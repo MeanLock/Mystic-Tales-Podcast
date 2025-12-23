@@ -71,6 +71,7 @@ const transactionApi = appApi.injectEndpoints({
         console.log("Create Payment Link Result:", result);
         return { data: result };
       },
+      invalidatesTags: ["Account"],
     }),
     createWithdrawRequest: build.mutation<
       {
@@ -101,7 +102,9 @@ const transactionApi = appApi.injectEndpoints({
           .unwrap();
         return { data: result };
       },
+      invalidatesTags: ["Account"],
     }),
+
     getTransactionHistory: build.query<
       { AccountBalanceTransactionList: AccountBalanceTransaction[] },
       { getEnum: string }
@@ -135,6 +138,7 @@ const transactionApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "required",
       }),
+      keepUnusedDataFor: 0,
     }),
   }),
 });

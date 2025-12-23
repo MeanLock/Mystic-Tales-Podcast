@@ -46,6 +46,13 @@ const EpisodeMoreInformations = ({ episode }: { episode: EpisodeDetails }) => {
           {episode.ListenCount.toLocaleString()} times
         </Text>
       </View>
+
+      <View className="border-b-[0.5px] border-gray-800 w-full flex flex-row items-center justify-between py-2">
+        <Text className="text-[#D9D9D9] text-lg font-light">Episode Type</Text>
+        <Text className="text-white text-lg">
+          {episode.PodcastEpisodeSubscriptionType.Name || "Normal"}
+        </Text>
+      </View>
     </View>
   );
 };

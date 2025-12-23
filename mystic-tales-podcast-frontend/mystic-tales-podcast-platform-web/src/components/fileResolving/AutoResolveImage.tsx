@@ -97,7 +97,8 @@ interface AutoResolveImageProps {
     | "AccountPublicSource"
     | "BookingPublicSource"
     | "PodcastPublicSource"
-    | "CategoryPublicSource";
+    | "CategoryPublicSource"
+    | "WithdrawalReceipt";
   className?: string;
   imgClassName?: string;
 }

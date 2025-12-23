@@ -75,12 +75,6 @@ const EpisodeCard = ({ episode }: { episode: Episode }) => {
           <Text numberOfLines={1} className="text-white text-[10px] font-bold">
             {episode.Name}
           </Text>
-          {/* <HtmlText
-            html={episode.Description ?? ""}
-            color="#D9D9D9"
-            fontSize={7}
-            numberOfLines={3}
-          /> */}
           <View className="w-full items-start mt-5">
             <PlayButtonVariant2
               audioId={episode.Id}

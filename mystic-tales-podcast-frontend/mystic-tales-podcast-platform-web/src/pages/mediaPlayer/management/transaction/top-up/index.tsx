@@ -105,7 +105,7 @@ const TopUpPage = () => {
         setError("Không thể tạo link thanh toán. Vui lòng thử lại.");
         return;
       }
-
+      localStorage.removeItem("neededTopUpAmount");
       const paymentLink = response.PaymentLinkUrl;
       console.log("Payment Link:", paymentLink);
       window.location.href = paymentLink;

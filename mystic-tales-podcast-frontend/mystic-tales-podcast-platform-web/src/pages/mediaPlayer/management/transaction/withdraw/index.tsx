@@ -1,14 +1,24 @@
-// @ts-nocheck
 import {
   useCreateWithdrawRequestMutation,
-  useGetTransactionHistoryQuery,
   useGetWithdrawalRequestHistoryQuery,
+  type WithdrawalRequest,
 } from "@/core/services/transaction/transaction.service";
 import type { RootState } from "@/redux/store";
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { TbCoinFilled } from "react-icons/tb";
 import MTPCoinOutline from "@/components/coinIcons/CoinIconOutline";
+import {
+  Dialog,
+  DialogDescription,
+  DialogHeader,
+  DialogContent,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
 
 const presetAmounts = [20000, 50000, 100000, 200000, 500000];
 
@@ -20,17 +30,13 @@ const WithDrawPage = () => {
   const [viewMode, setViewMode] = useState<"withdraw" | "history">("withdraw");
   const [amount, setAmount] = useState<number>(0);
   const [error, setError] = useState<string>("");
+  const [selectedWithdrawal, setSelectedWithDrawal] =
+    useState<WithdrawalRequest | null>(null);
+  const [isShowSelectedReceiptImage, setIsShowSelectedReceiptImage] =
+    useState<boolean>(false);
 
   // HOOKS
-  // const {
-  //   data: withdrawHistoryData,
-  //   isLoading: isHistoryLoading,
-  //   refetch,
-  // } = useGetTransactionHistoryQuery(
-  //   { getEnum: "MoneyOut" },
-  //   { skip: viewMode !== "history" }
-  // );
-
+  const dispatch = useDispatch();
   const {
     data: withdrawHistoryData,
     isLoading: isHistoryLoading,
@@ -78,10 +84,25 @@ const WithDrawPage = () => {
 
     try {
       const result = await createWithdrawRequest({ Amount: amount }).unwrap();
-      setAmount(0);
-      setError("");
-      setViewMode("history");
-      refetch();
+      if (result) {
+        dispatch(
+          showAlert({
+            type: "success",
+            title: "Successfully!",
+            description:
+              "We have received your withdrawal request, please wait the staff to resolve it.",
+            isAutoClose: false,
+            functionalButtonText: "Got it",
+            isFunctional: true,
+            onClickAction: async () => {
+              setAmount(0);
+              setError("");
+              setViewMode("history");
+              await refetch();
+            },
+          })
+        );
+      }
     } catch (error: any) {
       console.error("Withdraw request failed:", error);
       setError(
@@ -93,6 +114,16 @@ const WithDrawPage = () => {
   };
 
   const currentBalance = user?.Balance || 0;
+
+  const handleViewImageReceipt = (withdraw: WithdrawalRequest) => {
+    setSelectedWithDrawal(withdraw);
+    setIsShowSelectedReceiptImage(true);
+  };
+
+  const handleCloseImageReceipt = () => {
+    setSelectedWithDrawal(null);
+    setIsShowSelectedReceiptImage(false);
+  };
 
   return (
     <div className="w-full h-full flex flex-col items-start gap-5 font-poppins">
@@ -252,14 +283,16 @@ const WithDrawPage = () => {
                               Status:{" "}
                               <span
                                 className={`font-semibold ${
-                                  transaction.CompletedAt
+                                  transaction.CompletedAt &&
+                                  !transaction.IsRejected
                                     ? "text-mystic-green"
                                     : !transaction.IsRejected
                                     ? "text-yellow-400"
                                     : "text-[#FEA863]"
                                 }`}
                               >
-                                {transaction.CompletedAt
+                                {transaction.CompletedAt &&
+                                !transaction.IsRejected
                                   ? "Completed"
                                   : !transaction.IsRejected
                                   ? "Pending"
@@ -268,6 +301,16 @@ const WithDrawPage = () => {
                             </p>
                           </div>
                         </div>
+
+                        {transaction.CompletedAt && !transaction.IsRejected && (
+                          <Button
+                            onClick={() => handleViewImageReceipt(transaction)}
+                            variant="outline"
+                            className="border-white/20 text-black bg-white hover:bg-white/80 mx-5"
+                          >
+                            <p>Show Receipt</p>
+                          </Button>
+                        )}
                         <div className="text-right">
                           <p className="text-xs text-white/40 mb-1">
                             Created at
@@ -304,6 +347,52 @@ const WithDrawPage = () => {
           </div>
         )}
       </div>
+
+      {selectedWithdrawal && (
+        <Dialog
+          open={isShowSelectedReceiptImage}
+          onOpenChange={() => {
+            handleCloseImageReceipt();
+          }}
+        >
+          <DialogContent className="z-9999 sm:max-w-105 border border-white/10 bg-black/80 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-mystic-green">
+                Withdrawal Receipt Image
+              </DialogTitle>
+              <DialogDescription className="text-[#D9D9D9] my-2 gap-2 flex flex-col items-start">
+                <p>
+                  If there's anything incorrect, please contact us via:
+                  <span className="text-mystic-green underline ml-2">
+                    mtp@support.com
+                  </span>
+                </p>
+                <p>
+                  <strong className="text-mystic-green">Amount: </strong>
+                  {selectedWithdrawal.Amount.toLocaleString()}đ
+                </p>
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="scrollbar-hide flex w-full items-center justify-center py-2 overflow-y-auto h-130">
+              <AutoResolveImage
+                FileKey={selectedWithdrawal.TransferReceiptImageFileKey}
+                type="WithdrawalReceipt"
+              />
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                onClick={() => handleCloseImageReceipt()}
+                variant="outline"
+                className="border-white/20 text-black bg-white hover:bg-white/80"
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

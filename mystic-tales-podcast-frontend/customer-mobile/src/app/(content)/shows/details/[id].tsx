@@ -34,6 +34,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/src/store/store";
 import { setDataAndShowAlert } from "@/src/features/alert/alertSlice";
 import MTPCoinOutline from "@/src/components/coinIcon/CoinIconOuline";
+import HtmlText from "@/src/components/renderHtml/HtmlText";
 
 export default function ShowDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -431,9 +432,7 @@ export default function ShowDetailsScreen() {
                   <Text style={styles.subscriptionTitle} numberOfLines={1}>
                     {activeSubscription?.PodcastSubscription.Name}
                   </Text>
-                  <Text style={styles.message} numberOfLines={3}>
-                    {activeSubscription?.PodcastSubscription.Description}
-                  </Text>
+                  <HtmlText html={activeSubscription?.PodcastSubscription.Description || ""} numberOfLines={3} textStyle={styles.message} />
                   <View className="w-full px-1 mb-2 flex items-center justify-center">
                     <View className="w-full h-[1px] bg-[#D9D9D9]" />
                   </View>

@@ -1,4 +1,5 @@
 import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
+import HtmlText from "@/src/components/renderHtml/HtmlText";
 import { Episode } from "@/src/core/types/episode.type";
 import { EpisodeCardWithImageProps } from "@/src/types/episode";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -49,9 +50,7 @@ const EpisodeCard = ({
           <Text numberOfLines={1} className="text-white text-[10px] font-bold">
             {episode.Name}
           </Text>
-          <Text numberOfLines={3} className="text-white text-[7px]">
-            {episode.Description}
-          </Text>
+          <HtmlText html={episode.Description} numberOfLines={3} fontSize={7} color="white" />
           <View className="flex-1 flex flex-row items-end gap-2">
             {/* {episode.ExplicitContent && <ExplicitContentTag />} */}
             <AudioLengthTag length={episode.AudioLength} />

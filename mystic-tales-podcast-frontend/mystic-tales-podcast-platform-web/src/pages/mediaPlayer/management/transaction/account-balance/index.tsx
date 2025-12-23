@@ -1,10 +1,5 @@
-// @ts-nocheck
 import { useGetAccountBalanceChangeHistoryQuery } from "@/core/services/transaction/transaction.service";
-import type {
-  BalanceChange,
-  TransactionType,
-  TransactionStatus,
-} from "@/core/types/transaction";
+import type { TransactionStatus } from "@/core/types/transaction";
 import { useState, useMemo } from "react";
 import {
   Select,
@@ -21,8 +16,12 @@ type SortField = "amount" | "date" | "type";
 type SortDirection = "asc" | "desc";
 
 const AccountBalanceChangePage = () => {
-  const { data: balanceChangeData, isLoading: isBalanceChangeLoading } =
-    useGetAccountBalanceChangeHistoryQuery();
+  const { data: balanceChangeData, isFetching: isBalanceChangeLoading } =
+    useGetAccountBalanceChangeHistoryQuery(undefined, {
+      refetchOnFocus: true,
+      refetchOnMountOrArgChange: true,
+      refetchOnReconnect: true,
+    });
 
   // Sorting state
   const [sortField, setSortField] = useState<SortField>("date");
@@ -214,7 +213,7 @@ const AccountBalanceChangePage = () => {
               <SelectTrigger className="bg-white/5 border-white/10 text-white">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
-              <SelectContent className="bg-[#1a1d24] border-white/10 text-white">
+              <SelectContent className="z-9999 bg-[#1a1d24] border-white/10 text-white">
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="1">Account Balance Deposit</SelectItem>
                 <SelectItem value="2">Account Balance Withdrawal</SelectItem>
@@ -238,7 +237,7 @@ const AccountBalanceChangePage = () => {
               <SelectTrigger className="bg-white/5 border-white/10 text-white">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
-              <SelectContent className="bg-[#1a1d24] border-white/10 text-white">
+              <SelectContent className="z-9999 bg-[#1a1d24] border-white/10 text-white">
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="1">Processing</SelectItem>
                 <SelectItem value="2">Success</SelectItem>
@@ -257,7 +256,7 @@ const AccountBalanceChangePage = () => {
               <SelectTrigger className="bg-white/5 border-white/10 text-white">
                 <SelectValue placeholder="All Directions" />
               </SelectTrigger>
-              <SelectContent className="bg-[#1a1d24] border-white/10 text-white">
+              <SelectContent className="z-9999 bg-[#1a1d24] border-white/10 text-white">
                 <SelectItem value="all">All Directions</SelectItem>
                 <SelectItem value="received">Received (+)</SelectItem>
                 <SelectItem value="sent">Sent (-)</SelectItem>

@@ -5,30 +5,13 @@ import { useUpdateAccountMeQuery } from "@/core/services/account/account.service
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/redux/store";
 import { useEffect } from "react";
-// import {
-//   useGetEpisodeLatestSessionQuery,
-//   useGetBookingLatestSessionQuery,
-// } from "@/core/services/player/player.service";
-// import {
-//   setListenSession,
-//   setListenSessionProcedure,
-//   setCurrentAudio,
-//   stopAudio,
-//   playAudio,
-// } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
-// import type {
-//   ListenSessionEpisodes,
-//   ListenSessionBookingTracks,
-// } from "@/core/types/audio";
-// import { usePlayer } from "@/core/services/player/usePlayer";
 import { setUser, clearAuth } from "@/redux/slices/authSlice/authSlice";
 
 const NormalLayout = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
-  // const user = useSelector((state: RootState) => state.auth.user);
-  // const { playFromLatest } = usePlayer();
+
   // Chỉ polling khi user đã đăng nhập (có token)
   const { data, error } = useUpdateAccountMeQuery(undefined, {
     pollingInterval: accessToken ? 1000 * 60 * 5 : 0, // 5 phút nếu có token, không poll nếu chưa login
@@ -48,47 +31,6 @@ const NormalLayout = () => {
       dispatch(setUser(data.Account));
     }
   }, [data, dispatch]);
-
-  // Lấy latest session khi mount
-  // const { data: episodeLatestData } = useGetEpisodeLatestSessionQuery(
-  //   undefined,
-  //   {
-  //     skip: !accessToken,
-  //   }
-  // );
-
-  // const { data: bookingLatestData } = useGetBookingLatestSessionQuery(
-  //   undefined,
-  //   {
-  //     skip: !accessToken,
-  //   }
-  // );
-
-  // Xử lý latest session khi có data - chỉ set state, playerCore sẽ xử lý việc listen
-  // useEffect(() => {
-  //   if (user) {
-  //     playFromLatest();
-  //   }
-  // }, []);
-
-  useEffect(() => {
-    if (accessToken) {
-      // Tạo ID riêng cho từng tab nếu chưa có
-      if (!sessionStorage.getItem("tabSessionId")) {
-        sessionStorage.setItem("tabSessionId", crypto.randomUUID());
-      }
-
-      const tabSessionId = sessionStorage.getItem("tabSessionId");
-      const isInWebKey = `${tabSessionId}:isInWeb`;
-
-      const isFirstInWeb = sessionStorage.getItem(isInWebKey);
-
-      if (!isFirstInWeb) {
-        sessionStorage.setItem(isInWebKey, "true");
-        navigate("/media-player/discovery");
-      }
-    }
-  }, [accessToken, navigate]);
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black">

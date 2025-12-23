@@ -1,5 +1,7 @@
 import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
 import PlayButtonVariant1 from "@/src/components/buttons/playButton/playButtonVariant1";
+import PlayButtonVariant2 from "@/src/components/buttons/playButton/playButtonVariant2";
+import { usePlayer } from "@/src/core/services/player/usePlayer";
 import { Episode } from "@/src/core/types/episode.type";
 import { playAudio } from "@/src/features/mediaPlayer/playerSlice";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -41,14 +43,23 @@ const formatAudioLength = (seconds: number): string => {
 };
 
 const EpisodeCard = ({ episode }: { episode: Episode }) => {
-  const dispatch = useDispatch();
-  const handlePlayEpisodeFromSavedCard = () => {
-    dispatch(
-      playAudio({
-        sourceType: "SavedEpisodes",
-        audioId: episode.Id,
-      })
-    );
+  const { state: uiState, pause, play, listenFromEpisode } = usePlayer();
+
+  const handlePlayPause = (episodeId: string) => {
+    if (uiState.isAudioLoading) {
+      return;
+    }
+    if (uiState.currentAudio) {
+      if (uiState.isPlaying && uiState.currentAudio.id === episodeId) {
+        pause();
+      } else if (uiState.currentAudio.id === episodeId) {
+        play();
+      } else {
+        listenFromEpisode(episodeId, "SavedEpisodes");
+      }
+    } else {
+      listenFromEpisode(episodeId, "SavedEpisodes");
+    }
   };
   return (
     <View style={styles.episodeCardContainer}>
@@ -68,14 +79,14 @@ const EpisodeCard = ({ episode }: { episode: Episode }) => {
         <Text className="text-gray-400 text-sm mt-1">
           {calculateReleaseDate(episode.ReleaseDate)}
         </Text>
-        <Text className="text-white text-lg" numberOfLines={2}>
+        <Text className="text-white text-lg" numberOfLines={1}>
           {episode.Name}
         </Text>
         <View className="flex-1 flex flex-row items-center mt-2">
-          <PlayButtonVariant1
-            episodeId={episode.Id}
+          <PlayButtonVariant2
+            audioId={episode.Id}
             audioLength={episode.AudioLength}
-            onPlayPress={handlePlayEpisodeFromSavedCard}
+            onPlayPress={() => handlePlayPause(episode.Id)}
           />
         </View>
       </View>

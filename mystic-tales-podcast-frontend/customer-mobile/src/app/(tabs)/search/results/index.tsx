@@ -164,9 +164,15 @@ export default function SearchResultsScreen() {
                 <View className="w-full mt-10 flex flex-col gap-2">
                   {searchResults.TopSearchResults.map((result) =>
                     result.Episode ? (
-                      <EpisodeCard episode={result.Episode} />
+                      <EpisodeCard
+                        key={`top-results-${result.Episode.Id}`}
+                        episode={result.Episode}
+                      />
                     ) : result.Show ? (
-                      <ShowCard show={result.Show} />
+                      <ShowCard
+                        key={`top-results-${result.Show.Id}`}
+                        show={result.Show}
+                      />
                     ) : (
                       <></>
                     )
@@ -176,21 +182,21 @@ export default function SearchResultsScreen() {
               {viewMode === "show" && (
                 <View className="w-full mt-10 flex flex-col gap-2">
                   {searchResults.ShowList.map((show) => (
-                    <ShowCard show={show} />
+                    <ShowCard key={`show-${show.Id}`} show={show} />
                   ))}
                 </View>
               )}
               {viewMode === "episode" && (
                 <View className="w-full mt-10 flex flex-col gap-2">
                   {searchResults.EpisodeList.map((episode) => (
-                    <EpisodeCard episode={episode} />
+                    <EpisodeCard key={`episode-${episode.Id}`} episode={episode} />
                   ))}
                 </View>
               )}
               {viewMode === "channel" && (
                 <View className="w-full mt-10 flex flex-col gap-2">
                   {searchResults.ChannelList.map((channel) => (
-                    <ChannelCard channel={channel} />
+                    <ChannelCard key={`channel-${channel.Id}`} channel={channel} />
                   ))}
                 </View>
               )}

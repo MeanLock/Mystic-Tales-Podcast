@@ -2,6 +2,7 @@ import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
 import { EpisodeFromShow } from "@/src/core/types/episode.type";
 import { EvilIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { StyleSheet } from "react-native";
 import { Pressable } from "react-native";
 
@@ -31,32 +32,6 @@ interface MoreInformationsProps {
   };
 }
 
-const InformationItem = ({
-  title,
-  value,
-  isLink,
-}: {
-  title: string;
-  value: string;
-  isLink: boolean;
-}) => {
-  return (
-    <View style={styles.itemContainer}>
-      <Text className="text-[#D9D9D9]">{title}</Text>
-      {isLink ? (
-        <Pressable className="flex-row items-center gap-1">
-          <Text className="text-[#AEE339]">{value}</Text>
-          <EvilIcons name="external-link" color="#AEE339" size={24} />
-        </Pressable>
-      ) : (
-        <Text numberOfLines={1} className="text-white max-w-[60%]">
-          {value}
-        </Text>
-      )}
-    </View>
-  );
-};
-
 const MoreInformations = ({
   Podcaster,
   ReleaseDate,
@@ -66,6 +41,7 @@ const MoreInformations = ({
   PodcastCategory,
   PodcastSubCategory,
 }: MoreInformationsProps) => {
+  const router = useRouter();
   const getActiveTimeString = (
     releaseDateString: string,
     episodes: EpisodeFromShow[]
@@ -120,47 +96,90 @@ const MoreInformations = ({
       </Text>
 
       <View className="mt-5 w-full">
-        <InformationItem
+        {/* <InformationItem
           title="Creator"
           value={Podcaster.FullName}
           isLink={true}
-        />
-        <InformationItem
-          title="Active Time"
-          value={getActiveTimeString(ReleaseDate, ShowEpisodeList)}
-          isLink={false}
-        />
-        <InformationItem
-          title="Episodes"
-          value={ShowEpisodeList.length.toString()}
-          isLink={false}
-        />
-        <InformationItem
-          title="Classify"
-          value={
-            checkExplicitContent(ShowEpisodeList)
+          linkType="podcaster"
+          link={`/${Podcaster.Id}`}
+        /> */}
+
+        <View style={styles.itemContainer}>
+          <Text className="text-[#D9D9D9]">Creator</Text>
+          <Pressable
+            onPress={() =>
+              router.push(`/(content)/podcasters/details/${Podcaster.Id}`)
+            }
+            className="flex-row items-center gap-1"
+          >
+            <Text className="text-[#AEE339]">{Podcaster.FullName}</Text>
+            <EvilIcons name="external-link" color="#AEE339" size={24} />
+          </Pressable>
+        </View>
+
+        <View style={styles.itemContainer}>
+          <Text className="text-[#D9D9D9]">Active Time</Text>
+          <Text numberOfLines={1} className="text-white max-w-[60%]">
+            {getActiveTimeString(ReleaseDate, ShowEpisodeList)}
+          </Text>
+        </View>
+
+        <View style={styles.itemContainer}>
+          <Text className="text-[#D9D9D9]">Episodes</Text>
+          <Text numberOfLines={1} className="text-white max-w-[60%]">
+            {ShowEpisodeList.length.toString()}
+          </Text>
+        </View>
+
+        <View style={styles.itemContainer}>
+          <Text className="text-[#D9D9D9]">Classify</Text>
+          <Text numberOfLines={1} className="text-white max-w-[60%]">
+            {checkExplicitContent(ShowEpisodeList)
               ? "Explicit Content"
-              : "Safe Content"
-          }
-          isLink={false}
-        />
-        <InformationItem title="Copyright" value={Copyright} isLink={false} />
-        <InformationItem
-          title="Category"
-          value={PodcastCategory.Name}
-          isLink={true}
-        />
-        <InformationItem
-          title="Sub Category"
-          value={PodcastSubCategory.Name}
-          isLink={true}
-        />
+              : "Safe Content"}
+          </Text>
+        </View>
+
+        <View style={styles.itemContainer}>
+          <Text className="text-[#D9D9D9]">Copyright</Text>
+          <Text numberOfLines={1} className="text-white max-w-[60%]">
+            {Copyright}
+          </Text>
+        </View>
+
+        <View style={styles.itemContainer}>
+          <Text className="text-[#D9D9D9]">Category</Text>
+          <Pressable
+            onPress={() =>
+              router.push(`/(tabs)/search/category/${PodcastCategory.Id}`)
+            }
+            className="flex-row items-center gap-1"
+          >
+            <Text className="text-[#AEE339]">{PodcastCategory.Name}</Text>
+            <EvilIcons name="external-link" color="#AEE339" size={24} />
+          </Pressable>
+        </View>
+
+        <View style={styles.itemContainer}>
+          <Text className="text-[#D9D9D9]">Sub Category</Text>
+          <Text numberOfLines={1} className="text-white max-w-[60%]">
+            {PodcastSubCategory.Name}
+          </Text>
+        </View>
+
         {PodcastChannel && (
-          <InformationItem
-            title="Channel"
-            value={PodcastChannel.Name}
-            isLink={true}
-          />
+          <View style={styles.itemContainer}>
+            <Text className="text-[#D9D9D9]">Channel</Text>
+            <Pressable
+              onPress={() =>
+                router.push(`/(content)/channels/details/${PodcastChannel.Id}`)
+              }
+              className="flex-row items-center gap-1"
+            >
+              <Text className="text-[#AEE339]">{PodcastChannel.Name}</Text>
+              <EvilIcons name="external-link" color="#AEE339" size={24} />
+            </Pressable>
+          </View>
         )}
       </View>
     </View>

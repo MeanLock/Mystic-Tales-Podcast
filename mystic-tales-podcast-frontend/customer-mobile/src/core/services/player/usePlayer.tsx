@@ -66,6 +66,9 @@ export function usePlayer() {
   // Prevent concurrent listen/navigate calls
   const isProcessingAudio = useRef(false);
 
+  // Global debounce timer for listen functions
+  const listenDebounceTimer = useRef<number | null>(null);
+
   // Player UI State - Initialize with current engine state to prevent flash of empty state
   const [state, setState] = useState<PlayerUiState>(() => {
     // Get current state from engine on mount to avoid initial render with duration = 0
@@ -109,6 +112,12 @@ export function usePlayer() {
       episodeId: string,
       sourceType: "SavedEpisodes" | "SpecifyShowEpisodes"
     ) => {
+      // Clear any pending debounce timer
+      if (listenDebounceTimer.current) {
+        clearTimeout(listenDebounceTimer.current);
+        listenDebounceTimer.current = null;
+      }
+
       // Prevent concurrent calls
       if (isProcessingAudio.current) {
         if (__DEV__) {
@@ -117,103 +126,164 @@ export function usePlayer() {
         return;
       }
 
-      if (!user) {
-        dispatch(
-          setDataAndShowAlert({
-            title: "Login Required",
-            description: "Please log in to listen to podcasts.",
-            type: "warning",
-            isCloseable: true,
-            isFunctional: true,
-            functionalButtonText: "Log In",
-            autoCloseDuration: 5,
-            actionId,
-          })
-        );
-        return;
-      }
+      // Set debounce timer - only the last click will execute
+      listenDebounceTimer.current = setTimeout(async () => {
+        listenDebounceTimer.current = null;
 
-      isProcessingAudio.current = true;
-      playerEngine.setLoadingState(true, episodeId);
-
-      try {
-        // Check Subscription Benefits
-        let benefitList: SubscriptionBenefit[] = [];
-
-        // Check Non-Quota Access
-        const isNonQuota = await triggerCheckNonQuota({
-          PodcastEpisodeId: episodeId,
-        }).unwrap();
-
-        // If not Non-Quota, check listen slots
-        // If listen slots are 0, show alert and return
-        if (!isNonQuota) {
-          const listenSlot = (await triggerGetListenSlot().unwrap())
-            .PodcastListenSlot;
-          if (listenSlot <= 0) {
-            dispatch(
-              setDataAndShowAlert({
-                title: "No Remaining Listen Slots",
-                description:
-                  "You have no remaining podcast listen slots. Please subscribe to a podcast plan to continue listening.",
-                type: "error",
-                isCloseable: true,
-                isFunctional: false,
-                autoCloseDuration: 10,
-              })
+        // Double-check flag after debounce
+        if (isProcessingAudio.current) {
+          if (__DEV__) {
+            console.warn(
+              "[ListenFromEpisode] Already processing after debounce, skipping"
             );
-            return;
           }
+          return;
         }
 
-        const benefitData = await triggerGetBenefitList({
-          PodcastEpisodeId: episodeId,
-        }).unwrap();
+        // Set flag IMMEDIATELY to block spam
+        isProcessingAudio.current = true;
+        playerEngine.setLoadingState(true, episodeId);
 
-        if (
-          benefitData &&
-          benefitData.CurrentPodcastSubscriptionRegistrationBenefitList
-        ) {
-          benefitList =
-            benefitData.CurrentPodcastSubscriptionRegistrationBenefitList;
+        if (!user) {
+          dispatch(
+            setDataAndShowAlert({
+              title: "Login Required",
+              description: "Please log in to listen to podcasts.",
+              type: "warning",
+              isCloseable: true,
+              isFunctional: true,
+              functionalButtonText: "Log In",
+              autoCloseDuration: 5,
+              actionId,
+            })
+          );
+          isProcessingAudio.current = false;
+          playerEngine.setLoadingState(false, null);
+          return;
         }
 
-        const listenResponse = await listenToEpisodeV2({
-          CurrentPodcastSubscriptionRegistrationBenefitList: benefitList,
-          PodcastEpisodeId: episodeId,
-          SourceType: sourceType,
-        });
+        try {
+          // Check Subscription Benefits
+          let benefitList: SubscriptionBenefit[] = [];
 
-        if (listenResponse.isError || !listenResponse.data) {
-          const messageId = listenResponse.messageId;
-          if (messageId === "listen-failed-2") {
-            const messageData = alertMessages["listen-failed-2"];
-            if (messageData) {
+          // Check Non-Quota Access
+          const isNonQuota = await triggerCheckNonQuota({
+            PodcastEpisodeId: episodeId,
+          }).unwrap();
+
+          // If not Non-Quota, check listen slots
+          // If listen slots are 0, show alert and return
+          if (!isNonQuota) {
+            const listenSlot = (await triggerGetListenSlot().unwrap())
+              .PodcastListenSlot;
+            if (listenSlot <= 0) {
               dispatch(
                 setDataAndShowAlert({
-                  title: messageData.title,
-                  description: messageData.description,
+                  title: "No Remaining Listen Slots",
+                  description:
+                    "You have no remaining podcast listen slots. Please subscribe to a podcast plan to continue listening.",
+                  type: "error",
                   isCloseable: true,
                   isFunctional: false,
-                  type: messageData.type,
                   autoCloseDuration: 10,
                 })
               );
+              isProcessingAudio.current = false;
+              playerEngine.setLoadingState(false, null);
               return;
             }
-          } else if (messageId === "listen-failed-3/4") {
-            const activeSubscription = (
-              await getActiveSubscriptionFromEpisodeId({
-                PodcastEpisodeId: episodeId,
-              }).unwrap()
-            ).PodcastSubscription;
-            if (activeSubscription) {
-              const messageData = alertMessages["listen-failed-3"];
+          }
+
+          const benefitData = await triggerGetBenefitList({
+            PodcastEpisodeId: episodeId,
+          }).unwrap();
+
+          if (
+            benefitData &&
+            benefitData.CurrentPodcastSubscriptionRegistrationBenefitList
+          ) {
+            benefitList =
+              benefitData.CurrentPodcastSubscriptionRegistrationBenefitList;
+          }
+
+          const listenResponse = await listenToEpisodeV2({
+            CurrentPodcastSubscriptionRegistrationBenefitList: benefitList,
+            PodcastEpisodeId: episodeId,
+            SourceType: sourceType,
+          });
+
+          if (listenResponse.isError || !listenResponse.data) {
+            const messageId = listenResponse.messageId;
+            if (messageId === "listen-failed-2") {
+              const messageData = alertMessages["listen-failed-2"];
               if (messageData) {
                 dispatch(
                   setDataAndShowAlert({
                     title: messageData.title,
                     description: messageData.description,
+                    isCloseable: true,
+                    isFunctional: false,
+                    type: messageData.type,
+                    autoCloseDuration: 10,
+                  })
+                );
+                return;
+              }
+            } else if (messageId === "listen-failed-3/4") {
+              const activeSubscription = (
+                await getActiveSubscriptionFromEpisodeId({
+                  PodcastEpisodeId: episodeId,
+                }).unwrap()
+              ).PodcastSubscription;
+              if (activeSubscription) {
+                const messageData = alertMessages["listen-failed-3"];
+                if (messageData) {
+                  dispatch(
+                    setDataAndShowAlert({
+                      title: messageData.title,
+                      description: messageData.description,
+                      isCloseable: true,
+                      isFunctional: false,
+                      type: messageData.type,
+                      autoCloseDuration: 10,
+                    })
+                  );
+                  return;
+                }
+              } else {
+                const messageData = alertMessages["listen-failed-4"];
+                if (messageData) {
+                  dispatch(
+                    setDataAndShowAlert({
+                      title: messageData.title,
+                      description: messageData.description,
+                      isCloseable: true,
+                      isFunctional: false,
+                      type: messageData.type,
+                      autoCloseDuration: 10,
+                    })
+                  );
+                  return;
+                }
+              }
+            } else if (
+              messageId === "listen-failed-5" &&
+              listenResponse.missingBenefits
+            ) {
+              const messageData = alertMessages["listen-failed-5"];
+              const formatDescription =
+                `${messageData.description}` +
+                listenResponse.missingBenefits
+                  .map((key) => benefitTransformDescriptions[key])
+                  .filter(Boolean)
+                  .map((text) => `• ${text}`)
+                  .join("\n");
+
+              if (messageData) {
+                dispatch(
+                  setDataAndShowAlert({
+                    title: messageData.title,
+                    description: formatDescription,
                     isCloseable: true,
                     isFunctional: false,
                     type: messageData.type,
@@ -223,7 +293,7 @@ export function usePlayer() {
                 return;
               }
             } else {
-              const messageData = alertMessages["listen-failed-4"];
+              const messageData = alertMessages["listen-failed-1"];
               if (messageData) {
                 dispatch(
                   setDataAndShowAlert({
@@ -238,96 +308,55 @@ export function usePlayer() {
                 return;
               }
             }
-          } else if (
-            messageId === "listen-failed-5" &&
-            listenResponse.missingBenefits
-          ) {
-            const messageData = alertMessages["listen-failed-5"];
-            const formatDescription =
-              `${messageData.description}` +
-              listenResponse.missingBenefits
-                .map((key) => benefitTransformDescriptions[key])
-                .filter(Boolean)
-                .map((text) => `• ${text}`)
-                .join("\n");
-
-            if (messageData) {
-              dispatch(
-                setDataAndShowAlert({
-                  title: messageData.title,
-                  description: formatDescription,
-                  isCloseable: true,
-                  isFunctional: false,
-                  type: messageData.type,
-                  autoCloseDuration: 10,
-                })
-              );
-              return;
-            }
           } else {
-            const messageData = alertMessages["listen-failed-1"];
-            if (messageData) {
-              dispatch(
-                setDataAndShowAlert({
-                  title: messageData.title,
-                  description: messageData.description,
-                  isCloseable: true,
-                  isFunctional: false,
-                  type: messageData.type,
-                  autoCloseDuration: 10,
-                })
+            // Success: Always set ListenSessionProcedure (never null)
+            dispatch(
+              setListenSessionProcedure(
+                listenResponse.data.ListenSessionProcedure
+              )
+            );
+            // Only play if ListenSession exists
+            if (listenResponse.data.ListenSession) {
+              const ls = listenResponse.data
+                .ListenSession as ListenSessionEpisodes;
+              const track: PlayerTrack = {
+                id: ls.PodcastEpisode.Id,
+                url: ls.AudioFileUrl,
+                artist: ls.Podcaster.FullName,
+                title: ls.PodcastEpisode.Name,
+                artwork: ls.PodcastEpisode.MainImageFileKey,
+              };
+
+              playerEngine.setSourceType(sourceType);
+              dispatch(setListenSession(listenResponse.data.ListenSession));
+              await playerEngine.loadAndPlay(
+                track,
+                listenResponse.data.ListenSession,
+                listenResponse.data.ListenSessionProcedure,
+                true,
+                ls.PodcastEpisodeListenSession.LastListenDurationSeconds,
+                listenResponse.data.ListenSessionProcedure?.IsAutoPlay
               );
-              return;
             }
           }
-        } else {
-          // Success: Always set ListenSessionProcedure (never null)
+        } catch (error) {
+          playerEngine.setLoadingState(false, null);
+          console.error("Error in listenFromEpisode:", error);
           dispatch(
-            setListenSessionProcedure(
-              listenResponse.data.ListenSessionProcedure
-            )
+            setDataAndShowAlert({
+              title: "Listen Error",
+              description: `${error}`,
+              type: "error",
+              isCloseable: true,
+              isFunctional: false,
+              autoCloseDuration: 5,
+            })
           );
-          // Only play if ListenSession exists
-          if (listenResponse.data.ListenSession) {
-            const ls = listenResponse.data
-              .ListenSession as ListenSessionEpisodes;
-            const track: PlayerTrack = {
-              id: ls.PodcastEpisode.Id,
-              url: ls.AudioFileUrl,
-              artist: ls.Podcaster.FullName,
-              title: ls.PodcastEpisode.Name,
-              artwork: ls.PodcastEpisode.MainImageFileKey,
-            };
-
-            playerEngine.setSourceType(sourceType);
-            dispatch(setListenSession(listenResponse.data.ListenSession));
-            await playerEngine.loadAndPlay(
-              track,
-              listenResponse.data.ListenSession,
-              listenResponse.data.ListenSessionProcedure,
-              true,
-              ls.PodcastEpisodeListenSession.LastListenDurationSeconds,
-              listenResponse.data.ListenSessionProcedure?.IsAutoPlay
-            );
-          }
+        } finally {
+          isProcessingAudio.current = false;
+          playerEngine.setLoadingState(false, null);
         }
-      } catch (error) {
-        playerEngine.setLoadingState(false, null);
-        console.error("Error in listenFromEpisode:", error);
-        dispatch(
-          setDataAndShowAlert({
-            title: "Listen Error",
-            description: `${error}`,
-            type: "error",
-            isCloseable: true,
-            isFunctional: false,
-            autoCloseDuration: 5,
-          })
-        );
-      } finally {
-        isProcessingAudio.current = false;
-        playerEngine.setLoadingState(false, null);
-      }
+      }, 300); // 300ms debounce - quick enough for UX, long enough to prevent double clicks
     },
     [
       user,
@@ -349,6 +378,11 @@ export function usePlayer() {
         }
         return;
       }
+
+      // Set flag IMMEDIATELY to block spam
+      isProcessingAudio.current = true;
+      playerEngine.setLoadingState(true, episodeId);
+
       if (!user) {
         const actionId = "login-required-continue-episode";
         registerAlertAction(actionId, () => {
@@ -368,11 +402,10 @@ export function usePlayer() {
             actionId,
           })
         );
+        isProcessingAudio.current = false;
+        playerEngine.setLoadingState(false, null);
         return;
       }
-
-      isProcessingAudio.current = true;
-      playerEngine.setLoadingState(true, episodeId);
 
       try {
         // Check Subscription Benefits
@@ -400,6 +433,8 @@ export function usePlayer() {
                 autoCloseDuration: 10,
               })
             );
+            isProcessingAudio.current = false;
+            playerEngine.setLoadingState(false, null);
             return;
           }
         }
@@ -723,6 +758,11 @@ export function usePlayer() {
         }
         return;
       }
+
+      // Set flag IMMEDIATELY to block spam
+      isProcessingAudio.current = true;
+      playerEngine.setLoadingState(true, bookingTrackId);
+
       if (!user) {
         dispatch(
           setDataAndShowAlert({
@@ -736,10 +776,10 @@ export function usePlayer() {
             actionId,
           })
         );
+        isProcessingAudio.current = false;
+        playerEngine.setLoadingState(false, null);
         return;
       } else {
-        isProcessingAudio.current = true;
-        playerEngine.setLoadingState(true, bookingTrackId);
         try {
           const listenResponse = await listenToBookingTrackV2({
             BookingId: bookingId,
