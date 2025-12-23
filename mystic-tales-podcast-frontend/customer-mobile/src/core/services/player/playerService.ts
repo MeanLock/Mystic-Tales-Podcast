@@ -213,25 +213,29 @@ export const playerApi = appApi.injectEndpoints({
         },
         api
       ) {
-        const result = await api
-          .dispatch(
-            appApi.endpoints.kickoffThenWait.initiate({
-              kickoff: {
-                url: `/api/podcast-service/api/episodes/listen-sessions/${PodcastEpisodeListenSessionId}/last-duration-seconds/${LastListenDurationSeconds}`,
-                method: "PUT",
-                body: {
-                  CurrentPodcastSubscriptionRegistrationBenefitList,
+        try {
+          const result = await api
+            .dispatch(
+              appApi.endpoints.kickoffThenWait.initiate({
+                kickoff: {
+                  url: `/api/podcast-service/api/episodes/listen-sessions/${PodcastEpisodeListenSessionId}/last-duration-seconds/${LastListenDurationSeconds}`,
+                  method: "PUT",
+                  body: {
+                    CurrentPodcastSubscriptionRegistrationBenefitList,
+                  },
+                  authMode: "required",
                 },
-                authMode: "required",
-              },
-              poll: {
-                intervalMs: 1000,
-                maxAttempts: 30,
-              },
-            })
-          )
-          .unwrap();
-        return { data: result as { Message: string } | undefined };
+                poll: {
+                  intervalMs: 1000,
+                  maxAttempts: 30,
+                },
+              })
+            )
+            .unwrap();
+          return { data: result as { Message: string } | undefined };
+        } catch (error) {
+          return { error: error as ApiErrorModel };
+        }
       },
     }),
 
@@ -247,22 +251,26 @@ export const playerApi = appApi.injectEndpoints({
         { BookingPodcastTrackListenSessionId, LastListenDurationSeconds },
         api
       ) {
-        const result = await api
-          .dispatch(
-            appApi.endpoints.kickoffThenWait.initiate({
-              kickoff: {
-                url: `/api/booking-management-service/api/bookings/listen-sessions/${BookingPodcastTrackListenSessionId}/last-duration-seconds/${LastListenDurationSeconds}`,
-                method: "PUT",
-                authMode: "required",
-              },
-              poll: {
-                intervalMs: 1000,
-                maxAttempts: 30,
-              },
-            })
-          )
-          .unwrap();
-        return { data: result as { Message: string } | undefined };
+        try {
+          const result = await api
+            .dispatch(
+              appApi.endpoints.kickoffThenWait.initiate({
+                kickoff: {
+                  url: `/api/booking-management-service/api/bookings/listen-sessions/${BookingPodcastTrackListenSessionId}/last-duration-seconds/${LastListenDurationSeconds}`,
+                  method: "PUT",
+                  authMode: "required",
+                },
+                poll: {
+                  intervalMs: 1000,
+                  maxAttempts: 30,
+                },
+              })
+            )
+            .unwrap();
+          return { data: result as { Message: string } | undefined };
+        } catch (error) {
+          return { error: error as ApiErrorModel };
+        }
       },
     }),
 

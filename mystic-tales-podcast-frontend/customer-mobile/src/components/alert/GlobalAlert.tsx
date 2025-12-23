@@ -136,9 +136,7 @@ export const GlobalAlert = () => {
           </View>
 
           <View className="w-full flex items-center justify-center">
-            <Text numberOfLines={1} style={styles.message}>
-              {description}
-            </Text>
+            <Text style={styles.message}>{description}</Text>
           </View>
 
           {isFunctional && (
@@ -259,7 +257,7 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.75)",
     lineHeight: 20,
     marginBottom: 14,
-    textAlign: "center",
+    textAlign: "left",
   },
 
   functionalBtn: {

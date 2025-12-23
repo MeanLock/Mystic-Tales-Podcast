@@ -65,7 +65,10 @@ export default function CompletedBookingDetailsScreen() {
   }
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={{ backgroundColor: "#000" }}
+      showsVerticalScrollIndicator={false}
+    >
       <View className="flex items-center justify-center h-[400px] relative">
         <Image
           source={{

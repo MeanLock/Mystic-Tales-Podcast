@@ -207,7 +207,7 @@ export default function EpisdeDetailsScreen() {
     );
   }
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
+    <ScrollView className="bg-black" showsVerticalScrollIndicator={false}>
       <EpisodeInformations
         onSaveToggle={handleSaveEpisode}
         isSaved={isSaved}

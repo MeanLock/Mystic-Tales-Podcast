@@ -195,6 +195,7 @@ const subscriptionApi = appApi.injectEndpoints({
         authMode: "required",
       }),
     }),
+
     cancelSubscriptionRegistration: build.mutation<
       { Message: string },
       { PodcastSubscriptionRegistrationId: string }
@@ -255,6 +256,21 @@ const subscriptionApi = appApi.injectEndpoints({
         authMode: "required",
       }),
     }),
+
+    getActiveSubscriptionFromEpisodeId: build.query<
+      {
+        PodcastSubscription:
+          | SubscriptionDetails
+          | { PodcastSubscription: null };
+      },
+      { PodcastEpisodeId: string }
+    >({
+      query: ({ PodcastEpisodeId }) => ({
+        url: `/api/subscription-service/api/podcast-subscriptions/episodes/${PodcastEpisodeId}`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
   }),
 });
 
@@ -271,4 +287,5 @@ export const {
   useMakeDecisionOnAcceptingNewestVersionMutation,
   useGetRegistrationDetailsQuery,
   useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery,
+  useLazyGetActiveSubscriptionFromEpisodeIdQuery
 } = subscriptionApi;

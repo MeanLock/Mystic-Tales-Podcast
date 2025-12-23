@@ -91,7 +91,7 @@ const ShowInformations = ({
             {activeSubscription.PodcastSubscriptionCycleTypePriceList[0].Price.toLocaleString(
               "vn"
             )}{" "}
-            đ /{" "}
+            coins /{" "}
             {
               activeSubscription.PodcastSubscriptionCycleTypePriceList[0]
                 .SubscriptionCycleType.Name

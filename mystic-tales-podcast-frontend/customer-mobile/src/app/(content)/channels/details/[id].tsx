@@ -80,11 +80,11 @@ const renderSubscriptionPriceInfo = (subscription: SubscriptionDetails) => {
   const priceTexts: string[] = [];
 
   if (monthlyPrice) {
-    priceTexts.push(`${formatPrice(monthlyPrice.Price)} đ/month`);
+    priceTexts.push(`${formatPrice(monthlyPrice.Price)} coins/month`);
   }
 
   if (yearlyPrice) {
-    priceTexts.push(`${formatPrice(yearlyPrice.Price)} đ/year`);
+    priceTexts.push(`${formatPrice(yearlyPrice.Price)} coins/year`);
   }
 
   // Join with " hoặc " if both exist
@@ -762,7 +762,8 @@ export default function ChannelDetailsScreen() {
 
                 <View className="flex flex-col items-start gap-1">
                   <Text className="text-[#D9D9D9] text-2xl font-semibold">
-                    {getSelectedCyclePrice(selectedCycle.Id).toLocaleString()} đ
+                    {getSelectedCyclePrice(selectedCycle.Id).toLocaleString()}{" "}
+                    coins
                   </Text>
                   <Text className="text-sm font-semibold text-[#9CA3AF]">
                     per user /{selectedCycle.Name}
@@ -821,7 +822,7 @@ export default function ChannelDetailsScreen() {
                         .Price
                         ? customerRegistrationInfo.PodcastSubscriptionRegistration.Price.toLocaleString()
                         : "100,000"}{" "}
-                      đ
+                      coins
                     </Text>
                     <View className="gap-2 mt-2">
                       {customerRegistrationInfo.PodcastSubscriptionRegistration.PodcastSubscriptionBenefitList.map(
@@ -847,7 +848,7 @@ export default function ChannelDetailsScreen() {
                             .PodcastSubscriptionRegistration
                             ?.SubscriptionCycleType.Id
                       )?.Price.toLocaleString()}
-                      đ
+                      coins
                     </Text>
                     <View className="gap-2 mt-2">
                       {activeSubscription.PodcastSubscription.PodcastSubscriptionBenefitMappingList.map(

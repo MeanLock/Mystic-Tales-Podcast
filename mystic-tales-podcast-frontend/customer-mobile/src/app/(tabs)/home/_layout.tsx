@@ -118,7 +118,7 @@ const Header = ({ scrollY }: { scrollY: Animated.Value }) => {
           ) : (
             <Pressable
               style={[style.loginBtn, { backgroundColor: "#AEE339" }]}
-              onPress={goToLogin}
+              onPress={() => goToLogin()}
             >
               <Text style={style.loginText}>Login</Text>
             </Pressable>

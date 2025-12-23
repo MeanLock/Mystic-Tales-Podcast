@@ -9,15 +9,8 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import {
-  useGetAccountPublicSourceQuery,
-  useGetBookingPublicSourceQuery,
-  useGetPodcastPublicSourceQuery,
-  useGetCategoryPublicSourceQuery,
-  useGetTemplatePodcastBuddyCommitmentFileQuery,
-  useGetPodcastBuddyCommitmentFileQuery,
-} from "@/src/core/services/file/file.service";
-import { useState } from "react";
+import { getPublisSourceFileUrl } from "@/src/core/services/file/file-v2.service";
+import { useState, useEffect } from "react";
 
 type SourceType =
   | "AccountPublicSource"
@@ -44,92 +37,43 @@ const AutoResolvingImageBackground = ({
   ...backgroundProps // blurRadius, children, etc...
 }: AutoResolvingImageBackgroundProps) => {
   const [loadError, setLoadError] = useState(false);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const fallbackSource = require("@/assets/images/user/unknown.jpg");
   const hasFileKey = Boolean(FileKey);
   const validFileKey = (FileKey ?? "") as string;
 
-  // Queries theo type
-  const { data: accountData, isLoading: isAccountLoading } =
-    useGetAccountPublicSourceQuery(
-      { FileKey: validFileKey },
-      {
-        skip: type !== "AccountPublicSource" || !hasFileKey,
-        refetchOnMountOrArgChange: true,
-        refetchOnFocus: true,
-        refetchOnReconnect: true,
+  // Use file-v2 service for all types
+  useEffect(() => {
+    const loadFileUrl = async () => {
+      // Skip TemplateCommitment and CommitmentDocument (not implemented in v2)
+      if (type === "TemplateCommitment" || type === "CommitmentDocument") {
+        setFileUrl(null);
+        return;
       }
-    );
 
-  const { data: bookingData, isLoading: isBookingLoading } =
-    useGetBookingPublicSourceQuery(
-      { FileKey: validFileKey },
-      {
-        skip: type !== "BookingPublicSource" || !hasFileKey,
-        refetchOnMountOrArgChange: true,
-        refetchOnFocus: true,
-        refetchOnReconnect: true,
+      if (!hasFileKey) {
+        setFileUrl(null);
+        return;
       }
-    );
 
-  const { data: podcastData, isLoading: isPodcastLoading } =
-    useGetPodcastPublicSourceQuery(
-      { FileKey: validFileKey },
-      {
-        skip: type !== "PodcastPublicSource" || !hasFileKey,
-        refetchOnMountOrArgChange: true,
-        refetchOnFocus: true,
-        refetchOnReconnect: true,
+      setIsLoading(true);
+      try {
+        const url = await getPublisSourceFileUrl({
+          fileKey: validFileKey,
+          type,
+        });
+        setFileUrl(url);
+      } catch (error) {
+        console.error("Error loading file URL:", error);
+        setFileUrl(null);
+      } finally {
+        setIsLoading(false);
       }
-    );
+    };
 
-  const { data: categoryData, isLoading: isCategoryLoading } =
-    useGetCategoryPublicSourceQuery(
-      { FileKey: validFileKey },
-      {
-        skip: type !== "CategoryPublicSource" || !hasFileKey,
-        refetchOnMountOrArgChange: true,
-        refetchOnFocus: true,
-        refetchOnReconnect: true,
-      }
-    );
-
-  const { data: templateData, isLoading: isTemplateLoading } =
-    useGetTemplatePodcastBuddyCommitmentFileQuery(
-      { fileEnum: fileEnum! },
-      {
-        skip: type !== "TemplateCommitment" || !fileEnum,
-        refetchOnMountOrArgChange: true,
-        refetchOnFocus: true,
-        refetchOnReconnect: true,
-      }
-    );
-
-  const { data: commitmentData, isLoading: isCommitmentLoading } =
-    useGetPodcastBuddyCommitmentFileQuery(
-      { FileKey: validFileKey },
-      {
-        skip: type !== "CommitmentDocument" || !hasFileKey,
-        refetchOnMountOrArgChange: true,
-        refetchOnFocus: true,
-        refetchOnReconnect: true,
-      }
-    );
-
-  const isLoading =
-    isAccountLoading ||
-    isBookingLoading ||
-    isPodcastLoading ||
-    isCategoryLoading ||
-    isTemplateLoading ||
-    isCommitmentLoading;
-
-  const fileUrl =
-    accountData?.FileUrl ||
-    bookingData?.FileUrl ||
-    podcastData?.FileUrl ||
-    categoryData?.FileUrl ||
-    templateData?.FileUrl ||
-    commitmentData?.FileUrl;
+    loadFileUrl();
+  }, [FileKey, type, hasFileKey, validFileKey]);
 
   if (isLoading) {
     return (

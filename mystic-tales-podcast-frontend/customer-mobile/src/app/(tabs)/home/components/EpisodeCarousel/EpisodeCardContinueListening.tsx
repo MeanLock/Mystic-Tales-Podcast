@@ -1,11 +1,19 @@
 import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
 import { Episode } from "@/src/core/types/episode.type";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { ContinueListenSession } from "./EpisodeContinueCarousel";
 import HtmlText from "@/src/components/renderHtml/HtmlText";
 import { usePlayer } from "@/src/core/services/player/usePlayer";
 import TimeUtil from "@/src/core/utils/time";
+import { useRef, useCallback } from "react";
+import { formatAudioLength } from "@/src/lib/format";
 
 const AudioLengthTag = ({ length }: { length: number }) => {
   const formatLength = (length: number) => {
@@ -33,25 +41,45 @@ const EpisodeContinueListeningCard = ({
     continueListenFromEpisode,
     state: uiState,
   } = usePlayer();
+  const debounceTimerRef = useRef<number | null>(null);
 
-  const handlePlayPause = async () => {
+  const handlePlayPause = useCallback(async () => {
+    if (uiState.isAudioLoading) return;
     if (!episode.Episode) return;
-    // Đang Playing episode này
-    if (uiState.currentAudio?.id === episode.Episode.Id && uiState.isPlaying) {
-      pause();
-      return;
+
+    // Clear previous timer if exists
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
-    // Đang Pause episode này
-    if (uiState.currentAudio?.id === episode.Episode.Id && !uiState.isPlaying) {
-      play();
-      return;
-    }
-    // Chưa play episode này
-    await continueListenFromEpisode(
-      episode.Episode.Id,
-      episode.PodcastEpisodeListenSession.Id
-    );
-  };
+
+    // Set new timer for debounce
+    debounceTimerRef.current = setTimeout(async () => {
+      // Đang Playing episode này
+      if (
+        uiState.currentAudio?.id === episode.Episode.Id &&
+        uiState.isPlaying
+      ) {
+        pause();
+        debounceTimerRef.current = null;
+        return;
+      }
+      // Đang Pause episode này
+      if (
+        uiState.currentAudio?.id === episode.Episode.Id &&
+        !uiState.isPlaying
+      ) {
+        play();
+        debounceTimerRef.current = null;
+        return;
+      }
+      // Chưa play episode này
+      await continueListenFromEpisode(
+        episode.Episode.Id,
+        episode.PodcastEpisodeListenSession.Id
+      );
+      debounceTimerRef.current = null;
+    }, 1000);
+  }, [episode, uiState, play, pause, continueListenFromEpisode]);
 
   return (
     <View
@@ -75,72 +103,64 @@ const EpisodeContinueListeningCard = ({
             {episode.Episode.Name}
           </Text>
           <View className="flex-1 flex flex-row items-end gap-2">
-            {uiState.currentAudio?.id === episode.Episode.Id &&
-              uiState.isPlaying && (
-                <Pressable
-                  onPress={() => handlePlayPause()}
-                  className="flex flex-row items-center pr-3 pl-1 py-1 gap-2 bg-zinc-50/30 rounded-full"
-                >
+            <Pressable
+              onPress={() => handlePlayPause()}
+              disabled={uiState.isAudioLoading}
+              className="flex flex-row items-center pr-3 pl-1 py-1 gap-2 bg-zinc-50/30 rounded-full"
+            >
+              {uiState.isAudioLoading &&
+              uiState.loadingAudioId === episode.Episode.Id ? (
+                <ActivityIndicator size={24} color="white" />
+              ) : uiState.isAudioLoading ? (
+                <View className="p-1 flex items-center justify-center bg-white rounded-full">
                   <MaterialIcons
-                    name="pause-circle-filled"
-                    size={24}
-                    color="white"
+                    name="play-disabled"
+                    size={14}
+                    className="text-zinc-50/30"
                   />
-                  <View className="w-24 h-2 bg-zinc-50 rounded-full flex flex-row items-center justify-start">
-                    <View
-                      style={{
-                        width: `${
-                          (uiState.currentTime / uiState.duration) * 100
-                        }%`,
-                      }}
-                      className="h-2 bg-[#aee339] rounded-l-full"
-                    />
-                  </View>
-                </Pressable>
-              )}
-            {uiState.currentAudio?.id === episode.Episode.Id &&
-              !uiState.isPlaying && (
-                <Pressable
-                  onPress={() => handlePlayPause()}
-                  className="flex flex-row items-center pr-3 pl-1 py-1 gap-2 bg-zinc-50/30 rounded-full"
-                >
-                  <MaterialIcons
-                    name="play-circle-filled"
-                    size={24}
-                    color="white"
-                  />
-                  <View className="w-24 h-2 bg-zinc-50 rounded-full flex flex-row items-center justify-start">
-                    <View
-                      style={{
-                        width: `${
-                          (uiState.currentTime / uiState.duration) * 100
-                        }%`,
-                      }}
-                      className="h-2 bg-[#aee339] rounded-l-full"
-                    />
-                  </View>
-                </Pressable>
-              )}
-            {(!uiState.currentAudio ||
-              uiState.currentAudio.id !== episode.Episode.Id) && (
-              <Pressable
-                onPress={() => handlePlayPause()}
-                className="flex flex-row items-center pr-3 pl-1 py-1 gap-2 bg-zinc-50/30 rounded-full"
-              >
+                </View>
+              ) : !uiState.isAudioLoading &&
+                uiState.currentAudio &&
+                uiState.currentAudio.id === episode.Episode.Id &&
+                uiState.isPlaying ? (
+                <MaterialIcons
+                  name="pause-circle-filled"
+                  size={24}
+                  color="white"
+                />
+              ) : (
                 <MaterialIcons
                   name="play-circle-filled"
                   size={24}
                   color="white"
                 />
-                <Text className="text-white text-xs">
-                  Continue at{" "}
-                  {TimeUtil.formatAudioLength(
+              )}
+
+              {uiState.isAudioLoading &&
+              uiState.loadingAudioId === episode.Episode.Id ? (
+                <Text className="text-white text-sm">Loading ...</Text>
+              ) : uiState.currentAudio &&
+                uiState.currentAudio.id === episode.Episode.Id ? (
+                <View className="w-24 h-2 bg-zinc-50 rounded-full flex flex-row items-center justify-start">
+                  <View
+                    style={{
+                      width: `${
+                        (uiState.currentTime / uiState.duration) * 100
+                      }%`,
+                    }}
+                    className="h-2 bg-[#aee339] rounded-l-full"
+                  />
+                </View>
+              ) : (
+                <Text className="text-white text-sm">
+                  Continue at:{" "}
+                  {formatAudioLength(
                     episode.PodcastEpisodeListenSession
                       .LastListenDurationSeconds
                   )}
                 </Text>
-              </Pressable>
-            )}
+              )}
+            </Pressable>
           </View>
         </View>
       </View>

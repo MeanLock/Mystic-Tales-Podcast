@@ -46,9 +46,10 @@ const authApi = appApi.injectEndpoints({
           message: "",
           isUnVerified: false,
         };
-
+        console.log(">>>>>>>>>>>>>>>Starting login mutation...");
         try {
           // 1️⃣ Gọi saga login
+          console.log(">>>>>>>>>>>Login Info: ", ManualLoginInfo, DeviceInfo);
           const sagaRes = await api
             .dispatch(
               appApi.endpoints.kickoffThenWait.initiate({

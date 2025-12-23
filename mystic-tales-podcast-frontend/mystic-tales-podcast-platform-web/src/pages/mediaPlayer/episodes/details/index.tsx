@@ -285,6 +285,7 @@ const EpisodeDetailsPage = () => {
             Episode Informations
           </p>
           <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-5">
+           
             <div className="flex flex-col gap-1 font-poppins">
               <p className="text-[#D9D9D9] font-semibold">Show</p>
               <p
@@ -372,6 +373,13 @@ const EpisodeDetailsPage = () => {
               <p className="text-[#D9D9D9] font-semibold">Listens</p>
               <p className="text-white font-light line-clamp-1">
                 {episodeDetailsRaw.Episode.ListenCount.toLocaleString()} listens
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1 font-poppins">
+              <p className="text-[#D9D9D9] font-semibold">Episode Type</p>
+              <p className="text-white font-light line-clamp-1">
+                {episodeDetailsRaw.Episode.PodcastEpisodeSubscriptionType.Name}
               </p>
             </div>
           </div>

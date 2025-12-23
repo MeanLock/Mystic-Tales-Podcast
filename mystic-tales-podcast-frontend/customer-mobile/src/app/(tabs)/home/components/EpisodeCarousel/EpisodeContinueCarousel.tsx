@@ -53,24 +53,31 @@ const EpisodeContinueCarousel = ({
     return columns;
   }, [episodes]);
 
-  const renderGridColumn = ({ item }: { item: ContinueListenSession[] }) => (
-    <View style={styles.gridColumn}>
-      {item.map((episode, index) => (
-        <View
-          key={episode.Episode.Id}
-          style={[
-            styles.episodeContainer,
-            // Remove margin from last item
-            index === item.length - 1 ? null : styles.episodeMargin,
-          ]}
-        >
-          <EpisodeContinueListeningCard episode={episode} />
-        </View>
-      ))}
-    </View>
-  );
+  const renderGridColumn = ({ item }: { item: ContinueListenSession[] }) => {
+    // Calculate dynamic height based on actual number of items in this column
+    const columnHeight =
+      ITEM_HEIGHT * item.length +
+      ITEM_VERTICAL_SPACING * Math.max(0, item.length - 1);
 
-  const dispatch = useDispatch();//thịnh
+    return (
+      <View style={[styles.gridColumn, { height: columnHeight }]}>
+        {item.map((episode, index) => (
+          <View
+            key={episode.Episode.Id}
+            style={[
+              styles.episodeContainer,
+              // Remove margin from last item
+              index === item.length - 1 ? null : styles.episodeMargin,
+            ]}
+          >
+            <EpisodeContinueListeningCard episode={episode} />
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  const dispatch = useDispatch(); //thịnh
   const router = useRouter();
   const handleViewMoreEpisodesFromFeed = () => {
     // Implement navigation or action to view more episodes from the show
@@ -88,9 +95,7 @@ const EpisodeContinueCarousel = ({
   return (
     <View className="gap-5 mb-10">
       {/* Title with See More */}
-      <Pressable
-        onPress={() => handleViewMoreEpisodesFromFeed()}
-      >
+      <Pressable onPress={() => handleViewMoreEpisodesFromFeed()}>
         <View className="flex flex-row items-center justify-between w-full">
           {title}
           <View className="flex flex-row justify-center items-center gap-2">
@@ -123,10 +128,7 @@ const styles = StyleSheet.create({
   },
   gridColumn: {
     width: 350, // Width of each column
-    // Calculate height based on items and spacing: (itemHeight * itemCount) + (spacing * (itemCount-1))
-    height:
-      ITEM_HEIGHT * itemsPerColumn +
-      ITEM_VERTICAL_SPACING * (itemsPerColumn - 1),
+    // Height is now calculated dynamically in renderGridColumn
   },
   episodeContainer: {
     height: ITEM_HEIGHT,

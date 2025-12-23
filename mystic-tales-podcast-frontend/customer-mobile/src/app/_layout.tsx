@@ -156,10 +156,6 @@ function AppBody() {
     console.log("handleSheetChanges", index);
   }, []);
 
-  // derive from Redux: hide button when player stopped
-  const playStatus = useSelector(
-    (s: RootState) => s.player.playMode.playStatus
-  );
   const { state: UiState } = usePlayer();
 
   // Auto-update last duration every 2 seconds when playing
