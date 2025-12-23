@@ -5329,7 +5329,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             try
             {
                 // 1. Get template PDF from S3
-                string templatePath = $"{_filePathConfig.SYSTEM_PODCASTER_DOCUMENTS_FILE_PATH}/main_buddy_commitment_document_template_2.pdf";
+                string templatePath = $"{_filePathConfig.SYSTEM_PODCASTER_DOCUMENTS_FILE_PATH}/main_buddy_commitment_document_template.pdf";
 
                 byte[]? templateBytes = await _fileIOHelper.GetFileBytesAsync(templatePath);
 
@@ -5341,7 +5341,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 // 2. Prepare field values to fill
                 var fieldValues = new Dictionary<string, string>
             {
-                { "mail_day_ne", account.Email }, // Fill email into 'mail_day_ne' field
+                { "mail_text", account.Email }, // Fill email into 'mail_day_ne' field
                 // Add more fields as needed:
                 // { "date_field", DateTime.Now.ToString("dd/MM/yyyy") },
                 // { "name_field", account.FullName },
@@ -5365,12 +5365,12 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             }
         }
 
-        public async Task<byte[]> GetSignedBuddyCommitmentDocumentTemplatePdf(AccountStatusCache account, byte[] signatureImageBytes)
+        public async Task<byte[]> GetSignedBuddyCommitmentDocumentTemplatePdf(AccountStatusCache account, String Fullname, String Phone, String IdentityCardNumber, byte[] identityCardFrontImageBytes, byte[] identityCardBackImageBytes, byte[] signatureImageBytes)
         {
             try
             {
                 // 1. Get template PDF from S3
-                string templatePath = $"{_filePathConfig.SYSTEM_PODCASTER_DOCUMENTS_FILE_PATH}/main_buddy_commitment_document_template_2.pdf";
+                string templatePath = $"{_filePathConfig.SYSTEM_PODCASTER_DOCUMENTS_FILE_PATH}/main_buddy_commitment_document_template.pdf";
 
                 byte[]? templateBytes = await _fileIOHelper.GetFileBytesAsync(templatePath);
 
@@ -5378,14 +5378,14 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 {
                     throw new Exception("PDF template not found");
                 }
-
                 // 2. Prepare field values to fill
                 var textFieldValues = new Dictionary<string, string>
                 {
-                    { "mail_day_ne", account.Email }, // Fill email into 'mail_day_ne' field
+                    { "mail_text", account.Email }, // Fill email into 'mail_text' field
                     // Add more fields as needed:
-                    // { "date_field", DateTime.Now.ToString("dd/MM/yyyy") },
-                    // { "name_field", account.FullName },
+                    { "fullname_text", Fullname },
+                    { "phone_text", Phone },
+                    { "identity_card_number_text", IdentityCardNumber },
                 };
 
                 // 3. Fill PDF form fields
@@ -5400,7 +5400,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 // [THÊM CHỮ KÍ Ở ĐÂY , GỌI HÀM MỚI TẠO TỪ HELPER]
                 var imageFieldValues = new Dictionary<string, byte[]>
                 {
-                    { "chu_ki_image", signatureImageBytes }
+                    // { "chu_ki_image", signatureImageBytes }
+                    { "signature_image", signatureImageBytes },
+                    { "identity_card_front_image", identityCardFrontImageBytes },
+                    { "identity_card_back_image", identityCardBackImageBytes },
                 };
 
                 byte[] signedPdfBytes = _pdfFormFillingHelper.FillPdfImageFormFields(

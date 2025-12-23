@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
-using UserService.Common.Configurations.Consul.interfaces;
+using UserService.Infrastructure.Configurations.Consul.interfaces;
 
-namespace UserService.Common.Configurations.Consul
+namespace UserService.Infrastructure.Configurations.Consul
 {
     public class ConsulDistributedLockConfigModel
     {

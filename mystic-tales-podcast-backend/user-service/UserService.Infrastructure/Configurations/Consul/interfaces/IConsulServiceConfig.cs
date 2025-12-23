@@ -1,4 +1,4 @@
-namespace UserService.Common.Configurations.Consul.interfaces
+namespace UserService.Infrastructure.Configurations.Consul.interfaces
 {
     public interface IConsulServiceConfig
     {

@@ -8,17 +8,155 @@ using iText.IO.Image;
 using iText.Layout;
 using iText.Layout.Element;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Hosting;
+using iText.Kernel.Font;
+using iText.IO.Font;
+using UserService.Infrastructure.Configurations.Fonts.interfaces;
 
 namespace UserService.BusinessLogic.Helpers.FileHelpers
 {
     public class PdfFormFillingHelper
     {
         private readonly ILogger<PdfFormFillingHelper> _logger;
+        private readonly IWebHostEnvironment _environment;
+        private PdfFont _universalFont;
+        private readonly IFontProvider _fontProvider;
 
-        public PdfFormFillingHelper(ILogger<PdfFormFillingHelper> logger)
+        public PdfFormFillingHelper(ILogger<PdfFormFillingHelper> logger, IWebHostEnvironment environment, IFontProvider fontProvider)
         {
             _logger = logger;
+            _environment = environment;
+            _fontProvider = fontProvider;
+            // InitializeFont();
         }
+        private void InitializeFont()
+        {
+            const string fontFileName = "NotoSansCJKRegular.otf";
+
+            try
+            {
+                // ✅ Strategy 1: Try file system (if copied to output)
+                if (TryLoadFontFromFileSystem(fontFileName, out var font))
+                {
+                    _universalFont = font;
+                    return;
+                }
+
+                // ✅ Strategy 2: Try embedded resource (if embedded in Infrastructure)
+                if (TryLoadFontFromEmbeddedResource(fontFileName, out font))
+                {
+                    _universalFont = font;
+                    return;
+                }
+
+                // ❌ No font found
+                throw new InvalidOperationException(
+                    $"Font '{fontFileName}' not found in file system or embedded resources. " +
+                    "Please ensure font is copied to output or embedded as resource.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Font initialization failed: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Try loading font from file system (Fonts folder in ContentRootPath)
+        /// </summary>
+        private bool TryLoadFontFromFileSystem(string fontFileName, out PdfFont font)
+        {
+            font = null;
+
+            try
+            {
+                // Check common locations
+                var possiblePaths = new[]
+                {
+                    System.IO.Path.Combine(_environment.ContentRootPath, "Fonts", fontFileName),
+                    System.IO.Path.Combine(_environment.WebRootPath, "Fonts", fontFileName),
+                    System.IO.Path.Combine(AppContext.BaseDirectory, "Fonts", fontFileName),
+                };
+
+                foreach (var path in possiblePaths)
+                {
+                    if (File.Exists(path))
+                    {
+                        font = PdfFontFactory.CreateFont(
+                            path,
+                            PdfEncodings.IDENTITY_H,
+                            PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED
+                        );
+
+                        _logger.LogInformation($"✓ Font loaded from file system: {path}");
+                        return true;
+                    }
+                }
+
+                _logger.LogDebug($"Font '{fontFileName}' not found in file system");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to load font from file system: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Try loading font from embedded resources in any loaded assembly
+        /// </summary>
+        private bool TryLoadFontFromEmbeddedResource(string fontFileName, out PdfFont font)
+        {
+            font = null;
+
+            try
+            {
+                // ✅ Search in ALL loaded assemblies (no hardcoded name!)
+                var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+                    .Where(a => !a.IsDynamic && a.GetName().Name.Contains("UserService"))
+                    .ToList();
+
+                foreach (var assembly in assemblies)
+                {
+                    var resourceNames = assembly.GetManifestResourceNames()
+                        .Where(r => r.EndsWith(fontFileName, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+
+                    if (resourceNames.Any())
+                    {
+                        var resourceName = resourceNames.First();
+                        _logger.LogDebug($"Found embedded resource: {resourceName} in {assembly.GetName().Name}");
+
+                        using var stream = assembly.GetManifestResourceStream(resourceName);
+                        if (stream != null)
+                        {
+                            using var memoryStream = new MemoryStream();
+                            stream.CopyTo(memoryStream);
+                            byte[] fontBytes = memoryStream.ToArray();
+
+                            font = PdfFontFactory.CreateFont(
+                                fontBytes,
+                                PdfEncodings.IDENTITY_H,
+                                PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED
+                            );
+
+                            _logger.LogInformation($"✓ Font loaded from embedded resource: {resourceName}");
+                            return true;
+                        }
+                    }
+                }
+
+                _logger.LogDebug($"Font '{fontFileName}' not found in embedded resources");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to load font from embedded resources: {ex.Message}");
+                return false;
+            }
+        }
+
 
         /// <summary>
         /// Fill PDF form fields and return filled PDF as byte array
@@ -27,50 +165,223 @@ namespace UserService.BusinessLogic.Helpers.FileHelpers
         /// <param name="fieldValues">Dictionary of field names and values to fill</param>
         /// <param name="flattenForm">If true, form will be locked (non-editable)</param>
         /// <returns>Filled PDF as byte array</returns>
+        // public byte[] FillPdfTextFormFields(
+        //     byte[] templateBytes,
+        //     Dictionary<string, string> fieldValues,
+        //     bool flattenForm = true)
+        // {
+        //     MemoryStream outputStream = null;
+        //     PdfReader reader = null;
+        //     PdfWriter writer = null;
+        //     PdfDocument pdfDoc = null;
+
+        //     try
+        //     {
+        //         // Create streams
+        //         var inputStream = new MemoryStream(templateBytes);
+        //         outputStream = new MemoryStream();
+
+        //         // Configure reader - IMPORTANT: Set to append mode for form filling
+        //         reader = new PdfReader(inputStream);
+
+        //         // Configure writer with proper properties
+        //         var writerProperties = new WriterProperties();
+        //         // Don't use smart mode for form filling
+        //         // writerProperties.SetFullCompressionMode(true); // Optional compression
+
+        //         writer = new PdfWriter(outputStream, writerProperties);
+
+        //         // Open PDF in APPEND mode to preserve form structure
+        //         var readerProperties = new ReaderProperties();
+        //         pdfDoc = new PdfDocument(reader, writer);
+
+        //         // Get the form
+        //         var form = PdfAcroForm.GetAcroForm(pdfDoc, true);
+
+        //         if (form == null)
+        //         {
+        //             _logger.LogWarning("PDF template does not contain form fields");
+        //             throw new InvalidOperationException("PDF template does not contain form fields");
+        //         }
+
+        //         // Log available fields for debugging
+        //         var availableFields = form.GetAllFormFields();
+        //         _logger.LogInformation($"Found {availableFields.Count} form fields in PDF");
+
+        //         // Fill each field
+        //         int filledCount = 0;
+        //         foreach (var fieldEntry in fieldValues)
+        //         {
+        //             string fieldName = fieldEntry.Key;
+        //             string fieldValue = fieldEntry.Value ?? "";
+
+        //             if (availableFields.ContainsKey(fieldName))
+        //             {
+        //                 try
+        //                 {
+        //                     var field = availableFields[fieldName];
+        //                     field.SetValue(fieldValue);
+        //                     filledCount++;
+        //                     _logger.LogInformation($"✓ Filled field '{fieldName}' with value '{fieldValue}'");
+        //                 }
+        //                 catch (Exception ex)
+        //                 {
+        //                     _logger.LogWarning($"Failed to fill field '{fieldName}': {ex.Message}");
+        //                 }
+        //             }
+        //             else
+        //             {
+        //                 _logger.LogWarning($"✗ Field '{fieldName}' not found in PDF template");
+        //             }
+        //         }
+
+        //         _logger.LogInformation($"Successfully filled {filledCount}/{fieldValues.Count} fields");
+
+        //         // Flatten form to make it non-editable (optional)
+        //         if (flattenForm)
+        //         {
+        //             form.FlattenFields();
+        //             _logger.LogInformation("Form flattened (locked)");
+        //         }
+
+        //         // IMPORTANT: Close in correct order
+        //         pdfDoc.Close(); // This also closes reader and writer
+
+        //         byte[] result = outputStream.ToArray();
+        //         _logger.LogInformation($"Generated PDF: {result.Length} bytes");
+
+        //         return result;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError($"Error filling PDF form: {ex.GetType().Name} - {ex.Message}");
+        //         _logger.LogError($"Stack trace: {ex.StackTrace}");
+        //         throw new InvalidOperationException($"Failed to fill PDF form: {ex.Message}", ex);
+        //     }
+        //     finally
+        //     {
+        //         // Clean up - only dispose what wasn't closed by pdfDoc.Close()
+        //         outputStream?.Dispose();
+        //     }
+        // }
+        // public byte[] FillPdfTextFormFields(
+        //     byte[] templateBytes,
+        //     Dictionary<string, string> fieldValues,
+        //     bool flattenForm = true)
+        // {
+        //     MemoryStream outputStream = null;
+        //     PdfReader reader = null;
+        //     PdfWriter writer = null;
+        //     PdfDocument pdfDoc = null;
+
+        //     try
+        //     {
+        //         var inputStream = new MemoryStream(templateBytes);
+        //         outputStream = new MemoryStream();
+
+        //         reader = new PdfReader(inputStream);
+        //         writer = new PdfWriter(outputStream);
+        //         pdfDoc = new PdfDocument(reader, writer);
+
+        //         var form = PdfAcroForm.GetAcroForm(pdfDoc, true);
+
+        //         if (form == null)
+        //         {
+        //             _logger.LogWarning("PDF template does not contain form fields");
+        //             throw new InvalidOperationException("PDF template does not contain form fields");
+        //         }
+
+        //         var availableFields = form.GetAllFormFields();
+        //         _logger.LogInformation($"Found {availableFields.Count} form fields in PDF");
+
+        //         int filledCount = 0;
+        //         foreach (var fieldEntry in fieldValues)
+        //         {
+        //             string fieldName = fieldEntry.Key;
+        //             string fieldValue = fieldEntry.Value ?? "";
+
+        //             if (availableFields.ContainsKey(fieldName))
+        //             {
+        //                 try
+        //                 {
+        //                     var field = availableFields[fieldName];
+
+        //                     // ✅ Apply universal font
+        //                     field.SetFont(_universalFont);
+        //                     // field.SetFontSize(12);
+        //                     field.SetValue(fieldValue);
+        //                     field.RegenerateField();
+
+        //                     filledCount++;
+        //                     _logger.LogInformation($"✓ Filled field '{fieldName}' with value '{fieldValue}'");
+        //                 }
+        //                 catch (Exception ex)
+        //                 {
+        //                     _logger.LogWarning($"Failed to fill field '{fieldName}': {ex.Message}");
+        //                 }
+        //             }
+        //             else
+        //             {
+        //                 _logger.LogWarning($"✗ Field '{fieldName}' not found in PDF template");
+        //             }
+        //         }
+
+        //         _logger.LogInformation($"Successfully filled {filledCount}/{fieldValues.Count} fields");
+
+        //         if (flattenForm)
+        //         {
+        //             form.FlattenFields();
+        //             _logger.LogInformation("Form flattened (locked)");
+        //         }
+
+        //         pdfDoc.Close();
+
+        //         byte[] result = outputStream.ToArray();
+        //         _logger.LogInformation($"Generated PDF: {result.Length} bytes");
+
+        //         return result;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError($"Error filling PDF form: {ex.GetType().Name} - {ex.Message}");
+        //         _logger.LogError($"Stack trace: {ex.StackTrace}");
+        //         throw new InvalidOperationException($"Failed to fill PDF form: {ex.Message}", ex);
+        //     }
+        //     finally
+        //     {
+        //         outputStream?.Dispose();
+        //     }
+        // }
+
         public byte[] FillPdfTextFormFields(
             byte[] templateBytes,
             Dictionary<string, string> fieldValues,
             bool flattenForm = true)
         {
             MemoryStream outputStream = null;
-            PdfReader reader = null;
-            PdfWriter writer = null;
-            PdfDocument pdfDoc = null;
 
             try
             {
-                // Create streams
                 var inputStream = new MemoryStream(templateBytes);
                 outputStream = new MemoryStream();
 
-                // Configure reader - IMPORTANT: Set to append mode for form filling
-                reader = new PdfReader(inputStream);
+                var reader = new PdfReader(inputStream);
+                var writer = new PdfWriter(outputStream);
+                var pdfDoc = new PdfDocument(reader, writer);
 
-                // Configure writer with proper properties
-                var writerProperties = new WriterProperties();
-                // Don't use smart mode for form filling
-                // writerProperties.SetFullCompressionMode(true); // Optional compression
-
-                writer = new PdfWriter(outputStream, writerProperties);
-
-                // Open PDF in APPEND mode to preserve form structure
-                var readerProperties = new ReaderProperties();
-                pdfDoc = new PdfDocument(reader, writer);
-
-                // Get the form
                 var form = PdfAcroForm.GetAcroForm(pdfDoc, true);
 
                 if (form == null)
                 {
-                    _logger.LogWarning("PDF template does not contain form fields");
                     throw new InvalidOperationException("PDF template does not contain form fields");
                 }
 
-                // Log available fields for debugging
                 var availableFields = form.GetAllFormFields();
                 _logger.LogInformation($"Found {availableFields.Count} form fields in PDF");
 
-                // Fill each field
+                // ✅ Create NEW font for THIS document (from cached bytes)
+                var font = _fontProvider.CreateUniversalFont();
+
                 int filledCount = 0;
                 foreach (var fieldEntry in fieldValues)
                 {
@@ -82,51 +393,43 @@ namespace UserService.BusinessLogic.Helpers.FileHelpers
                         try
                         {
                             var field = availableFields[fieldName];
+
+                            field.SetFont(font); // ✅ Fresh font for this document
+                            // field.SetFontSize(12);
                             field.SetValue(fieldValue);
+                            field.RegenerateField();
+
                             filledCount++;
-                            _logger.LogInformation($"✓ Filled field '{fieldName}' with value '{fieldValue}'");
+                            _logger.LogInformation($"✓ Filled field '{fieldName}'");
                         }
                         catch (Exception ex)
                         {
                             _logger.LogWarning($"Failed to fill field '{fieldName}': {ex.Message}");
                         }
                     }
-                    else
-                    {
-                        _logger.LogWarning($"✗ Field '{fieldName}' not found in PDF template");
-                    }
                 }
 
                 _logger.LogInformation($"Successfully filled {filledCount}/{fieldValues.Count} fields");
 
-                // Flatten form to make it non-editable (optional)
                 if (flattenForm)
                 {
                     form.FlattenFields();
-                    _logger.LogInformation("Form flattened (locked)");
                 }
 
-                // IMPORTANT: Close in correct order
-                pdfDoc.Close(); // This also closes reader and writer
+                pdfDoc.Close();
 
-                byte[] result = outputStream.ToArray();
-                _logger.LogInformation($"Generated PDF: {result.Length} bytes");
-
-                return result;
+                return outputStream.ToArray();
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error filling PDF form: {ex.GetType().Name} - {ex.Message}");
-                _logger.LogError($"Stack trace: {ex.StackTrace}");
-                throw new InvalidOperationException($"Failed to fill PDF form: {ex.Message}", ex);
+                _logger.LogError($"Error filling PDF form: {ex.Message}");
+                throw;
             }
             finally
             {
-                // Clean up - only dispose what wasn't closed by pdfDoc.Close()
                 outputStream?.Dispose();
             }
         }
-
         /// <summary>
         /// Alternative: Remove field and insert image at its position
         /// </summary>

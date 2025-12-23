@@ -1,7 +1,7 @@
 using Consul;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using UserService.Common.Configurations.Consul.interfaces;
+using UserService.Infrastructure.Configurations.Consul.interfaces;
 using UserService.Common.AppConfigurations.App.interfaces;
 
 namespace UserService.Infrastructure.Services.Consul
