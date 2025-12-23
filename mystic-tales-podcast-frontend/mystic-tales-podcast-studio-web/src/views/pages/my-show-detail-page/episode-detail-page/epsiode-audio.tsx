@@ -194,7 +194,6 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         intervalSeconds: 5,
     })
 
-
     const fetchBackgroundSounds = async () => {
         setLoading(true);
         try {
