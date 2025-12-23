@@ -223,7 +223,7 @@ export const SidebarNavItems: React.FC<SidebarNavItemsProps> = ({
         >
           Podcaster Studio Website
         </p>
-      ) : (
+      ) : !user?.IsPodcaster && !user?.IsPodcasterApplying && (
         <p
           onClick={() => navigate("/become-podcaster")}
           className="text-mystic-green hidden md:inline-block hover:underline font-poppins italic cursor-pointer"

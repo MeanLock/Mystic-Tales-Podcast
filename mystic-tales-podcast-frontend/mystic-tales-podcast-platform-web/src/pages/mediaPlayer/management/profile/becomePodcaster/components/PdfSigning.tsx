@@ -692,8 +692,8 @@ import { Loader2 } from "lucide-react";
 
 interface PdfSigningProps {
   FileBytes: ArrayBuffer;
-  // Khi có / đổi / xoá chữ ký thì callback ra ngoài
-  onSignChange?: (data: FormData | null) => void;
+  // Callback trả về File chữ ký (hoặc null khi xoá)
+  onSignChange?: (signatureFile: File | null) => void;
 }
 
 const DISPLAY_WIDTH = 800;
@@ -744,18 +744,12 @@ const PdfSigning = ({ FileBytes, onSignChange }: PdfSigningProps) => {
 
   const clearPad = () => sigPadRef.current?.clear();
 
-  // helper: từ dataURL → File → FormData
-  const buildFormDataFromDataURL = async (
-    dataURL: string
-  ): Promise<FormData> => {
+  // helper: từ dataURL → File
+  const buildFileFromDataURL = async (dataURL: string): Promise<File> => {
     const res = await fetch(dataURL);
     const blob = await res.blob();
     const file = new File([blob], "signature.png", { type: "image/png" });
-
-    const formData = new FormData();
-    // Đặt tên field tuỳ backend – ví dụ: "SignatureImage"
-    formData.append("SignatureImage", file);
-    return formData;
+    return file;
   };
 
   const saveSignature = async (img?: string) => {
@@ -775,21 +769,12 @@ const PdfSigning = ({ FileBytes, onSignChange }: PdfSigningProps) => {
     setSignaturePreview(dataURL);
     setIsSigning(false);
 
-    // Build FormData và gửi về parent để parent xử lý API call
+    // Build File và gửi về parent
     try {
-      const formData = await buildFormDataFromDataURL(dataURL);
-
-      // Đổi tên field thành SignatureImageFile theo yêu cầu backend
-      const sigFile = formData.get("SignatureImage");
-      if (sigFile) {
-        formData.delete("SignatureImage");
-        formData.append("SignatureImageFile", sigFile);
-      }
-
-      // Gửi formData về parent, parent sẽ gọi API
-      onSignChange?.(formData);
+      const file = await buildFileFromDataURL(dataURL);
+      onSignChange?.(file);
     } catch (e: any) {
-      console.error("Error building FormData from signature:", e);
+      console.error("Error building File from signature:", e);
       alert("Không thể tạo dữ liệu chữ ký!");
       setSignaturePreview(null);
     }
@@ -822,7 +807,7 @@ const PdfSigning = ({ FileBytes, onSignChange }: PdfSigningProps) => {
 
   const handleClearSignature = () => {
     setSignaturePreview(null);
-    onSignChange?.(null); // báo ra ngoài là không còn chữ ký
+    onSignChange?.(null);
   };
 
   return (

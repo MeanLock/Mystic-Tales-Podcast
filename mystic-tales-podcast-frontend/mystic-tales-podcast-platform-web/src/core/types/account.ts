@@ -40,6 +40,7 @@ export type AccountMeFromApi = {
   PodcastListenSlot: number;
   DeactivatedAt: string;
   IsPodcaster: boolean;
+  IsPodcasterApplying: boolean;
 };
 
 export type AccountMeUI = {
@@ -68,4 +69,3 @@ export type AccountRole = {
 //   Account: AccountFromAPI;
 //   CurrentAudio: CurrentAudioFromApi;
 // };
-

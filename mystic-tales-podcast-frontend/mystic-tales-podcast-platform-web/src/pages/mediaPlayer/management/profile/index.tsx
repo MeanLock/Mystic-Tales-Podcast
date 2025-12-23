@@ -693,14 +693,15 @@ const ProfilePage = () => {
 
         {/* bottom actions */}
         <div className="w-full mt-2 flex items-center justify-end gap-5">
-          {!accountInformation?.Account.IsPodcaster && (
-            <ShowOnHoverButton
-              Icon={FaMicrophoneAlt}
-              text="Apply to be Podcaster"
-              bgColor="#4F8BFF"
-              onClick={() => handleApplyToBePodcaster()}
-            />
-          )}
+          {!accountInformation?.Account.IsPodcaster &&
+            !accountInformation?.Account.IsPodcasterApplying && (
+              <ShowOnHoverButton
+                Icon={FaMicrophoneAlt}
+                text="Apply to be Podcaster"
+                bgColor="#4F8BFF"
+                onClick={() => handleApplyToBePodcaster()}
+              />
+            )}
 
           <ShowOnHoverButton
             Icon={MdLockReset}
