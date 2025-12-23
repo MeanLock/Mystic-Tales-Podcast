@@ -1,8 +1,6 @@
 import { useGetFollowedShowsQuery } from "@/core/services/show/show.service";
 import { useGetSubscribedContentsQuery } from "@/core/services/subscription/subscription.service";
-import type { ShowUI } from "@/core/types/show";
-import { useEffect, useState } from "react";
-import { resolveFiles } from "@/core/utils/fileResolver.util";
+import { useState } from "react";
 import ShowCard from "./components/ShowCard";
 import FireLoading from "@/components/fireLoading";
 import {
@@ -15,8 +13,6 @@ import { Label } from "@/components/ui/label";
 
 const SubscribedShowsPage = () => {
   // STATES
-  const [followedShows, setFollowedShows] = useState<ShowUI[]>([]);
-  const [subscribedShows, setSubscribedShows] = useState<ShowUI[]>([]);
   const [followedSearchQuery, setFollowedSearchQuery] = useState<string>("");
   const [subscribedSearchQuery, setSubscribedSearchQuery] =
     useState<string>("");
@@ -25,20 +21,16 @@ const SubscribedShowsPage = () => {
   >([]);
   const [subscribedSelectedCategories, setSubscribedSelectedCategories] =
     useState<string[]>([]);
-  const [isResolvingFollowed, setIsResolvingFollowed] =
-    useState<boolean>(false);
-  const [isResolvingSubscribed, setIsResolvingSubscribed] =
-    useState<boolean>(false);
 
   // HOOKS
-  const { data: followedShowsData, isFetching: isLoadingFollowedShows } =
+  const { data: followedShows, isFetching: isLoadingFollowedShows } =
     useGetFollowedShowsQuery(undefined, {
       refetchOnMountOrArgChange: true,
       refetchOnFocus: true,
       refetchOnReconnect: true,
     });
   const {
-    data: subscribedContentsData,
+    data: subscribedShows,
     isFetching: isLoadingSubscribedContents,
   } = useGetSubscribedContentsQuery(undefined, {
     refetchOnMountOrArgChange: true,
@@ -46,74 +38,9 @@ const SubscribedShowsPage = () => {
     refetchOnReconnect: true,
   });
 
-  useEffect(() => {
-    const resolveFileData = async () => {
-      // Resolve followed shows independently
-      if (!isLoadingFollowedShows && followedShowsData) {
-        setIsResolvingFollowed(true);
-        const { resolvedData: resolvedData1 } = await resolveFiles(
-          followedShowsData,
-          [
-            {
-              path: "ShowList[].MainImageFileKey",
-              type: "PodcastPublic",
-              output: "ShowList[].ImageUrl",
-            },
-            {
-              path: "ShowList[].Podcaster.MainImageFileKey",
-              type: "AccountPublic",
-              output: "ShowList[].Podcaster.ImageUrl",
-            },
-            {
-              path: "ShowList[].PodcastChannel.MainImageFileKey",
-              type: "PodcastPublic",
-              output: "ShowList[].PodcastChannel.ImageUrl",
-            },
-          ]
-        );
-        setFollowedShows(resolvedData1.ShowList as unknown as ShowUI[]);
-        setIsResolvingFollowed(false);
-      }
-
-      // Resolve subscribed shows independently
-      if (!isLoadingSubscribedContents && subscribedContentsData) {
-        setIsResolvingSubscribed(true);
-        const { resolvedData: resolvedData2 } = await resolveFiles(
-          subscribedContentsData,
-          [
-            {
-              path: "PodcastShowList[].MainImageFileKey",
-              type: "PodcastPublic",
-              output: "PodcastShowList[].ImageUrl",
-            },
-            {
-              path: "PodcastShowList[].Podcaster.MainImageFileKey",
-              type: "AccountPublic",
-              output: "PodcastShowList[].Podcaster.ImageUrl",
-            },
-            {
-              path: "PodcastShowList[].PodcastChannel.MainImageFileKey",
-              type: "PodcastPublic",
-              output: "PodcastShowList[].PodcastChannel.ImageUrl",
-            },
-          ]
-        );
-        setSubscribedShows(
-          resolvedData2.PodcastShowList as unknown as ShowUI[]
-        );
-        setIsResolvingSubscribed(false);
-      }
-    };
-    resolveFileData();
-  }, [
-    followedShowsData,
-    subscribedContentsData,
-    isLoadingFollowedShows,
-    isLoadingSubscribedContents,
-  ]);
 
   // Filter followed shows by search query and category
-  const filteredFollowedShows = followedShows.filter((show) => {
+  const filteredFollowedShows = followedShows?.ShowList.filter((show) => {
     const matchesSearch = show.Name.toLowerCase().includes(
       followedSearchQuery.toLowerCase()
     );
@@ -125,11 +52,11 @@ const SubscribedShowsPage = () => {
 
   // Get unique categories from followed shows
   const followedCategories = Array.from(
-    new Set(followedShows.map((ch) => ch.PodcastCategory.Name))
+    new Set(followedShows?.ShowList.map((ch) => ch.PodcastCategory.Name))
   );
 
   // Filter subscribed shows by search query and category
-  const filteredSubscribedShows = subscribedShows.filter((show) => {
+  const filteredSubscribedShows = subscribedShows?.PodcastShowList.filter((show) => {
     const matchesSearch = show.Name.toLowerCase().includes(
       subscribedSearchQuery.toLowerCase()
     );
@@ -141,7 +68,7 @@ const SubscribedShowsPage = () => {
 
   // Get unique categories from subscribed shows
   const subscribedCategories = Array.from(
-    new Set(subscribedShows.map((ch) => ch.PodcastCategory.Name))
+    new Set(subscribedShows?.PodcastShowList.map((ch) => ch.PodcastCategory.Name))
   );
 
   // Toggle category selection for followed
@@ -166,15 +93,15 @@ const SubscribedShowsPage = () => {
     <div className="w-full h-full flex flex-col py-10 gap-20">
       {/* Followed Shows */}
       <div className="w-full flex flex-col gap-5">
-        <p className="mx-8 font-poppins text-6xl text-white font-semibold">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#12c2e9] via-[#e0b0f8] to-[#f3d9db]">
+        <p className="mx-8 font-poppins font-bold text-5xl text-white">
+          <span className="text-transparent bg-clip-text bg-linear-to-r from-[#12c2e9] via-[#e0b0f8] to-[#f3d9db]">
             Followed
           </span>{" "}
           Shows
         </p>
 
-        {followedShows && followedShows.length > 0 ? (
-          <div className="mx-8 p-4 flex items-center justify-start gap-6 bg-white/10 border border-white/20 rounded-md shadow-lg hover:bg-white/[0.12] transition-all duration-300">
+        {followedShows && followedShows.ShowList.length > 0 ? (
+          <div className="mx-8 p-4 flex items-center justify-start gap-6 bg-white/10 border border-white/20 rounded-md shadow-lg hover:bg-white/12 transition-all duration-300">
             {/* Search Query Input */}
             <input
               type="text"
@@ -189,7 +116,7 @@ const SubscribedShowsPage = () => {
                 <div
                   className="
                   px-5 py-3 
-                  bg-gradient-to-r from-[#12c2e9]/20 via-[#e0b0f8]/20 to-[#f3d9db]/20
+                  bg-linear-to-r from-[#12c2e9]/20 via-[#e0b0f8]/20 to-[#f3d9db]/20
                   border border-white/20
                   rounded-md 
                   text-white text-sm font-semibold font-poppins
@@ -261,11 +188,10 @@ const SubscribedShowsPage = () => {
           </div>
         ) : (
           <div className="mx-8 grid grid-cols-3 gap-6">
-            {filteredFollowedShows.map((show) => (
+            {filteredFollowedShows?.map((show) => (
               <ShowCard
                 key={show.Id}
                 show={show}
-                isLoadingImage={isResolvingFollowed}
               />
             ))}
           </div>
@@ -273,15 +199,15 @@ const SubscribedShowsPage = () => {
       </div>
       {/* Subscribed Shows */}
       <div className="w-full flex flex-col gap-5">
-        <p className="mx-8 font-poppins text-6xl text-white font-semibold">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#74ebd5] to-[#ACB6E5]">
+        <p className="mx-8 font-poppins text-5xl text-white font-bold">
+          <span className="text-transparent bg-clip-text bg-linear-to-r from-[#74ebd5] to-[#ACB6E5]">
             Subscribed
           </span>{" "}
           Shows
         </p>
 
-        {subscribedShows && subscribedShows.length > 0 ? (
-          <div className="mx-8 p-4 flex items-center justify-start gap-6 bg-white/10 border border-white/20 rounded-md shadow-lg hover:bg-white/[0.12] transition-all duration-300">
+        {subscribedShows && subscribedShows.PodcastShowList.length > 0 ? (
+          <div className="mx-8 p-4 flex items-center justify-start gap-6 bg-white/10 border border-white/20 rounded-md shadow-lg hover:bg-white/12 transition-all duration-300">
             {/* Search Query Input */}
             <input
               type="text"
@@ -296,7 +222,7 @@ const SubscribedShowsPage = () => {
                 <div
                   className="
                   px-5 py-3 
-                  bg-gradient-to-r from-[#74ebd5]/20 to-[#ACB6E5]/20 
+                  bg-linear-to-r from-[#74ebd5]/20 to-[#ACB6E5]/20 
                   border border-white/20
                   rounded-md 
                   text-white text-sm font-semibold font-poppins
@@ -368,11 +294,10 @@ const SubscribedShowsPage = () => {
           </div>
         ) : (
           <div className="mx-8 grid grid-cols-3 gap-6">
-            {filteredSubscribedShows.map((show) => (
+            {filteredSubscribedShows?.map((show) => (
               <ShowCard
                 key={show.Id}
                 show={show}
-                isLoadingImage={isResolvingSubscribed}
               />
             ))}
           </div>

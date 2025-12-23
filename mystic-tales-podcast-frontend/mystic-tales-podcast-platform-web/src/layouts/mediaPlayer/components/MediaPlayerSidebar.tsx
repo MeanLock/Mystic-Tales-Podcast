@@ -17,7 +17,6 @@ import {
 import { PiHandWithdrawBold } from "react-icons/pi";
 import { MdOutlineSubscriptions } from "react-icons/md";
 import { AiOutlineFileDone, AiOutlineHome } from "react-icons/ai";
-import { TbCoinFilled } from "react-icons/tb";
 import { MdOutlineNavigateNext } from "react-icons/md";
 
 import { useSelector } from "react-redux";
@@ -37,6 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { LucideFileAudio } from "lucide-react";
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import MTPCoinOutline from "@/components/coinIcons/CoinIconOutline";
 
 const navItems = [
   {
@@ -442,9 +442,8 @@ const MediaPlayerSidebar = () => {
                 keywordOriginal={keyword}
                 keywords={suggesstionAutocompleteKeywords}
                 contents={suggesstionContents}
-                isLoading={
-                  isSuggestionKeywordLoading || isSuggestionContentLoading
-                }
+                isKeywordLoading={isSuggestionKeywordLoading}
+                isContentLoading={isSuggestionContentLoading}
                 onKeywordClick={(kw) => {
                   setKeyword(kw);
                   navigate(
@@ -457,7 +456,7 @@ const MediaPlayerSidebar = () => {
                     navigate(`/media-player/shows/${content.Show.Id}`);
                   } else if (content.Episode) {
                     navigate(
-                      `/media-player/episodes/details/${content.Episode.Id}`
+                      `/media-player/episodes/${content.Episode.Id}`
                     );
                   }
                   setShowSearchSuggestion(false);
@@ -482,6 +481,7 @@ const MediaPlayerSidebar = () => {
               <Skeleton className="md:w-8 md:h-8 sm:w-8 sm:h-8 w-8 h-8 rounded-full" />
             ) : (
               <AutoResolveImage
+                key={`${user?.MainImageFileKey}-${user?.Id}`}
                 FileKey={user?.MainImageFileKey}
                 Name={user.FullName}
                 className="md:w-10 md:h-10 sm:w-8 sm:h-8 w-8 h-8 rounded-full aspect-square object-cover"
@@ -494,8 +494,8 @@ const MediaPlayerSidebar = () => {
             <p className="font-bold text-white text-[12px] line-clamp-1 max-w-[120px]">
               {user.FullName}
             </p>
-            <div className="flex items-center gap-1 max-w-[150px]">
-              <TbCoinFilled color="#aae339" size={14} />
+            <div className="flex items-center gap-1 max-w-37.5">
+              <MTPCoinOutline size={14} color="#aee339" />
               <p className="text-sm font-semibold text-mystic-green line-clamp-1">
                 {user.Balance.toLocaleString("vn")}
               </p>

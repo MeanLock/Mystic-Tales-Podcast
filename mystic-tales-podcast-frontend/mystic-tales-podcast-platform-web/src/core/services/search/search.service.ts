@@ -25,13 +25,14 @@ const searchApi = appApi.injectEndpoints({
     }),
     getSearchResults: build.query<
       SearchResultResponse,
-      { keyword: string; refresh: string }
+      { keyword: string; refresh?: string }
     >({
       query: ({ keyword }) => ({
         url: `/api/podcast-service/api/misc/feed/podcast-contents/keyword-search?keyword=${keyword}`,
         method: "GET",
         authMode: "public",
       }),
+      keepUnusedDataFor: 60,
     }),
   }),
 });

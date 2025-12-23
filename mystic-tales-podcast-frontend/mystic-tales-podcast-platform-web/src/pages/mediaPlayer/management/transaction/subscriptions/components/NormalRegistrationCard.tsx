@@ -1,18 +1,17 @@
-// @ts-nocheck
 import { useCallback } from "react";
 import { GrPowerCycle } from "react-icons/gr";
 import { RiMoneyDollarCircleLine } from "react-icons/ri";
 import { MdArrowForward, MdClose } from "react-icons/md";
-import { FaCheckCircle, FaHourglass } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
-import type { RegistrationUI } from "..";
+import type { Registration } from "..";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 
 const NormalRegistrationCard = ({
   registration,
   onCancel,
   onViewDetails,
 }: {
-  registration: RegistrationUI;
+  registration: Registration;
   onCancel?: (id: string) => void;
   onViewDetails?: (id: string) => void;
 }) => {
@@ -57,9 +56,9 @@ const NormalRegistrationCard = ({
     >
       <div className="space-y-4 px-4 py-4">
         <div className="flex items-center gap-2">
-          <img
-            src={registration.SourceInformation.ImageUrl || "/placeholder.svg"}
-            alt={registration.SourceInformation.Name}
+          <AutoResolveImage
+            FileKey={registration.SourceInformation.MainImageFileKey}
+            type="PodcastPublicSource"
             className="w-10 h-10 object-cover rounded-full shadow-md"
           />
           <h3 className="text-xl font-bold text-white line-clamp-1 dark:text-white">
@@ -117,7 +116,7 @@ const NormalRegistrationCard = ({
           </div>
           <div className="h-1.5 w-full rounded-full bg-white/15 shadow-inner">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#aee339]/40 via-[#aee339]/60 to-[#aee339] shadow-lg transition-all"
+              className="h-full rounded-full bg-linear-to-r from-[#aee339]/40 via-[#aee339]/60 to-[#aee339] shadow-lg transition-all"
               style={{
                 width: `${Math.max(
                   10,

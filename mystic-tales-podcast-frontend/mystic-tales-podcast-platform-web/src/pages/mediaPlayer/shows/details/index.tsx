@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Loading from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +17,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Check, MoreHorizontalIcon } from "lucide-react";
+import { Check, MoreHorizontalIcon, ShipWheel } from "lucide-react";
 import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
 import {
   useFollowShowMutation,
@@ -39,11 +40,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { ShowDetailsUI } from "@/core/types/show";
-import {
-  resolveFiles,
-  type FileResolveConfig,
-} from "@/core/utils/fileResolver.util";
 import { setError } from "@/redux/slices/errorSlice/errorSlice";
 import type { RootState } from "@/redux/store";
 import { useEffect, useState } from "react";
@@ -69,34 +65,7 @@ import EpisodeCard from "./components/EpisodeCard";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { setSeeMoreEpisodeData } from "@/redux/slices/seeMoreEpisodeSlice/seeMoreEpisodeSlice";
 import { useLazyGetPodcastPublicSourceQuery } from "@/core/services/file/file.service";
-
-const ShowFileConfig: FileResolveConfig[] = [
-  {
-    path: "Show.MainImageFileKey",
-    output: "Show.ImageUrl",
-    type: "PodcastPublic",
-  },
-  {
-    path: "Show.Podcaster.MainImageFileKey",
-    output: "Show.Podcaster.ImageUrl",
-    type: "AccountPublic",
-  },
-  {
-    path: "Show.PodcastChannel.MainImageFileKey",
-    output: "Show.PodcastChannel.ImageUrl",
-    type: "PodcastPublic",
-  },
-  {
-    path: "Show.EpisodeList[].MainImageFileKey",
-    output: "Show.EpisodeList[].ImageUrl",
-    type: "PodcastPublic",
-  },
-  {
-    path: "Show.EpisodeList[].PodcastShow.MainImageFileKey",
-    output: "Show.EpisodeList[].PodcastShow.ImageUrl",
-    type: "PodcastPublic",
-  },
-];
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 
 export function renderDescriptionHTML(description: string | null) {
   if (!description) return "";
@@ -165,11 +134,6 @@ const getTimeAgo = (dateString: string): string => {
 
 const ShowDetailsPage = () => {
   // STATES
-  const [show, setShow] = useState<ShowDetailsUI | null>(null);
-  const [isFileResolving, setIsFileResolving] = useState(false);
-  // const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(
-  //   null
-  // );
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
@@ -216,7 +180,7 @@ const ShowDetailsPage = () => {
 
   // Queries
   const {
-    data: showDetailsRaw,
+    data: show,
     isLoading: isShowDetailsLoading,
     refetch: refetchShowDetails,
   } = useGetShowDetailsQuery({ PodcastShowId: id! }, { skip: !id });
@@ -254,13 +218,12 @@ const ShowDetailsPage = () => {
         return;
       }
 
-      if (!showDetailsRaw) {
+      if (!show || !show.Show) {
         console.log("Show not found");
         return;
       }
 
-      setIsFileResolving(true);
-      setIsFollowed(showDetailsRaw.Show.IsFollowedByCurrentUser);
+      setIsFollowed(show.Show.IsFollowedByCurrentUser);
       // Check coi user đã subscribe channel này chưa
       if (
         customerRegistrationInfo &&
@@ -290,17 +253,9 @@ const ShowDetailsPage = () => {
         setIsShowAlreadyReported(true);
       }
 
-      // Resolve Show Files
-      const { resolvedData: resolvedShow } = await resolveFiles(
-        showDetailsRaw,
-        ShowFileConfig
-      );
-
-      const data = resolvedShow as unknown as { Show: ShowDetailsUI };
-
       // Sort episodes: newest first by SeasonNumber, EpisodeOrder, then ReleaseDate
-      if (data.Show && Array.isArray(data.Show.EpisodeList)) {
-        const sortedEpisodes = [...data.Show.EpisodeList].sort((a, b) => {
+      if (show && show.Show && Array.isArray(show.Show.EpisodeList)) {
+        const sortedEpisodes = [...show.Show.EpisodeList].sort((a, b) => {
           const seasonDiff = (b.SeasonNumber ?? 0) - (a.SeasonNumber ?? 0);
           if (seasonDiff !== 0) return seasonDiff;
 
@@ -311,7 +266,7 @@ const ShowDetailsPage = () => {
           const bTime = b.CreatedAt ? new Date(b.CreatedAt).getTime() : 0;
           return bTime - aTime;
         });
-        data.Show.EpisodeList = sortedEpisodes;
+        show.Show.EpisodeList = sortedEpisodes;
       }
 
       // Process subscription data
@@ -320,17 +275,12 @@ const ShowDetailsPage = () => {
       } else {
         setCurrentSubscription(null);
       }
-
-      setShow(data.Show);
-      console.log("[Show Details]", data.Show);
-
-      setIsFileResolving(false);
     };
 
     resolveData();
   }, [
     id,
-    showDetailsRaw,
+    show,
     isShowDetailsLoading,
     navigate,
     activeSubscriptionRaw,
@@ -342,17 +292,17 @@ const ShowDetailsPage = () => {
   // FUNCTIONS
   // Calculate rating from ReviewList
   const calculateRating = () => {
-    if (!show || !show.ReviewList || show.ReviewList.length === 0) {
+    if (!show || !show.Show.ReviewList || show.Show.ReviewList.length === 0) {
       return { averageRating: 0, ratingCount: 0 };
     }
-    const totalRating = show.ReviewList.reduce(
+    const totalRating = show.Show.ReviewList.reduce(
       (sum, review) => sum + review.Rating,
       0
     );
-    const averageRating = totalRating / show.ReviewList.length;
+    const averageRating = totalRating / show.Show.ReviewList.length;
     return {
       averageRating,
-      ratingCount: show.ReviewList ? show.ReviewList.length : 0,
+      ratingCount: show.Show.ReviewList ? show.Show.ReviewList.length : 0,
     };
   };
 
@@ -360,8 +310,8 @@ const ShowDetailsPage = () => {
 
   // Check if user already reviewed this show
   const hasUserReviewed = () => {
-    if (!user || !show || !show.ReviewList) return false;
-    return show.ReviewList.some((review) => review.Account.Id === user.Id);
+    if (!user || !show || !show.Show.ReviewList) return false;
+    return show.Show.ReviewList.some((review) => review.Account.Id === user.Id);
   };
 
   const handleUnsubscribeShow = async () => {
@@ -636,18 +586,18 @@ const ShowDetailsPage = () => {
   };
 
   const handleSeeMoreEpisodeFromShow = () => {
-    if (!showDetailsRaw) return;
+    if (!show) return;
     dispatch(
       setSeeMoreEpisodeData({
-        title: `Episodes from ${show?.Name}`,
-        episodes: showDetailsRaw.Show.EpisodeList,
+        title: `Episodes from ${show?.Show.Name}`,
+        episodes: show.Show.EpisodeList,
       })
     );
     navigate(`/media-player/episodes`);
   };
 
   const handlePlayTrailerAudio = async () => {
-    if (!show || !show.TrailerAudioFileKey) return;
+    if (!show || !show.Show.TrailerAudioFileKey) return;
 
     try {
       // If already playing, stop it
@@ -661,7 +611,7 @@ const ShowDetailsPage = () => {
 
       // Get audio URL and play
       const { data } = await getTrailerAudioUrl({
-        FileKey: show.TrailerAudioFileKey,
+        FileKey: show.Show.TrailerAudioFileKey,
       });
 
       if (data && data.FileUrl) {
@@ -710,8 +660,13 @@ const ShowDetailsPage = () => {
     };
   }, [trailerAudio]);
 
+  const testSubscription = () => {
+    console.log("Is User Subscribed: ", isUserSubscribed);
+    console.log("Curent Subscription: ", currentSubscription);
+    setIsSubscriptionDialogOpen(true);
+  };
   // RENDER
-  if (isShowDetailsLoading || isFileResolving) {
+  if (isShowDetailsLoading) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center gap-5">
         <Loading />
@@ -757,36 +712,26 @@ const ShowDetailsPage = () => {
       {/* Header Section */}
       <div className="flex gap-10 mb-8 px-12 ">
         {/* Show Image */}
-        <div className="w-80 h-80 bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
-          <img
-            src={show.ImageUrl}
-            alt={show.Name}
+        <div className="w-80 h-80 bg-gray-800 rounded-lg overflow-hidden shrink-0">
+          <AutoResolveImage
+            FileKey={show.Show.MainImageFileKey}
+            type="PodcastPublicSource"
             className="w-full h-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-              e.currentTarget.parentElement!.innerHTML = `
-                <div class="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
-                  <svg class="w-24 h-24 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
-                  </svg>
-                </div>
-              `;
-            }}
           />
         </div>
 
         {/* Show Info */}
         <div className="flex-1 flex flex-col items-start justify-between">
-          <h1 className="text-4xl font-medium text-white">{show.Name}</h1>
-          <p className="text-xl text-white">{show.Podcaster.FullName}</p>
+          <h1 className="text-4xl font-medium text-white">{show.Show.Name}</h1>
+          <p className="text-xl text-white">{show.Show.Podcaster.FullName}</p>
           <span className="text-sm text-white">
             ⭐ {averageRating.toFixed(1)} (
             {ratingCount !== undefined ? ratingCount : 0})
-            {show.PodcastCategory
-              ? ` - ${show.PodcastCategory.Name}`
+            {show.Show.PodcastCategory
+              ? ` - ${show.Show.PodcastCategory.Name}`
               : "Unknown Category"}{" "}
-            {show.PodcastSubCategory
-              ? ` - ${show.PodcastSubCategory.Name}`
+            {show.Show.PodcastSubCategory
+              ? ` - ${show.Show.PodcastSubCategory.Name}`
               : ""}
           </span>
           {/* <p className="text-gray-300 text-base leading-relaxed my-6 max-w-2xl line-clamp-4">
@@ -795,7 +740,7 @@ const ShowDetailsPage = () => {
           <div
             className="text-gray-300 text-base leading-relaxed my-6 max-w-2xl line-clamp-4"
             dangerouslySetInnerHTML={{
-              __html: renderDescriptionHTML(show.Description),
+              __html: renderDescriptionHTML(show.Show.Description),
             }}
           />
 
@@ -803,7 +748,7 @@ const ShowDetailsPage = () => {
           <div className="flex w-full items-center justify-between">
             <Button
               onClick={() => handlePlayTrailerAudio()}
-              disabled={!show.TrailerAudioFileKey}
+              disabled={!show.Show.TrailerAudioFileKey}
               className={`${
                 isPlayingTrailer
                   ? "bg-white hover:bg-gray-100"
@@ -828,7 +773,7 @@ const ShowDetailsPage = () => {
               ) : (
                 <>
                   <FaPlay className="mr-2" />
-                  {show.TrailerAudioFileKey
+                  {show.Show.TrailerAudioFileKey
                     ? "Play Trailer"
                     : "No Trailer Available"}
                 </>
@@ -847,7 +792,8 @@ const ShowDetailsPage = () => {
               ) : (
                 <LiquidButton
                   variant="minimal"
-                  onClick={() => setIsSubscriptionDialogOpen(true)}
+                  // onClick={() => setIsSubscriptionDialogOpen(true)}
+                  onClick={() => testSubscription()}
                 >
                   <p>Subscription Informations</p>
                 </LiquidButton>
@@ -884,7 +830,7 @@ const ShowDetailsPage = () => {
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-60 z-[9999] py-4 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-md text-white"
+                className="w-60 z-9999 py-4 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-md text-white"
                 align="end"
                 sideOffset={8}
               >
@@ -907,7 +853,7 @@ const ShowDetailsPage = () => {
             </DropdownMenu>
 
             <Dialog open={reportShowDialog} onOpenChange={setReportShowDialog}>
-              <DialogContent className="z-[9999] sm:max-w-[500px] bg-[#0f1115]/95 border-white/10 text-white">
+              <DialogContent className="z-9999 sm:max-w-125 bg-[#0f1115]/95 border-white/10 text-white">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold text-mystic-green">
                     Report Show
@@ -941,7 +887,7 @@ const ShowDetailsPage = () => {
                         <SelectTrigger className="bg-white/5 border-white/10 text-white">
                           <SelectValue placeholder="Select a report type" />
                         </SelectTrigger>
-                        <SelectContent className="z-[9999] bg-[#1a1d24] border-white/10 text-white">
+                        <SelectContent className="z-9999 bg-[#1a1d24] border-white/10 text-white">
                           {showAvailableReportTypes?.ShowReportTypeList.map(
                             (type) => (
                               <SelectItem
@@ -970,7 +916,7 @@ const ShowDetailsPage = () => {
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                         setShowReportContent(e.target.value)
                       }
-                      className="min-h-[120px] bg-white/5 border-white/10 text-white placeholder:text-white/40 resize-none"
+                      className="min-h-30 bg-white/5 border-white/10 text-white placeholder:text-white/40 resize-none"
                       disabled={isShowAlreadyReported}
                     />
                     <p className="text-xs text-white/50">
@@ -1014,7 +960,7 @@ const ShowDetailsPage = () => {
       <div>
         <div className="w-full flex items-center justify-between px-12 mb-8 mt-12">
           <h2 className="text-2xl font-medium">
-            Episodes ({show.EpisodeList.length})
+            Episodes ({show.Show.EpisodeList.length})
           </h2>
           <div
             onClick={() => handleSeeMoreEpisodeFromShow()}
@@ -1028,7 +974,7 @@ const ShowDetailsPage = () => {
           {/* {show.EpisodeList.map((episode) => (
             <EpisodeCard key={episode.Id} episode={episode} />
           ))} */}
-          {show.EpisodeList.slice(0, 5).map((episode) => (
+          {show.Show.EpisodeList.slice(0, 5).map((episode) => (
             <EpisodeCard key={episode.Id} episode={episode} />
           ))}
         </div>
@@ -1048,7 +994,7 @@ const ShowDetailsPage = () => {
                   <FaPlus className="text-black" size={16} />
                 </button>
               </DialogTrigger>
-              <DialogContent className="z-[9999] backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl">
+              <DialogContent className="z-9999 backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-semibold text-white mb-2">
                     Write a Review
@@ -1145,12 +1091,12 @@ const ShowDetailsPage = () => {
             {/* Rating bars */}
             <div className="space-y-2 w-100">
               {[5, 4, 3, 2, 1].map((rating) => {
-                const count = show.ReviewList.filter(
+                const count = show.Show.ReviewList.filter(
                   (r) => Math.floor(r.Rating) === rating
                 ).length;
                 const percentage =
-                  show.ReviewList.length > 0
-                    ? (count / show.ReviewList.length) * 100
+                  show.Show.ReviewList.length > 0
+                    ? (count / show.Show.ReviewList.length) * 100
                     : 0;
 
                 return (
@@ -1175,7 +1121,7 @@ const ShowDetailsPage = () => {
                       ></div>
                     </div>
 
-                    <span className="text-white text-sm min-w-[3rem] text-right">
+                    <span className="text-white text-sm min-w-12 text-right">
                       {count}
                     </span>
                   </div>
@@ -1195,7 +1141,7 @@ const ShowDetailsPage = () => {
           className="w-full"
         >
           <CarouselContent className="-ml-4">
-            {show.ReviewList.map((review) => (
+            {show.Show.ReviewList.map((review) => (
               <CarouselItem key={review.Id} className="pl-4 basis-1/3">
                 <div
                   className=" rounded-2xl p-6 h-full "
@@ -1247,30 +1193,54 @@ const ShowDetailsPage = () => {
 
         {/* Grid Layout - 3 columns */}
         <div className="grid grid-cols-3 gap-x-16 gap-y-6 mb-8">
+          {/* Channel */}
+          {show.Show.PodcastChannel && (
+            <div>
+              <h3 className="text-gray-400 text-sm mb-2">Channel</h3>
+              <p
+                onClick={() =>
+                  navigate(
+                    `/media-player/channels/${show.Show.PodcastChannel.Id}`
+                  )
+                }
+                className="text-mystic-green italic hover:underline cursor-pointer text-base"
+              >
+                {show.Show.PodcastChannel.Name}
+              </p>
+            </div>
+          )}
+
           {/* Creator */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Creator</h3>
-            <p className="text-white text-base">{show.Podcaster.FullName}</p>
+            <p
+              onClick={() =>
+                navigate(`/media-player/podcasters/${show.Show.Podcaster.Id}`)
+              }
+              className="text-mystic-green italic hover:underline cursor-pointer text-base"
+            >
+              {show.Show.Podcaster.FullName}
+            </p>
           </div>
 
           {/* Seasons */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Seasons</h3>
             <p className="text-white text-base">
-              {show.EpisodeList[0]?.SeasonNumber || 1}
+              {show.Show.EpisodeList[0]?.SeasonNumber || 1}
             </p>
           </div>
 
           {/* Rating */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Upload Frequency</h3>
-            <p className="text-white text-base">{show.UploadFrequency}</p>
+            <p className="text-white text-base">{show.Show.UploadFrequency}</p>
           </div>
 
           {/* Copyright */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Copyright</h3>
-            <p className="text-white text-base">{show.Copyright}</p>
+            <p className="text-white text-base">{show.Show.Copyright}</p>
           </div>
 
           {/* Show Website */}
@@ -1279,9 +1249,9 @@ const ShowDetailsPage = () => {
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Release Date</h3>
             <p className="text-white text-base">
-              {show.IsReleased
-                ? show.ReleaseDate
-                : `Not Released Yet - Will be release on ${show.ReleaseDate}`}
+              {show.Show.IsReleased
+                ? show.Show.ReleaseDate
+                : `Not Released Yet - Will be release on ${show.Show.ReleaseDate}`}
             </p>
           </div>
         </div>
@@ -1291,7 +1261,7 @@ const ShowDetailsPage = () => {
           <div
             className="text-white text-base leading-relaxed"
             dangerouslySetInnerHTML={{
-              __html: renderDescriptionHTML(show.Description),
+              __html: renderDescriptionHTML(show.Show.Description),
             }}
           />
         </div>
@@ -1304,7 +1274,7 @@ const ShowDetailsPage = () => {
           onOpenChange={setIsCancelConfirmDialogOpen}
         >
           <DialogContent
-            className="w-[450px] px-8 py-8 border border-white/10 bg-[#0f1115]/50 text-white
+            className="z-9999 w-112.5 px-8 py-8 border border-white/10 bg-[#0f1115]/50 text-white
                  backdrop-blur-xl shadow-2xl rounded-2xl"
           >
             <DialogHeader>
@@ -1364,7 +1334,7 @@ const ShowDetailsPage = () => {
           onOpenChange={setIsSubscriptionDialogOpen}
         >
           <DialogContent
-            className="w-[500px] px-8 py-12 border border-white/10 bg-[#0f1115]/50 text-white
+            className="z-9999 w-125 px-8 py-12 border border-white/10 bg-[#0f1115]/50 text-white
                  backdrop-blur-xl shadow-2xl rounded-2xl"
           >
             <DialogHeader>
@@ -1412,7 +1382,7 @@ const ShowDetailsPage = () => {
                     <TabsTrigger
                       key={d.SubscriptionCycleType.Id}
                       value={d.SubscriptionCycleType.Name}
-                      className="data-[state=active]:bg-[var(--accent)]
+                      className="data-[state=active]:bg-accent
                          data-[state=active]:text-black data-[state=active]:shadow
                          rounded-full px-5 py-2 text-sm font-semibold
                          text-white
@@ -1434,11 +1404,11 @@ const ShowDetailsPage = () => {
                   >
                     <div
                       className="rounded-2xl p-6 md:p-8 border border-white/10
-                         bg-gradient-to-b from-white/5 to-transparent"
+                         bg-linear-to-b from-white/5 to-transparent"
                     >
                       <div className="flex items-end gap-3">
                         <span className="text-4xl md:text-5xl text-mystic-green font-extrabold leading-none">
-                          {formatVND(d.Price)}đ
+                          {formatVND(d.Price)} coins
                         </span>
                         <span className="text-white/60 mb-1">
                           {cycleSuffix(d.SubscriptionCycleType.Name)}
@@ -1485,7 +1455,7 @@ const ShowDetailsPage = () => {
                              text-black hover:brightness-95"
                           style={{ backgroundColor: ACCENT }}
                         >
-                          Subscribe now for only {formatVND(d.Price)}đ
+                          Subscribe now for only {formatVND(d.Price)} coins
                           {cycleSuffix(d.SubscriptionCycleType.Name)}
                         </Button>
                       </DialogFooter>

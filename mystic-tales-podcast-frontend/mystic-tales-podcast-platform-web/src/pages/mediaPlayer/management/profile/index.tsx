@@ -1,19 +1,11 @@
-// @ts-nocheck
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import {
   useGetAccountInformationsQuery,
   useUpdateAccountInformationsMutation,
 } from "@/core/services/account/account.service";
-import type { AccountMeFromApi, AccountMeUI } from "@/core/types/account";
-import {
-  resolveFiles,
-  type FileResolveConfig,
-} from "@/core/utils/fileResolver.util";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import "./style.css";
 import { useDispatch } from "react-redux";
-import { clearAuth } from "@/redux/slices/authSlice/authSlice";
+import { clearAuth, setUser } from "@/redux/slices/authSlice/authSlice";
 import { MdEdit, MdLockReset, MdOutlineLogout, MdUpload } from "react-icons/md";
 import ShowOnHoverButton from "@/components/button/ShowOnHoverButton";
 import { TimeUtil } from "@/core/utils/time";
@@ -31,6 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useUpdatePasswordMutation } from "@/core/services/auth/auth.service";
 import { useNavigate } from "react-router-dom";
+import MTPCoinOutline from "@/components/coinIcons/CoinIconOutline";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 
 type UpdateInformationsForm = {
   AccountUpdateInfo: {
@@ -47,18 +41,7 @@ type AccountUpdateInfoErrors = Partial<
   Record<keyof UpdateInformationsForm["AccountUpdateInfo"], string>
 >;
 
-const FileConfig: FileResolveConfig[] = [
-  {
-    path: "MainImageFileKey",
-    output: "ImageUrl",
-    type: "AccountPublic",
-  },
-];
-
 const ProfilePage = () => {
-  const [accountInformation, setAccountInformation] =
-    useState<AccountMeUI | null>(null);
-
   const [isResetPasswordOpen, setIsResetPasswordOpen] =
     useState<boolean>(false);
   const [oldPassword, setOldPassword] = useState<string>("");
@@ -68,17 +51,17 @@ const ProfilePage = () => {
   const [resetPasswordSuccess, setResetPasswordSuccess] = useState<string>("");
 
   const {
-    data: dataAccount,
-    isLoading: isAccountMeLoading,
+    data: accountInformation,
+    isFetching: isAccountMeLoading,
     isError,
     refetch,
   } = useGetAccountInformationsQuery();
 
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [resetPassword, { isLoading: isResettingPassword }] =
     useUpdatePasswordMutation();
+
   const [updateAccountInformations, { isLoading: isUpdating }] =
     useUpdateAccountInformationsMutation();
 
@@ -96,33 +79,6 @@ const ProfilePage = () => {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Lấy data account + resolve file
-  useEffect(() => {
-    const resolvedAccountInformation = async () => {
-      setIsLoading(true);
-      if (dataAccount && dataAccount.Account) {
-        const accountData: AccountMeFromApi = dataAccount.Account;
-        const { resolvedData } = await resolveFiles(accountData, FileConfig);
-        const parsedData = resolvedData as unknown as AccountMeUI;
-        setAccountInformation(parsedData);
-
-        // init form từ data api nếu chưa có
-        setFormState({
-          AccountUpdateInfo: {
-            FullName: parsedData.FullName ?? "",
-            Dob: parsedData.Dob ?? "",
-            Gender: parsedData.Gender ?? "Other",
-            Address: parsedData.Address ?? "",
-            Phone: parsedData.Phone ?? "",
-          },
-          MainImageFile: null,
-        });
-      }
-      setIsLoading(false);
-    };
-    resolvedAccountInformation();
-  }, [dataAccount]);
-
   // FUNCTIONS
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
@@ -135,11 +91,11 @@ const ProfilePage = () => {
     if (!accountInformation) return;
     setFormState({
       AccountUpdateInfo: {
-        FullName: accountInformation.FullName ?? "",
-        Dob: accountInformation.Dob ?? "",
-        Gender: accountInformation.Gender ?? "Other",
-        Address: accountInformation.Address ?? "",
-        Phone: accountInformation.Phone ?? "",
+        FullName: accountInformation.Account.FullName ?? "",
+        Dob: accountInformation.Account.Dob ?? "",
+        Gender: accountInformation.Account.Gender ?? "Other",
+        Address: accountInformation.Account.Address ?? "",
+        Phone: accountInformation.Account.Phone ?? "",
       },
       MainImageFile: null,
     });
@@ -286,30 +242,35 @@ const ProfilePage = () => {
     if (options?.onlyAvatar || !formState) {
       // dùng giá trị cũ
       accountUpdateInfo = {
-        FullName: accountInformation.FullName ?? "",
-        Dob: accountInformation.Dob ?? "",
-        Gender: accountInformation.Gender ?? "Other",
-        Address: accountInformation.Address ?? "",
-        Phone: accountInformation.Phone ?? "",
+        FullName: accountInformation.Account.FullName ?? "",
+        Dob: accountInformation.Account.Dob ?? "",
+        Gender: accountInformation.Account.Gender ?? "Other",
+        Address: accountInformation.Account.Address ?? "",
+        Phone: accountInformation.Account.Phone ?? "",
       };
     } else {
       // merge form với giá trị cũ
       const merged: UpdateInformationsForm["AccountUpdateInfo"] = {
         FullName:
           formState.AccountUpdateInfo.FullName ||
-          accountInformation.FullName ||
+          accountInformation.Account.FullName ||
           "",
-        Dob: formState.AccountUpdateInfo.Dob || accountInformation.Dob || "",
+        Dob:
+          formState.AccountUpdateInfo.Dob ||
+          accountInformation.Account.Dob ||
+          "",
         Gender:
           formState.AccountUpdateInfo.Gender ||
-          accountInformation.Gender ||
+          accountInformation.Account.Gender ||
           "Other",
         Address:
           formState.AccountUpdateInfo.Address ||
-          accountInformation.Address ||
+          accountInformation.Account.Address ||
           "",
         Phone:
-          formState.AccountUpdateInfo.Phone || accountInformation.Phone || "",
+          formState.AccountUpdateInfo.Phone ||
+          accountInformation.Account.Phone ||
+          "",
       };
 
       // validate
@@ -336,14 +297,17 @@ const ProfilePage = () => {
     try {
       const response = await updateAccountInformations({
         uploadAccountInformationsFormData: formData,
-        accountId: accountInformation.Id,
+        accountId: accountInformation.Account.Id,
       }).unwrap();
 
       setUpdateSuccessMessage(response?.Message || "Update successfully.");
       setFieldErrors({});
 
-      // refetch lại thông tin
-      await refetch();
+      // refetch lại thông tin và dispatch data mới vào Redux
+      const refetchResult = await refetch();
+      if (refetchResult.data) {
+        dispatch(setUser(refetchResult.data.Account));
+      }
 
       // tắt mode edit nếu đang edit
       if (!options?.onlyAvatar) {
@@ -370,7 +334,8 @@ const ProfilePage = () => {
   };
 
   const getDobInputValue = () => {
-    const dobIso = formState?.AccountUpdateInfo.Dob || accountInformation?.Dob;
+    const dobIso =
+      formState?.AccountUpdateInfo.Dob || accountInformation?.Account.Dob;
     if (!dobIso) return "";
     // TimeUtil.formatDate → "YYYY-MM-DD" cho input[type=date]
     return TimeUtil.formatDate(dobIso, "YYYY-MM-DD");
@@ -452,7 +417,7 @@ const ProfilePage = () => {
     }
   };
 
-  if (isLoading || isAccountMeLoading) {
+  if (isAccountMeLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center flex-col gap-5">
         <Loading />
@@ -488,26 +453,15 @@ const ProfilePage = () => {
       <div className="px-8  w-full flex flex-col gap-3">
         {/* Avatar */}
         <div className="p-5 flex items-center gap-10 bg-white/10 border border-white/20 shadow-2xl rounded-md">
-          {accountInformation?.ImageUrl ? (
-            <img
-              src={accountInformation?.ImageUrl}
-              alt="Avatar"
-              className="w-36 aspect-square rounded-full object-cover shadow-2xl"
-            />
-          ) : (
-            <div className="flex items-center justify-center relative ">
-              <img
-                src="/images/unknown/user.png"
-                alt="Avatar"
-                className="w-36 aspect-square rounded-full object-cover shadow-2xl"
-              />
-              <div className="w-full h-full absolute inset-0 flex items-center justify-center bg-gray-500/50 background-blur-md rounded-full">
-                <p className="text-center text-white font-poppins font-bold">
-                  Upload Your Image Now
-                </p>
-              </div>
-            </div>
-          )}
+          <AutoResolveImage
+            FileKey={
+              accountInformation
+                ? accountInformation.Account.MainImageFileKey
+                : ""
+            }
+            type="AccountPublicSource"
+            className="w-36 aspect-square rounded-full object-cover shadow-2xl"
+          />
 
           {/* hidden input file */}
           <input
@@ -602,7 +556,7 @@ const ProfilePage = () => {
                 </>
               ) : (
                 <p className="text-white line-clamp-1">
-                  {accountInformation?.FullName}
+                  {accountInformation?.Account.FullName}
                 </p>
               )}
             </div>
@@ -611,7 +565,7 @@ const ProfilePage = () => {
             <div className="w-full flex flex-col items-start justify-center gap-2">
               <p className="text-[#a1a1a1] font-bold">Email</p>
               <p className="text-white line-clamp-1">
-                {accountInformation?.Email}
+                {accountInformation?.Account.Email}
               </p>
             </div>
 
@@ -631,7 +585,7 @@ const ProfilePage = () => {
                 </>
               ) : (
                 <p className="text-white line-clamp-1">
-                  {accountInformation?.Phone}
+                  {accountInformation?.Account.Phone}
                 </p>
               )}
             </div>
@@ -642,7 +596,7 @@ const ProfilePage = () => {
               {isEditing ? (
                 <>
                   <select
-                    className="w-full bg-white/5 border border-white/20 rounded px-3 py-2 pr-8 text-white text-sm focus:outline-none focus:ring-2 focus:ring-mystic-green [&>option]:bg-[#333] [&>option]:text-white appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%23fff%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat"
+                    className="w-full bg-white/5 border border-white/20 rounded px-3 py-2 pr-8 text-white text-sm focus:outline-none focus:ring-2 focus:ring-mystic-green [&>option]:bg-[#333] [&>option]:text-white appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%23fff%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-size-[1.25rem] bg-position-[right_0.5rem_center] bg-no-repeat"
                     value={formState?.AccountUpdateInfo.Gender ?? "Other"}
                     onChange={(e) =>
                       handleInputChange("Gender", e.target.value)
@@ -658,7 +612,7 @@ const ProfilePage = () => {
                 </>
               ) : (
                 <p className="text-white line-clamp-1">
-                  {accountInformation?.Gender}
+                  {accountInformation?.Account.Gender}
                 </p>
               )}
             </div>
@@ -684,9 +638,12 @@ const ProfilePage = () => {
                     <p className="text-red-400 text-xs">{fieldErrors.Dob}</p>
                   )}
                 </>
-              ) : accountInformation && accountInformation.Dob ? (
+              ) : accountInformation && accountInformation.Account.Dob ? (
                 <p className="text-white line-clamp-1">
-                  {TimeUtil.formatDate(accountInformation.Dob, "DD/MM/YYYY")}
+                  {TimeUtil.formatDate(
+                    accountInformation.Account.Dob,
+                    "DD/MM/YYYY"
+                  )}
                 </p>
               ) : (
                 <p className="text-white line-clamp-1">Not Updated</p>
@@ -714,7 +671,7 @@ const ProfilePage = () => {
                 </>
               ) : (
                 <p className="text-white line-clamp-1">
-                  {accountInformation?.Address}
+                  {accountInformation?.Account.Address}
                 </p>
               )}
             </div>
@@ -722,23 +679,29 @@ const ProfilePage = () => {
             {/* Balance */}
             <div className="w-full flex flex-col items-start justify-center gap-2 overflow-ellipsis">
               <p className="text-[#a1a1a1] font-bold">Account Balance</p>
-              <p className="text-white line-clamp-1">
-                {accountInformation?.Balance?.toLocaleString()} Coins
-              </p>
+
+              <div className="flex items-center gap-2">
+                <p className="text-white line-clamp-1">
+                  {accountInformation?.Account.Balance?.toLocaleString()}
+                </p>
+                <MTPCoinOutline size={16} color="white" />
+                <p className="text-white">MTP Coins</p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* bottom actions */}
         <div className="w-full mt-2 flex items-center justify-end gap-5">
-          {!accountInformation?.IsPodcaster && (
-            <ShowOnHoverButton
-              Icon={FaMicrophoneAlt}
-              text="Apply to be Podcaster"
-              bgColor="#4F8BFF"
-              onClick={() => handleApplyToBePodcaster()}
-            />
-          )}
+          {!accountInformation?.Account.IsPodcaster &&
+            !accountInformation?.Account.IsPodcasterApplying && (
+              <ShowOnHoverButton
+                Icon={FaMicrophoneAlt}
+                text="Apply to be Podcaster"
+                bgColor="#4F8BFF"
+                onClick={() => handleApplyToBePodcaster()}
+              />
+            )}
 
           <ShowOnHoverButton
             Icon={MdLockReset}
@@ -769,7 +732,7 @@ const ProfilePage = () => {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[480px] z-9999 border border-white/10 bg-black/80 text-white">
+        <DialogContent className="sm:max-w-120 z-9999 border border-white/10 bg-black/80 text-white">
           <DialogHeader>
             <DialogTitle className="text-mystic-green">
               Reset Password

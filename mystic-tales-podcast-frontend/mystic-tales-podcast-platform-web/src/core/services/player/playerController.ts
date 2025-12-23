@@ -31,6 +31,8 @@ export type PlayerUiState = {
   } | null;
   sourceType: SourceType | null;
   volume: number;
+  isLoadingSession: boolean;
+  loadingAudioId: string | null;
 };
 
 export type PlayerEvents = {
@@ -67,6 +69,8 @@ class PlayerController {
   private currentAudioId: string | null = null;
   private rafId: number | null = null;
   private isLoadingLatest = false; // Prevent concurrent playFromLatest calls
+  private isLoadingSession = false; // Prevent concurrent play operations
+  private loadingAudioId: string | null = null; // Track which audio is being loaded
 
   private constructor() {
     this.audio = new Audio();
@@ -172,6 +176,8 @@ class PlayerController {
       currentAudio: this.currentAudioMeta,
       sourceType: this.sourceType,
       volume: this.audio.volume,
+      isLoadingSession: this.isLoadingSession,
+      loadingAudioId: this.loadingAudioId,
     };
   }
 
@@ -239,6 +245,17 @@ class PlayerController {
 
   setLoadingLatestSession(value: boolean): void {
     this.isLoadingLatest = value;
+  }
+
+  // Kiểm tra và set flag để prevent concurrent play operations
+  isCurrentlyLoadingSession(): boolean {
+    return this.isLoadingSession;
+  }
+
+  setLoadingSession(value: boolean, audioId?: string): void {
+    this.isLoadingSession = value;
+    this.loadingAudioId = value ? audioId || null : null;
+    this.emitState();
   }
 
   // ====== API CHÍNH: nhận session đã có sẵn ======

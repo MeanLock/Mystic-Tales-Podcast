@@ -1,10 +1,5 @@
 import { useGetFollowedPodcastersQuery } from "@/core/services/podcasters/podcasters.service";
-import type { PodcasterUI } from "@/core/types/podcaster";
-import { useEffect, useState } from "react";
-import {
-  resolveFiles,
-  type FileResolveConfig,
-} from "@/core/utils/fileResolver.util";
+import { useState } from "react";
 import Loading from "@/components/loading";
 import "./styles.css";
 import PodcasterCard from "./components/PodcasterCard";
@@ -12,72 +7,21 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const PodcasterFileConfig: FileResolveConfig[] = [
-  {
-    path: "MainImageFileKey",
-    output: "ImageUrl",
-    type: "AccountPublic",
-  },
-];
-
 const FollowedPodcastersPage = () => {
   // STATES
-  const [podcasters, setPodcasters] = useState<PodcasterUI[] | null>(null);
-  const [isFileResolving, setIsFileResolving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // HOOKS
   const navigate = useNavigate();
 
-  const {
-    data: followedPodcastersRaw,
-    isLoading: isFollowedPodcastersLoading,
-  } = useGetFollowedPodcastersQuery();
-
-  useEffect(() => {
-    const resolveData = async () => {
-      // Đợi API loading xong
-      if (isFollowedPodcastersLoading) {
-        return;
-      }
-      console.log("Followed Podcasters Raw Data:", followedPodcastersRaw);
-      setIsFileResolving(true);
-
-      // Resolve Followed Podcasters
-      if (
-        followedPodcastersRaw &&
-        followedPodcastersRaw.FollowedPodcasterList
-      ) {
-        const resolvedPromises =
-          followedPodcastersRaw.FollowedPodcasterList.map((podcaster) =>
-            resolveFiles(podcaster, PodcasterFileConfig)
-          );
-        const resolvedResults = await Promise.all(resolvedPromises);
-        console.log("Resolved Followed Podcasters:", resolvedResults);
-        const resolved = resolvedResults.map((r) => r.resolvedData);
-        console.log("Resolved Followed Podcasters:", resolved);
-        setPodcasters(resolved as unknown as PodcasterUI[]);
-      } else {
-        setPodcasters([]);
-      }
-
-      setIsFileResolving(false);
-
-      // Restore search query from localStorage
-      const savedQuery = localStorage.getItem(
-        "followed-podcaster-search-query"
-      );
-      if (savedQuery) {
-        setSearchQuery(savedQuery);
-      }
-    };
-    resolveData();
-  }, [followedPodcastersRaw, isFollowedPodcastersLoading]);
+  const { data: podcasters, isLoading: isFollowedPodcastersLoading } =
+    useGetFollowedPodcastersQuery();
 
   // FUNCTIONS
   // Filter podcasters based on search query
-  const filteredPodcasters = podcasters?.filter((podcaster) =>
-    podcaster.Name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPodcasters = podcasters?.FollowedPodcasterList.filter(
+    (podcaster) =>
+      podcaster.Name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleViewDetails = (podcasterId: number) => {
@@ -86,7 +30,7 @@ const FollowedPodcastersPage = () => {
   };
 
   // Loading State
-  if (isFollowedPodcastersLoading || isFileResolving) {
+  if (isFollowedPodcastersLoading) {
     return (
       <div className="w-full h-full flex items-center flex-col justify-center gap-5">
         <Loading />
@@ -110,7 +54,7 @@ const FollowedPodcastersPage = () => {
   }
 
   // Empty State
-  if (podcasters.length === 0) {
+  if (!podcasters || podcasters.FollowedPodcasterList.length === 0) {
     return (
       <div className="w-full h-full flex items-center flex-col justify-center gap-5">
         <div className="meteor"></div>
@@ -127,7 +71,7 @@ const FollowedPodcastersPage = () => {
   return (
     <div className="w-full flex flex-col relative p-8">
       <div className="w-full flex flex-col items-start justify-center mb-10 gap-2">
-        <p className="text-7xl pb-4 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#6DD5FA] to-white">
+        <p className="text-7xl pb-4 font-poppins font-bold text-transparent bg-clip-text bg-linear-to-r from-[#6DD5FA] to-white">
           Followed Podcasters
         </p>
         <p className="font-poppins text-white font-bold">

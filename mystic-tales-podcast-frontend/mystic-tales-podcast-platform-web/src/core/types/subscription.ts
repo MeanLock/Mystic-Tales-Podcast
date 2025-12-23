@@ -1,5 +1,3 @@
-
-
 export type SubscriptionDetails = {
   Id: number;
   Name: string;
@@ -112,12 +110,12 @@ export type PodcastSubscriptionRegistrationFromAPI = {
   PodcastChannel: {
     Id: string;
     Name: string;
-    MainFileKey: string;
+    MainImageFileKey: string;
   } | null;
   PodcastShow: {
     Id: string;
     Name: string;
-    MainFileKey: string;
+    MainImageFileKey: string;
   } | null;
   CurrentVersion: number;
   IsAcceptNewestVersionSwitch: boolean | null;

@@ -1,24 +1,15 @@
-// @ts-nocheck
-
 import { IoPause, IoPlay } from "react-icons/io5";
-import { IoIosMore } from "react-icons/io";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  playAudio,
-  pauseAudio,
-} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
 import type { RootState } from "@/redux/store";
-import PlayingWaveSmall from "@/components/playingWaveSmall/PlayWaveSmall";
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 import { usePlayer } from "@/core/services/player/usePlayer";
 import { useNavigate } from "react-router-dom";
 import { useLazyCheckUserPodcastListenSlotQuery } from "@/core/services/account/account.service";
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
 import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
-import { getPlayerController } from "@/core/services/player/playerController";
-import type { ListenSessionEpisodes } from "@/core/types/audio";
-import { useEffect, useState } from "react";
 import { useGetPodcastPublicSourceQuery } from "@/core/services/file/file.service";
+import { debouncePromise } from "@/core/utils/debouncePromise";
+import ActivityIndicator from "@/components/loader/ActivityIndicator";
 
 type EpisodeCardProps = {
   Episode: {
@@ -56,12 +47,6 @@ const getTimeRange = (releaseDate: string) => {
   }
 };
 
-const formatAudioLength = (lengthInSeconds: number) => {
-  const minutes = Math.floor(lengthInSeconds / 60);
-  const seconds = lengthInSeconds % 60;
-  return `${minutes}m ${seconds}s`;
-};
-
 const calculateProgressPercentage = (
   latestPosition: number,
   audioLength: number
@@ -76,7 +61,6 @@ const EpisodeCard = ({
   listenSession: EpisodeCardProps;
 }) => {
   const dispatch = useDispatch();
-
   const user = useSelector((state: RootState) => state.auth.user);
 
   // PLAYER CORE
@@ -87,8 +71,6 @@ const EpisodeCard = ({
     state: playerUiState,
   } = usePlayer();
 
-  const controller = getPlayerController();
-
   // Use state from usePlayer hook for reactive updates
   const state = playerUiState;
 
@@ -97,24 +79,23 @@ const EpisodeCard = ({
   const [triggerCheckListenSlot] = useLazyCheckUserPodcastListenSlotQuery();
   const navigate = useNavigate();
 
-  const { data: fileData, isLoading: isLoadingFile } =
-    useGetPodcastPublicSourceQuery(
-      { FileKey: listenSession.Episode.MainImageFileKey! },
-      {
-        skip: !listenSession.Episode.MainImageFileKey,
-        refetchOnMountOrArgChange: true,
-        refetchOnFocus: true,
-        refetchOnReconnect: true,
-      }
-    );
+  const { data: fileData } = useGetPodcastPublicSourceQuery(
+    { FileKey: listenSession.Episode.MainImageFileKey! },
+    {
+      skip: !listenSession.Episode.MainImageFileKey,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
+  );
 
   // RESOLVE FILE URL
   const fileUrl =
     fileData?.FileUrl ||
     "https://i.pinimg.com/736x/1c/c0/8f/1cc08fc01181a676f894534fc73f42cf.jpg";
 
-  // HOOKS
-  useEffect(() => {}, []);
+  // HOOKs
+
   // FUNCTIONS
   const handleContinuePlayEpisode = async (listenSession: EpisodeCardProps) => {
     if (!user) {
@@ -222,12 +203,17 @@ const EpisodeCard = ({
     }
   };
 
+  const debouncePlay = debouncePromise(handlePlayPause, 1000);
+
   return (
     <div
       style={{
         backgroundImage: `url(${fileUrl})`,
       }}
-      className="bg-cover w-full aspect-[3/4] rounded-xl relative transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+      onClick={() =>
+        navigate(`/media-player/episodes/${listenSession.Episode.Id}`)
+      }
+      className="bg-cover w-full aspect-3/4 rounded-xl relative transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
     >
       <div className="w-full aspect-square">
         <AutoResolveImage
@@ -243,8 +229,8 @@ const EpisodeCard = ({
             rounded-b-xl
             pointer-events-none absolute inset-0
             backdrop-blur-[200px] backdrop-saturate-200
-            [mask-image:linear-gradient(to_top,black_30%,transparent_100%)]
-            [mask-size:cover]
+            mask-[linear-gradient(to_top,black_30%,transparent_100%)]
+            mask-cover
         "
       />
 
@@ -252,8 +238,8 @@ const EpisodeCard = ({
         className="
             rounded-xl
             pointer-events-none absolute inset-0
-            bg-gradient-to-t from-black/50 via-transparent/30 to-transparent
-            [mask-image:linear-gradient(to_top,black_70%,transparent_100%)]
+            bg-linear-to-t from-black/50 via-transparent/30 to-transparent
+            mask-[linear-gradient(to_top,black_70%,transparent_100%)]
         "
       />
 
@@ -280,27 +266,46 @@ const EpisodeCard = ({
       <div className="absolute bottom-0 z-20 bg-black/40 backdrop-blur-md right-0 left-0 rounded-b-md">
         <div className="w-full flex items-center justify-start relative">
           <div className="w-full flex items-center gap-2 justify-between p-5">
-            <div
-              onClick={() => handlePlayPause()}
-              className="w-full flex items-center justify-center gap-1 py-1 px-2 bg-white rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
-            >
-              {state.isPlaying &&
-              state.currentAudio &&
-              state.currentAudio.id === listenSession.Episode.Id ? (
+            {state.isLoadingSession &&
+            state.loadingAudioId === listenSession.Episode.Id ? (
+              <div className="w-full flex items-center justify-center gap-1 py-1 px-2 bg-white rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
                 <div className="z-20 relative w-5 h-5 overflow-hidden flex items-center justify-center">
-                  <IoPause className="h-5 w-5 text-black" />
+                  <ActivityIndicator size={13} color="#000" />
                 </div>
-              ) : (
-                <IoPlay className="h-5 w-5 text-black" />
-              )}
-              <p className="font-poppins m-0 text-xs font-semibold text-[#333]">
+                <p className="font-poppins m-0 text-xs font-semibold text-[#333]">
+                  Loading
+                </p>
+              </div>
+            ) : (
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  debouncePlay();
+                }}
+                className={`w-full flex items-center justify-center gap-1 py-1 px-2 bg-white rounded-xl hover:bg-gray-100 transition-colors ${
+                  state.isLoadingSession
+                    ? "cursor-not-allowed"
+                    : "cursor-pointer"
+                }`}
+              >
                 {state.isPlaying &&
                 state.currentAudio &&
-                state.currentAudio.id === listenSession.Episode.Id
-                  ? "Pause"
-                  : `Continue`}
-              </p>
-            </div>
+                state.currentAudio.id === listenSession.Episode.Id ? (
+                  <div className="z-20 relative w-5 h-5 overflow-hidden flex items-center justify-center">
+                    <IoPause className="h-5 w-5 text-black" />
+                  </div>
+                ) : (
+                  <IoPlay className="h-5 w-5 text-black" />
+                )}
+                <p className="font-poppins m-0 text-xs font-semibold text-[#333]">
+                  {state.isPlaying &&
+                  state.currentAudio &&
+                  state.currentAudio.id === listenSession.Episode.Id
+                    ? "Pause"
+                    : `Continue`}
+                </p>
+              </div>
+            )}
           </div>
 
           {state.currentAudio &&

@@ -1,24 +1,21 @@
-// @ts-nocheck
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import type { PodcasterFromApi } from "@/core/types/podcaster";
 
-import type { PodcasterUI } from "@/core/types/podcaster";
-import type { TopPodcasterUI } from "..";
 import { MdPeopleAlt } from "react-icons/md";
-import { useNavigate } from "react-router-dom";
 
 interface PodcasterCardProps {
-  podcaster: TopPodcasterUI;
+  podcaster: PodcasterFromApi;
   onViewDetails: () => void;
 }
 const PodcasterCard = ({ podcaster, onViewDetails }: PodcasterCardProps) => {
-  const navigate = useNavigate();
 
   return (
     <div onClick={onViewDetails} className="">
       <div className="relative w-full flex flex-col items-center justify-center gap-5 p-5 rounded-md transition-all duration-700 hover:scale-105 ease-in-out cursor-pointer">
         {/* image */}
-        <img
-          src={podcaster.ImageUrl}
-          alt={podcaster.Name}
+        <AutoResolveImage
+          FileKey={podcaster.MainImageFileKey}
+          type="AccountPublicSource"
           className="w-full aspect-square rounded-full object-cover"
         />
 

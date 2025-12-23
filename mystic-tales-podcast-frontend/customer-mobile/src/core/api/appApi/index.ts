@@ -47,6 +47,10 @@ const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   prepareHeaders: (headers) => {
     headers.set("ngrok-skip-browser-warning", "69420");
+    // Đảm bảo Content-Type được set đúng
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
     return headers;
   },
 });
@@ -122,7 +126,7 @@ const modeAwareBaseQuery: BaseQueryFn<
     hasHeaders: Object.keys(headersRecord || {}).length > 0,
     body,
     params,
-    headers: headersRecord ? "Có Token" : "Không Token",
+    headers: headersRecord,
   });
 
   const res: any = await rawBaseQuery(baseQueryArgs, api, extraOptions);

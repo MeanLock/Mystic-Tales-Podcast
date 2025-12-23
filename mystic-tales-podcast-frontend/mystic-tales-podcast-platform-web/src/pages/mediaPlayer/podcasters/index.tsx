@@ -3,8 +3,6 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
-import type { PodcasterFromApi } from "@/core/types/podcaster";
-import { useEffect, useState } from "react";
 import PodcasterCard from "./components/PodcasterCard";
 import Autoplay from "embla-carousel-autoplay";
 import { useGetPodcastersQuery } from "@/core/services/podcasters/podcasters.service";
@@ -12,19 +10,19 @@ import Loading from "@/components/loading";
 
 const PodcastersPage = () => {
   // STATES
-  const [popularPodcasters, setPopularPodcasters] = useState<
-    PodcasterFromApi[] | null
-  >(null);
-  const [hotPodcasters, setHopularPodcasters] = useState<
-    PodcasterFromApi[] | null
-  >(null);
-  const [talentedRookies, setTalentedRookies] = useState<
-    PodcasterFromApi[] | null
-  >(null);
+  // const [popularPodcasters, setPopularPodcasters] = useState<
+  //   PodcasterFromApi[] | null
+  // >(null);
+  // const [hotPodcasters, setHopularPodcasters] = useState<
+  //   PodcasterFromApi[] | null
+  // >(null);
+  // const [talentedRookies, setTalentedRookies] = useState<
+  //   PodcasterFromApi[] | null
+  // >(null);
   // const [isFileResolving, setIsFileResolving] = useState(false);
 
   // HOOKS
-  const { data: popularPodcastersRaw, isFetching: isPopularPodcasterLoading } =
+  const { data: popularPodcasters, isFetching: isPopularPodcasterLoading } =
     useGetPodcastersQuery(
       { queryKey: "popular" },
       {
@@ -33,7 +31,7 @@ const PodcastersPage = () => {
         refetchOnMountOrArgChange: true,
       }
     );
-  const { data: hotPodcastersRaw, isFetching: isHotPodcastersLoading } =
+  const { data: hotPodcasters, isFetching: isHotPodcastersLoading } =
     useGetPodcastersQuery(
       { queryKey: "hotRencently" },
       {
@@ -42,7 +40,7 @@ const PodcastersPage = () => {
         refetchOnMountOrArgChange: true,
       }
     );
-  const { data: talentedRookiesRaw, isFetching: isTalentedRookiesLoading } =
+  const { data: talentedRookies, isFetching: isTalentedRookiesLoading } =
     useGetPodcastersQuery(
       { queryKey: "talentedRookie" },
       {
@@ -52,47 +50,47 @@ const PodcastersPage = () => {
       }
     );
 
-  useEffect(() => {
-    const resolveData = async () => {
-      // Đợi API loading xong
-      if (
-        isPopularPodcasterLoading ||
-        isHotPodcastersLoading ||
-        isTalentedRookiesLoading
-      ) {
-        return;
-      }
+  // useEffect(() => {
+  //   const resolveData = async () => {
+  //     // Đợi API loading xong
+  //     if (
+  //       isPopularPodcasterLoading ||
+  //       isHotPodcastersLoading ||
+  //       isTalentedRookiesLoading
+  //     ) {
+  //       return;
+  //     }
 
-      // Resolve Popular Podcasters
-      if (popularPodcastersRaw && popularPodcastersRaw.PodcasterList) {
-        setPopularPodcasters(popularPodcastersRaw.PodcasterList);
-      } else {
-        setPopularPodcasters([]);
-      }
+  //     // Resolve Popular Podcasters
+  //     if (popularPodcastersRaw && popularPodcastersRaw.PodcasterList) {
+  //       setPopularPodcasters(popularPodcastersRaw.PodcasterList);
+  //     } else {
+  //       setPopularPodcasters([]);
+  //     }
 
-      // Resolve Hot Podcasters
-      if (hotPodcastersRaw && hotPodcastersRaw.PodcasterList) {
-        setHopularPodcasters(hotPodcastersRaw.PodcasterList);
-      } else {
-        setHopularPodcasters([]);
-      }
+  //     // Resolve Hot Podcasters
+  //     if (hotPodcastersRaw && hotPodcastersRaw.PodcasterList) {
+  //       setHopularPodcasters(hotPodcastersRaw.PodcasterList);
+  //     } else {
+  //       setHopularPodcasters([]);
+  //     }
 
-      // Resolve Talented Rookies
-      if (talentedRookiesRaw && talentedRookiesRaw.PodcasterList) {
-        setTalentedRookies(talentedRookiesRaw.PodcasterList);
-      } else {
-        setTalentedRookies([]);
-      }
-    };
-    resolveData();
-  }, [
-    popularPodcastersRaw,
-    hotPodcastersRaw,
-    talentedRookiesRaw,
-    isPopularPodcasterLoading,
-    isHotPodcastersLoading,
-    isTalentedRookiesLoading,
-  ]);
+  //     // Resolve Talented Rookies
+  //     if (talentedRookiesRaw && talentedRookiesRaw.PodcasterList) {
+  //       setTalentedRookies(talentedRookiesRaw.PodcasterList);
+  //     } else {
+  //       setTalentedRookies([]);
+  //     }
+  //   };
+  //   resolveData();
+  // }, [
+  //   popularPodcastersRaw,
+  //   hotPodcastersRaw,
+  //   talentedRookiesRaw,
+  //   isPopularPodcasterLoading,
+  //   isHotPodcastersLoading,
+  //   isTalentedRookiesLoading,
+  // ]);
 
   // FUNCTIONS
 
@@ -114,7 +112,7 @@ const PodcastersPage = () => {
   return (
     <div className="w-full flex flex-col relative p-8">
       <div className="w-full flex flex-col items-start justify-center mb-10 gap-2">
-        <p className="text-9xl pb-4 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FFFFFf] via-[#6DD5FA] to-[#2980B9]">
+        <p className="text-9xl pb-4 font-poppins font-bold text-transparent bg-clip-text bg-linear-to-r from-[#FFFFFf] via-[#6DD5FA] to-[#2980B9]">
           Our Podcasters
         </p>
         <p className="font-poppins text-white font-bold">
@@ -134,7 +132,7 @@ const PodcastersPage = () => {
 
       {/* Content */}
       {/* Top Podcaster */}
-      {popularPodcasters && popularPodcasters.length > 0 && (
+      {popularPodcasters && popularPodcasters.PodcasterList.length > 0 && (
         <div className="mt-5 flex flex-col gap-2">
           <div className="w-full flex flex-col gap-8">
             <div className="w-full flex items-center justify-between">
@@ -156,7 +154,7 @@ const PodcastersPage = () => {
               className="w-full"
             >
               <CarouselContent>
-                {popularPodcasters.map((podcaster) => (
+                {popularPodcasters.PodcasterList.map((podcaster) => (
                   <CarouselItem
                     key={podcaster.AccountId}
                     className="basis-1/1 md:basis-1/2 lg:basis-1/3"
@@ -173,7 +171,7 @@ const PodcastersPage = () => {
       )}
 
       {/* Hot Recently */}
-      {hotPodcasters && hotPodcasters.length > 0 && (
+      {hotPodcasters && hotPodcasters.PodcasterList.length > 0 && (
         <div className="mt-10 flex flex-col gap-2">
           <div className="w-full flex flex-col gap-8">
             <div className="w-full flex items-center justify-between">
@@ -195,7 +193,7 @@ const PodcastersPage = () => {
               className="w-full"
             >
               <CarouselContent>
-                {hotPodcasters.map((podcaster) => (
+                {hotPodcasters.PodcasterList.map((podcaster) => (
                   <CarouselItem
                     key={podcaster.AccountId}
                     className="basis-1/2 md:basis-1/4 lg:basis-1/5"
@@ -212,7 +210,7 @@ const PodcastersPage = () => {
       )}
 
       {/* Talented Rookies */}
-      {talentedRookies && talentedRookies.length > 0 && (
+      {talentedRookies && talentedRookies.PodcasterList.length > 0 && (
         <div className="mt-10 flex flex-col gap-2">
           <div className="w-full flex flex-col gap-8">
             <div className="w-full flex items-center justify-between">
@@ -233,7 +231,7 @@ const PodcastersPage = () => {
               className="w-full"
             >
               <CarouselContent>
-                {talentedRookies.map((podcaster) => (
+                {talentedRookies.PodcasterList.map((podcaster) => (
                   <CarouselItem
                     key={podcaster.AccountId}
                     className="basis-1/2 md:basis-1/4 lg:basis-1/5"

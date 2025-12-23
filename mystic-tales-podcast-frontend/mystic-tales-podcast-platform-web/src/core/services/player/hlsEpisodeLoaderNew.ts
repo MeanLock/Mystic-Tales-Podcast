@@ -134,10 +134,10 @@ export async function loadEpisodeHls(
     },
   });
 
-  return new Promise<Hls>((resolve) => {
+  return new Promise<Hls>((resolve, reject) => {
     let resolved = false;
     let retryCount = 0;
-    const MAX_RETRIES = 3;
+    const MAX_RETRIES = 1;
 
     const finishResolve = () => {
       if (!resolved) {
@@ -202,6 +202,12 @@ export async function loadEpisodeHls(
           console.error(
             `[HLS EPISODE] Max retries (${MAX_RETRIES}) reached. Stopping.`
           );
+          if (!resolved) {
+            resolved = true;
+            reject(
+              new Error(`Failed to load HLS after ${MAX_RETRIES} retries`)
+            );
+          }
         }
       }
     });

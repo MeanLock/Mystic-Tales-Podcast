@@ -13,6 +13,8 @@ const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   // Include credentials (cookies) like axios withCredentials: true — some endpoints rely on cookies.
   credentials: "include",
+  // Timeout 5 phút (300000 milliseconds)
+  timeout: 300000,
   prepareHeaders: (headers) => {
     headers.set("ngrok-skip-browser-warning", "69420");
     return headers;

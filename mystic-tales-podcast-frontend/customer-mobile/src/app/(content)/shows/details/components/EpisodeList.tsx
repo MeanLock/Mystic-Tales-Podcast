@@ -62,55 +62,6 @@ const formatDate = (dateString: string): string => {
 
 // Format audio length from seconds to human-readable format
 
-// Episode Component
-const EpisodeComponent = ({ episode }: { episode: EpisodeFromShow }) => {
-  const router = useRouter();
-
-  const { listenFromEpisode } = usePlayer();
-
-  const handlePlayEpisode = () => {
-    listenFromEpisode(episode.Id, "SpecifyShowEpisodes");
-  };
-
-  return (
-    <Pressable
-      onPress={() => router.push(`/(content)/episodes/details/${episode.Id}`)}
-      style={[style.episodeContainer, style.borderBottom]}
-    >
-      <View className="w-[70%] justify-between">
-        <Text style={style.dateText}>{formatDate(episode.ReleaseDate)}</Text>
-        <View className="w-full gap-2">
-          <Text className="text-white text-[20px] font-bold" numberOfLines={2}>
-            {episode.Name}
-          </Text>
-          <HtmlText html={episode.Description} color="#fff" numberOfLines={3} />
-        </View>
-        <View className="w-full items-start mt-5">
-          <PlayButtonVariant2
-            episodeId={episode.Id}
-            audioLength={episode.AudioLength}
-            onPlayPress={() => handlePlayEpisode()}
-          />
-        </View>
-      </View>
-      <View className="flex-1  min-w-[51px] items-end justify-between mt-1">
-        <View>
-          <AutoResolvingImage
-            FileKey={episode.MainImageFileKey}
-            type="PodcastPublicSource"
-            style={{ width: 80, height: 80 }}
-          />
-        </View>
-        <View>
-          <Pressable>
-            <MaterialIcons name="more-horiz" size={18} color={"#D9D9D9"} />
-          </Pressable>
-        </View>
-      </View>
-    </Pressable>
-  );
-};
-
 const EpisodeList = ({ episodes }: EpisodeListProps) => {
   // Get the 4 most recent episodes sorted by ReleaseDate
   const latestEpisodes = useMemo(() => {
@@ -128,6 +79,8 @@ const EpisodeList = ({ episodes }: EpisodeListProps) => {
     );
   }, [episodes]);
 
+  const { listenFromEpisode, state: uiState, play, pause } = usePlayer();
+
   const dispatch = useDispatch();
   const router = useRouter();
   const handleViewMoreEpisodesFromShow = () => {
@@ -141,6 +94,23 @@ const EpisodeList = ({ episodes }: EpisodeListProps) => {
     );
     // Navigate to the episodes list page
     router.push(`/(content)/episodes`);
+  };
+
+  const handlePlayPause = (episodeId: string) => {
+    if (uiState.isAudioLoading) {
+      return;
+    }
+    if (uiState.currentAudio) {
+      if (uiState.isPlaying && uiState.currentAudio.id === episodeId) {
+        pause();
+      } else if (uiState.currentAudio.id === episodeId) {
+        play();
+      } else {
+        listenFromEpisode(episodeId, "SpecifyShowEpisodes");
+      }
+    } else {
+      listenFromEpisode(episodeId, "SpecifyShowEpisodes");
+    }
   };
 
   return (
@@ -158,7 +128,53 @@ const EpisodeList = ({ episodes }: EpisodeListProps) => {
 
       {/* Map through the 4 latest episodes */}
       {latestEpisodes.map((episode) => (
-        <EpisodeComponent key={episode.Id} episode={episode} />
+        <Pressable
+          key={episode.Id}
+          onPress={() =>
+            router.push(`/(content)/episodes/details/${episode.Id}`)
+          }
+          style={[style.episodeContainer, style.borderBottom]}
+        >
+          <View className="w-[70%] justify-between">
+            <Text style={style.dateText}>
+              {formatDate(episode.ReleaseDate)}
+            </Text>
+            <View className="w-full gap-2">
+              <Text
+                className="text-white text-[20px] font-bold"
+                numberOfLines={2}
+              >
+                {episode.Name}
+              </Text>
+              <HtmlText
+                html={episode.Description}
+                color="#fff"
+                numberOfLines={3}
+              />
+            </View>
+            <View className="w-full items-start mt-5">
+              <PlayButtonVariant2
+                audioId={episode.Id}
+                audioLength={episode.AudioLength}
+                onPlayPress={() => handlePlayPause(episode.Id)}
+              />
+            </View>
+          </View>
+          <View className="flex-1  min-w-[51px] items-end justify-between mt-1">
+            <View>
+              <AutoResolvingImage
+                FileKey={episode.MainImageFileKey}
+                type="PodcastPublicSource"
+                style={{ width: 80, height: 80 }}
+              />
+            </View>
+            <View>
+              <Pressable>
+                <MaterialIcons name="more-horiz" size={18} color={"#D9D9D9"} />
+              </Pressable>
+            </View>
+          </View>
+        </Pressable>
       ))}
 
       {/* Show "See all" button if there are more than 4 episodes */}

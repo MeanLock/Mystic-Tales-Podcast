@@ -13,41 +13,17 @@ import {
   MaterialIcons,
 } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { Image, Pressable } from "react-native";
+import { Pressable } from "react-native";
 import { StyleSheet } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
 import { useDispatch, useSelector } from "react-redux";
-import DraggableFlatList, {
-  RenderItemParams,
-  ScaleDecorator,
-} from "react-native-draggable-flatlist";
 import Slider from "@react-native-community/slider";
 import {
-  CurrentAudio,
   ListenSessionBookingTracks,
   ListenSessionEpisodes,
 } from "@/src/core/types/audio.type";
 import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
-import {
-  pauseAudio,
-  playAudio,
-  seekBy,
-  seekTo,
-  setUIIsAutoPlay,
-  setUIPlayOrderMode,
-} from "@/src/features/mediaPlayer/playerSlice";
-import { usePlayerNavigate } from "@/src/core/services/player/usePlayerNavigate";
-import {
-  useUpdateBookingTrackLastDurationMutation,
-  useUpdateEpisodeLastDurationMutation,
-  useUpdatePlayModeMutation,
-} from "@/src/core/services/player/playerService";
+import { useUpdatePlayModeMutation } from "@/src/core/services/player/playerService";
 import { usePlayer } from "@/src/core/services/player/usePlayer";
-import {
-  SubscriptionBenefit,
-  useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery,
-} from "@/src/core/services/subscription/subscription.service";
-import { setDataAndShowAlert } from "@/src/features/alert/alertSlice";
 import { playerEngine } from "@/src/core/services/player/playerEngine";
 
 export type CurrentTrack = {
@@ -105,9 +81,12 @@ const MediaPlayerContent = () => {
 
   const duration = uiState.duration ?? 0;
 
-  const position = uiState.currentTime;
+  // Fix: Only clamp to duration if duration > 0, otherwise just ensure >= 0
+  const clampedPos =
+    duration > 0
+      ? Math.min(Math.max(uiState.currentTime, 0), duration)
+      : Math.max(uiState.currentTime, 0);
 
-  const clampedPos = Math.min(Math.max(position, 0), duration);
   const remaining = Math.max(duration - clampedPos, 0);
 
   // STATES
@@ -132,8 +111,6 @@ const MediaPlayerContent = () => {
   const handlePlayPress = () => {
     play();
   };
-
-  const dispatch = useDispatch();
 
   const [updatePlayMode] = useUpdatePlayModeMutation();
 
@@ -213,7 +190,6 @@ const MediaPlayerContent = () => {
               style={styles.image}
             />
           </View>
-
           <MainAudioCard audio={uiState.currentAudio} />
         </View>
       </View>
@@ -225,7 +201,7 @@ const MediaPlayerContent = () => {
             style={{ width: "100%", height: 28 }}
             value={clampedPos}
             minimumValue={0}
-            maximumValue={Math.max(duration, 0.000001)}
+            maximumValue={duration > 0 ? duration : Math.max(clampedPos + 1, 1)}
             step={1}
             minimumTrackTintColor="#fff"
             maximumTrackTintColor="rgba(217,217,217,0.3)"

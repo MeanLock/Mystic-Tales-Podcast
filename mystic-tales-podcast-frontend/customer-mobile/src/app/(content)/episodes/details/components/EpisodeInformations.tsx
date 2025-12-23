@@ -13,8 +13,14 @@ import { formatAudioLength, formatDateRange } from "@/src/lib/format";
 import { Feather, MaterialIcons, Octicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-import { Platform, Pressable, StyleSheet } from "react-native";
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
 import { useDispatch } from "react-redux";
+import { useRef, useCallback } from "react";
 
 const EpisodeInformations = ({
   episode,
@@ -35,21 +41,38 @@ const EpisodeInformations = ({
     pause,
     checkIsCurrentPlay,
   } = usePlayer();
+  const debounceTimerRef = useRef<number | null>(null);
 
   // FUNCTIONS
-  const handlePlayPause = (episodeId: string) => {
-    if (uiState.currentAudio) {
-      if (uiState.isPlaying && uiState.currentAudio.id === episodeId) {
-        pause();
-      } else if (uiState.currentAudio.id === episodeId) {
-        play();
-      } else {
-        listenFromEpisode(episodeId, "SpecifyShowEpisodes");
+  const handlePlayPause = useCallback(
+    (episodeId: string) => {
+      if (uiState.isAudioLoading) {
+        return;
       }
-    } else {
-      listenFromEpisode(episodeId, "SpecifyShowEpisodes");
-    }
-  };
+
+      // Clear previous timer if exists
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      // Set new timer for debounce
+      debounceTimerRef.current = setTimeout(() => {
+        if (uiState.currentAudio) {
+          if (uiState.isPlaying && uiState.currentAudio.id === episodeId) {
+            pause();
+          } else if (uiState.currentAudio.id === episodeId) {
+            play();
+          } else {
+            listenFromEpisode(episodeId, "SpecifyShowEpisodes");
+          }
+        } else {
+          listenFromEpisode(episodeId, "SpecifyShowEpisodes");
+        }
+        debounceTimerRef.current = null;
+      }, 1000);
+    },
+    [uiState, play, pause, listenFromEpisode]
+  );
 
   return (
     <View style={styles.containerWrapper}>
@@ -122,7 +145,24 @@ const EpisodeInformations = ({
         </View>
 
         <View className="w-full flex items-center justify-center">
-          {checkIsCurrentPlay(episode.Id) ? (
+          {uiState.isAudioLoading && uiState.loadingAudioId === episode.Id ? (
+            // Đang load audio này
+            <Pressable
+              disabled
+              className="w-2/3 p-3 bg-white/40 flex flex-row items-center justify-center gap-3 shadow-sm rounded-full"
+            >
+              <ActivityIndicator size="small" color="#AEE339" />
+              <Text className="text-white font-bold">Loading...</Text>
+            </Pressable>
+          ) : uiState.isAudioLoading ? (
+            // Đang load audio khác
+            <Pressable
+              disabled
+              className="w-2/3 p-3 bg-white/20 flex items-center justify-center shadow-sm rounded-full opacity-50"
+            >
+              <Text className="text-gray-300 font-bold">Play Audio</Text>
+            </Pressable>
+          ) : checkIsCurrentPlay(episode.Id) ? (
             <Pressable
               onPress={() => handlePlayPause(episode.Id)}
               className="w-2/3 px-2 py-4 bg-white/40 flex flex-row items-center justify-center gap-5 shadow-sm rounded-full"

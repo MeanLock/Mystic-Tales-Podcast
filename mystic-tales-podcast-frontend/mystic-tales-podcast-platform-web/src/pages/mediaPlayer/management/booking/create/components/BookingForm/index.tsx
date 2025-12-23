@@ -36,6 +36,7 @@ interface BookingFormProps {
   onUploadNewFile: (file: File | null) => void;
   // (removed unused onUpdateFile prop)
   onSubmit: () => void;
+  isCreating: boolean;
 }
 
 // Script Editor Component
@@ -482,6 +483,7 @@ const BookingForm = ({
   BookingRequirementFiles,
   onUploadNewFile,
   onSubmit,
+  isCreating,
 }: BookingFormProps) => {
   const [title, setTitle] = useState(Title);
   const [deadline, setDeadline] = useState<number>(
@@ -714,8 +716,12 @@ const BookingForm = ({
                 // >
                 //   SUBMIT
                 // </button>
-                <LiquidButton onClick={onSubmit} variant="submit">
-                  <p>SUBMIT</p>
+                <LiquidButton
+                  disabled={isCreating}
+                  onClick={onSubmit}
+                  variant="submit"
+                >
+                  {isCreating ? <p>SUBMITING...</p> : <p>SUBMIT</p>}
                 </LiquidButton>
               )}
             </div>

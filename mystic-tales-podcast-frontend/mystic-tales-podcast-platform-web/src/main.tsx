@@ -5,7 +5,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 // Redux
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
-
+import { ToastContainer } from "react-toastify";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import NormalLayout from "./layouts/normal/index.tsx";
 import HomePage from "./pages/normal/home/index.tsx";
@@ -55,7 +55,7 @@ createRoot(document.getElementById("root")!).render(
         <PersistGate loading={null} persistor={persistor}>
           {/* <ErrorModal /> */}
           <AlertModal />
-          <BrowserRouter>
+          <BrowserRouter basename="/">
             <Routes>
               {/* 1️⃣ NORMAL LAYOUT */}
               <Route element={<NormalLayout />}>
@@ -100,10 +100,7 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="shows/:id" element={<ShowDetailsPage />} />
 
                 <Route path="episodes" element={<EpisodeListPage />} />
-                <Route
-                  path="episodes/details/:id"
-                  element={<EpisodeDetailsPage />}
-                />
+                <Route path="episodes/:id" element={<EpisodeDetailsPage />} />
                 {/* Protected Route */}
                 <Route element={<ProtectedRoute />}>
                   <Route
@@ -172,6 +169,7 @@ createRoot(document.getElementById("root")!).render(
               </Route>
             </Routes>
           </BrowserRouter>
+          <ToastContainer />
         </PersistGate>
       </Provider>
     </GoogleOAuthProvider>

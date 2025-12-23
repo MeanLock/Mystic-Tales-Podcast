@@ -1,18 +1,7 @@
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 import Loading from "@/components/loading";
 import { useGetCategoriesQuery } from "@/core/services/category/category.serivce";
-import type { PodcastCategoryWithImageUI } from "@/core/types/podcastCategory";
-import type { FileResolveConfig } from "@/core/utils/fileResolver.util";
-import { resolveFiles } from "@/core/utils/fileResolver.util";
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const fileConfig: FileResolveConfig[] = [
-  {
-    type: "CategoryPublic",
-    path: "[].MainImageFileKey",
-    output: "[].ImageUrl",
-  },
-];
 
 const themes = [
   {
@@ -34,12 +23,6 @@ const themes = [
 ];
 
 const CategoryPage = () => {
-  // STATES
-  const [categories, setCategories] = useState<PodcastCategoryWithImageUI[]>(
-    []
-  );
-  const [isResolvingFiles, setIsResolvingFiles] = useState(false);
-
   // HOOKS
   const navigate = useNavigate();
 
@@ -50,32 +33,7 @@ const CategoryPage = () => {
       refetchOnMountOrArgChange: true,
     });
 
-  useEffect(() => {
-    const resolveFile = async () => {
-      if (isCategoriesLoading || !categoriesData) {
-        return;
-      }
-
-      setIsResolvingFiles(true);
-      try {
-        const { resolvedData } = await resolveFiles(
-          categoriesData.PodcastCategoryList,
-          fileConfig
-        );
-        console.log("Resolved Categories Data:", resolvedData);
-        setCategories(resolvedData as unknown as PodcastCategoryWithImageUI[]);
-      } catch (error) {
-        console.error("Error resolving category files:", error);
-        // Fallback to original data if resolve fails
-        setCategories(categoriesData.PodcastCategoryList as any);
-      } finally {
-        setIsResolvingFiles(false);
-      }
-    };
-    resolveFile();
-  }, [categoriesData, isCategoriesLoading]);
-
-  if (isCategoriesLoading || isResolvingFiles) {
+  if (isCategoriesLoading) {
     return (
       <div className="w-full h-full flex flex-col gap-5 items-center justify-center">
         <Loading />
@@ -85,7 +43,7 @@ const CategoryPage = () => {
       </div>
     );
   }
-
+  
   return (
     <div
       className="
@@ -93,7 +51,7 @@ const CategoryPage = () => {
     "
     >
       <div className="w-full flex flex-col items-start justify-center mb-10 gap-2">
-        <p className="text-9xl pb-4 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#abbaab] to-[#ffffff]">
+        <p className="text-9xl pb-4 font-poppins font-bold text-transparent bg-clip-text bg-linear-to-r from-[#abbaab] to-[#ffffff]">
           Categories
         </p>
         <p className="font-poppins text-white font-bold">
@@ -111,18 +69,18 @@ const CategoryPage = () => {
 
       {/* Categories Grid */}
       <div className="w-full grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-20">
-        {categories.map((category, index) => {
+        {categoriesData?.PodcastCategoryList.map((category, index) => {
           const theme = themes[index % themes.length];
           return (
             <div
               key={category.Id}
-              className="group relative h-[300px] transition-all duration-300 cursor-pointer ease-out hover:-translate-y-1"
+              className="group relative h-75 transition-all duration-300 cursor-pointer ease-out hover:-translate-y-1"
             >
-              <div className="absolute h-[300px] z-10 left-0 bottom-0">
-                <img
-                  src={category.ImageUrl}
-                  alt={category.Name}
-                  className="w-full h-[300px] object-cover rounded-bl-[28px]"
+              <div className="absolute h-75 z-10 left-0 bottom-0">
+                <AutoResolveImage
+                  FileKey={category.MainImageFileKey}
+                  type="PodcastPublicSource"
+                  imgClassName="w-full h-75 object-cover rounded-bl-[28px]"
                 />
               </div>
               <div
@@ -141,7 +99,7 @@ const CategoryPage = () => {
                     onClick={() =>
                       navigate(`/media-player/categories/${category.Id}`)
                     }
-                    className={`px-[50px] mt-8 bg-white rounded-full py-[2px] font-bold font-poppins ${theme.text} hover:bg-white/70`}
+                    className={`px-12.5 mt-8 bg-white rounded-full py-0.5 font-bold font-poppins ${theme.text} hover:bg-white/70`}
                   >
                     <p>See More</p>
                   </div>

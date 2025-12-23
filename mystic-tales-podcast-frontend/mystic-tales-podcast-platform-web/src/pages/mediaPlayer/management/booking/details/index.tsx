@@ -1,18 +1,10 @@
-// @ts-nocheck
-
 import Loading from "@/components/loading";
-
-import type {
-  BookingDetailsFromAPI,
-  BookingDetailsUI,
-} from "@/core/types/booking";
 import { skipToken } from "@reduxjs/toolkit/query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { IoIosArrowBack } from "react-icons/io";
 import { useNavigate, useParams } from "react-router-dom";
 import BookingStatusTrackingBar from "./components/BookingStatusTrackingBar";
 import { TimeUtil } from "@/core/utils/time";
-import { TbCoinFilled } from "react-icons/tb";
 import RequirementCard from "./components/RequirementCard";
 import RequirementCardWithWordCount from "./components/RequirementCardWithWordCounts";
 import {
@@ -35,10 +27,6 @@ import {
 } from "@/components/ui/dialog";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
-import {
-  resolveFiles,
-  type FileResolveConfig,
-} from "@/core/utils/fileResolver.util";
 import { IoPause, IoPlay } from "react-icons/io5";
 import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
 import {
@@ -50,9 +38,9 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { setError } from "@/redux/slices/errorSlice/errorSlice";
-import { Track } from "@radix-ui/react-slider";
-import { playAudio } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
 import { usePlayer } from "@/core/services/player/usePlayer";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import MTPCoinOutline from "@/components/coinIcons/CoinIconOutline";
 
 export function renderDescriptionHTML(description: string | null) {
   if (!description) return "";
@@ -93,18 +81,9 @@ export function renderDescriptionHTML(description: string | null) {
   return html.trim();
 }
 
-const fileConfig: FileResolveConfig[] = [
-  {
-    path: "PodcastBuddy.MainImageFileKey",
-    type: "AccountPublic",
-    output: "PodcastBuddy.ImageUrl",
-  },
-];
-
 const BookingDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const user = useSelector((state: RootState) => state.auth.user);
-  const player = useSelector((state: RootState) => state.player);
 
   const { play, pause, playBookingTrack, state: playerUiState } = usePlayer();
   const { data: bookingManualCancelReasons } =
@@ -112,15 +91,11 @@ const BookingDetailsPage = () => {
 
   // STATES
   const [viewMode, setViewMode] = useState<string>("informations");
-  const [resolvedBooking, setResolvedBooking] = useState<any>(null);
-  const [isResolvingFiles, setIsResolvingFiles] = useState(false);
   const [isTopUpDialogOpen, setIsTopUpDialogOpen] = useState(false);
   const [neededTopUpAmount, setNeededTopUpAmount] = useState<number>(0);
   const [selectedProducingRequestId, setSelectedProducingRequestId] = useState<
     string | null
   >(null);
-  const [isProducingRequestDialogOpen, setIsProducingRequestDialogOpen] =
-    useState(false);
   const [isEditRequestDialogOpen, setIsEditRequestDialogOpen] = useState(false);
   const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>([]);
   const [editNote, setEditNote] = useState("");
@@ -179,45 +154,6 @@ const BookingDetailsPage = () => {
     }
   );
 
-  // EFFECT: Resolve files khi có booking data
-  useEffect(() => {
-    const resolveBookingFiles = async () => {
-      if (!booking) return;
-
-      setIsResolvingFiles(true);
-      try {
-        // 1. Resolve main booking files (PodcastBuddy avatar)
-        const { resolvedData: bookingWithAvatarRaw } = await resolveFiles(
-          booking.Booking,
-          fileConfig
-        );
-
-        // Cast về single object (không phải array) vì booking.Booking là object đơn
-        const bookingWithAvatar = bookingWithAvatarRaw as BookingDetailsFromAPI;
-
-        // 3. Gắn requirements đã resolved vào booking
-        const finalBooking = {
-          ...booking,
-          Booking: {
-            ...bookingWithAvatar,
-          },
-        };
-
-        // console.log("Final Booking: ", finalBooking);
-
-        setResolvedBooking(finalBooking);
-      } catch (err) {
-        console.error("Error resolving files:", err);
-        // Fallback: dùng booking gốc nếu resolve fail
-        setResolvedBooking(booking);
-      } finally {
-        setIsResolvingFiles(false);
-      }
-    };
-
-    resolveBookingFiles();
-  }, [booking]);
-
   const handleConfirmDeal = async () => {
     if (!booking || !user) return;
 
@@ -272,15 +208,12 @@ const BookingDetailsPage = () => {
     }
   };
 
-  const handleCloseProducingRequestDialog = () => {
-    setIsProducingRequestDialogOpen(false);
-    setSelectedProducingRequestId(null);
-  };
+  // const handleCloseProducingRequestDialog = () => {
+  //   setSelectedProducingRequestId(null);
+  // };
 
   const handleOpenCreateEditRequestForm = () => {
-    setIsProducingRequestDialogOpen(false);
     setIsEditRequestDialogOpen(true);
-    // Reset form states
     setSelectedTrackIds([]);
     setEditNote("");
     setDeadlineDayCount(1);
@@ -465,7 +398,7 @@ const BookingDetailsPage = () => {
   };
 
   // LOADING STATE
-  if (isLoading || isResolvingFiles) {
+  if (isLoading) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center gap-5">
         <Loading />
@@ -479,7 +412,7 @@ const BookingDetailsPage = () => {
   }
 
   // NO DATA STATE
-  if (!resolvedBooking) {
+  if (!booking) {
     return (
       <div className="w-full h-full flex items-center justify-center">
         <p className="text-white font-poppins">
@@ -590,8 +523,8 @@ const BookingDetailsPage = () => {
                 <p className="font-poppins text-white font-semibold text-lg">
                   Title
                 </p>
-                <div className="py-3 text-white border-b-[1px] border-white">
-                  <p>{resolvedBooking.Booking.Title}</p>
+                <div className="py-3 text-white border-b border-white">
+                  <p>{booking.Booking.Title}</p>
                 </div>
               </div>
               {/* Deadline & Price & Podcaster */}
@@ -601,11 +534,11 @@ const BookingDetailsPage = () => {
                   <p className="font-poppins font-semibold text-white text-lg">
                     Deadline
                   </p>
-                  <div className="w-1/2 py-2 text-white border-b-[1px] border-white">
-                    {resolvedBooking.Booking.Deadline ? (
+                  <div className="w-1/2 py-2 text-white border-b border-white">
+                    {booking.Booking.Deadline ? (
                       <p>
                         {TimeUtil.formatDate(
-                          resolvedBooking.Booking.Deadline,
+                          booking.Booking.Deadline,
                           "DD/MM/YYYY"
                         )}
                       </p>
@@ -619,11 +552,11 @@ const BookingDetailsPage = () => {
                   <p className="font-poppins text-white font-semibold text-lg">
                     Price
                   </p>
-                  <div className="w-1/2 flex items-center gap-1 py-2 text-white border-b-[1px]  border-white">
-                    {resolvedBooking.Booking.Price ? (
+                  <div className="w-1/2 flex items-center gap-1 py-2 text-white border-b  border-white">
+                    {booking.Booking.Price ? (
                       <>
                         <p>{booking.Booking.Price.toLocaleString()}</p>
-                        <TbCoinFilled />
+                        <MTPCoinOutline size={16} color="#fff" />
                       </>
                     ) : (
                       <p>Not Yet</p>
@@ -635,17 +568,14 @@ const BookingDetailsPage = () => {
                   <p className="font-poppins text-white font-semibold text-lg">
                     Buddy
                   </p>
-                  <div className="w-1/2 flex items-center gap-1 py-2 text-white border-b-[1px]  border-white">
-                    <img
-                      src={
-                        resolvedBooking.Booking.PodcastBuddy.ImageUrl
-                          ? resolvedBooking.Booking.PodcastBuddy.ImageUrl
-                          : "/images/unknown/user.jpg"
-                      }
+                  <div className="w-1/2 flex items-center gap-1 py-2 text-white border-b  border-white">
+                    <AutoResolveImage
+                      FileKey={booking.Booking.PodcastBuddy.MainImageFileKey}
+                      type="AccountPublicSource"
                       className="w-8 h-8 rounded-full aspect-square object-cover"
                     />
                     <p className="font-semibold line-clamp-1">
-                      {resolvedBooking.Booking.PodcastBuddy.FullName}
+                      {booking.Booking.PodcastBuddy.FullName}
                     </p>
                   </div>
                 </div>
@@ -656,7 +586,7 @@ const BookingDetailsPage = () => {
                 <p className="font-poppins text-white font-semibold text-lg">
                   Description
                 </p>
-                <div className="py-3 text-white border-b-[1px]  border-white">
+                <div className="py-3 text-white border-b border-white">
                   <div
                     dangerouslySetInnerHTML={{
                       __html: renderDescriptionHTML(
@@ -669,7 +599,7 @@ const BookingDetailsPage = () => {
 
               {/* Requirements List */}
               {/* Sort theo Order requirement.Order */}
-              {[...resolvedBooking.Booking.BookingRequirementFileList]
+              {[...booking.Booking.BookingRequirementFileList]
                 .sort((a, b) => a.Order - b.Order)
                 .map((requirement: any, index: number) =>
                   requirement.WordCount === null ||
@@ -734,11 +664,11 @@ const BookingDetailsPage = () => {
                           {booking.Booking.Price.toLocaleString()}
                         </span>
                       </p>
-                      <TbCoinFilled className="w-5 h-5 text-mystic-green" />
+                      <MTPCoinOutline size={20} color="#aee339" />
                     </div>
                   </div>
                 </div>
-                {[...resolvedBooking.Booking.BookingRequirementFileList]
+                {[...booking.Booking.BookingRequirementFileList]
                   .sort((a, b) => a.Order - b.Order)
                   .map((requirement: any, index: number) => (
                     <RequirementCardWithWordCount
@@ -1191,13 +1121,13 @@ const BookingDetailsPage = () => {
                               <div className="w-full  flex items-center justify-end gap-3">
                                 <button
                                   onClick={handleOpenCreateEditRequestForm}
-                                  className="px-6 py-2 bg-blue-400/10 hover:bg-blue-400/20 text-blue-400 border-blue-400 border-[1px] rounded-lg transition-all duration-300"
+                                  className="px-6 py-2 bg-blue-400/10 hover:bg-blue-400/20 text-blue-400 border-blue-400 border rounded-lg transition-all duration-300"
                                 >
                                   Send New Edit Request
                                 </button>
                                 <button
                                   onClick={() => handleAcceptBooking()}
-                                  className="px-6 py-2 bg-green-400/10 hover:bg-green-400/20 text-green-400 border-green-400 border-[1px] rounded-lg transition-all duration-300"
+                                  className="px-6 py-2 bg-green-400/10 hover:bg-green-400/20 text-green-400 border-green-400 border rounded-lg transition-all duration-300"
                                 >
                                   Accept and Pay The Rest
                                 </button>
@@ -1218,7 +1148,7 @@ const BookingDetailsPage = () => {
           open={isEditRequestDialogOpen}
           onOpenChange={setIsEditRequestDialogOpen}
         >
-          <DialogContent className="z-[9999] max-w-3xl max-h-[80vh] overflow-y-auto bg-black/50 backdrop-blur-sm text-white border border-white/10">
+          <DialogContent className="z-9999 max-w-3xl max-h-[80vh] overflow-y-auto bg-black/50 backdrop-blur-sm text-white border border-white/10">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-mystic-green">
                 Send New Edit Request
@@ -1350,7 +1280,7 @@ const BookingDetailsPage = () => {
 
         {/* ----- ALERT BÁO KHÔNG ĐỦ TIỀN ----- */}
         <Dialog open={isTopUpDialogOpen} onOpenChange={setIsTopUpDialogOpen}>
-          <DialogContent className="bg-black/50 backdrop-blur-sm text-white border border-white/10">
+          <DialogContent className="z-9999 bg-black/50 backdrop-blur-sm text-white border border-white/10">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold">
                 Account Balance Not Enough!
@@ -1411,7 +1341,7 @@ const BookingDetailsPage = () => {
           open={isCancelBookingConfirmationDialogOpen}
           onOpenChange={setIsCancelBookingConfirmationDialogOpen}
         >
-          <DialogContent className="z-[9999] bg-black/50 backdrop-blur-sm text-white border border-white/10">
+          <DialogContent className="z-9999 bg-black/50 backdrop-blur-sm text-white border border-white/10">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold">
                 Are You Sure You Want to Cancel This Booking?
@@ -1421,7 +1351,7 @@ const BookingDetailsPage = () => {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="flex flex-col py-2 gap-5 border-t-[1px] border-mystic-green">
+            <div className="flex flex-col py-2 gap-5 border-t border-mystic-green">
               <p className="text-[#D9D9D9] text-lg font-bold">
                 Please Choose Cancel Reason To Submit
               </p>
@@ -1434,7 +1364,7 @@ const BookingDetailsPage = () => {
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
 
-                <SelectContent className="z-[9999]">
+                <SelectContent className="z-9999">
                   {bookingManualCancelReasons?.OptionalManualCancelReasonList.map(
                     (reason) => (
                       <SelectItem key={reason} value={reason}>

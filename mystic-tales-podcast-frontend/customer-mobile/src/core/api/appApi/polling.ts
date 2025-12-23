@@ -114,7 +114,10 @@ export async function pollSagaResult<T = unknown>(opts: {
         resultData: env.ResultData,
         parsed,
       });
-      return parsed as T;
+
+      // CRITICAL: Nếu parse failed (undefined), vẫn coi là success với empty object
+      // Điều này tránh lỗi "neither error nor result" khi backend trả về empty ResultData
+      return (parsed ?? {}) as T;
     }
     if (env.FlowStatus === "FAILED") {
       console.log("[POLL FAILED]", {

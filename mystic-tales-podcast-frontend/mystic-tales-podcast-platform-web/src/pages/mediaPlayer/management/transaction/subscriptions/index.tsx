@@ -1,4 +1,3 @@
-// @ts-nocheck
 import Loading from "@/components/loading";
 import {
   useCancelSubscriptionRegistrationMutation,
@@ -6,14 +5,8 @@ import {
   useGetRegistrationDetailsQuery,
   useMakeDecisionOnAcceptingNewestVersionMutation,
 } from "@/core/services/subscription/subscription.service";
-import type {
-  PodcastSubscriptionRegistration,
-  PodcastSubscriptionRegistrationUI,
-} from "@/core/types/subscription";
-import { resolveFiles } from "@/core/utils/fileResolver.util";
 import { useEffect, useState } from "react";
 import NormalRegistrationCard from "./components/NormalRegistrationCard";
-import NewVersionRegistrationCard from "./components/NewVersionRegistrationCard";
 import SubscriptionComparisonModal from "./components/SubscriptionComparisonModal";
 
 import {
@@ -32,7 +25,7 @@ import { useGetActiveChannelSubscriptionQuery } from "@/core/services/channel/ch
 import { useGetActiveShowSubscriptionQuery } from "@/core/services/show/show.service";
 import AcceptRegistrationCard from "./components/AcceptRegistrationCard";
 
-export type RegistrationUI = {
+export type Registration = {
   // Id của registration
   Id: string;
   // Id của PodcastSubscription
@@ -47,7 +40,7 @@ export type RegistrationUI = {
     Type: "Show" | "Channel"; // Loại nguồn thông tin
     Id: string;
     Name: string;
-    ImageUrl: string;
+    MainImageFileKey: string;
   };
   IsAcceptNewestVersionSwitch: boolean | null; // Có chấp nhận tự động nâng cấp phiên bản mới không, null là chưa có sự thay đổi, false là đang đợi xác nhận update, true là đã chấp nhận
   LastPaidAt: string; // Ngày thanh toán cuối cùng
@@ -58,17 +51,17 @@ export type RegistrationUI = {
 const ManagementSubscriptionsPage = () => {
   // STATES
   const [customerRegistrations, setCustomerRegistrations] = useState<
-    RegistrationUI[]
+    Registration[]
   >([]);
 
   // IsAcceptNewestVersionSwitch === false
   const [newVersionRegistrations, setNewVersionRegistrations] = useState<
-    RegistrationUI[]
+    Registration[]
   >([]);
   const [viewMode, setViewMode] = useState<"all" | "new-version-only">("all");
   const [isResolving, setIsResolving] = useState(false);
   const [selectedRegistration, setSelectedRegistration] =
-    useState<RegistrationUI | null>(null);
+    useState<Registration | null>(null);
   const [isConfirmingCancelAlertOpen, setIsConfirmingCancelAlertOpen] =
     useState(false);
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
@@ -80,7 +73,11 @@ const ManagementSubscriptionsPage = () => {
     data: customerRegistrationsData,
     isLoading: isLoadingCustomerRegistrations,
     refetch: refetchCustomerRegistrations,
-  } = useGetCustomerRegistrationsQuery();
+  } = useGetCustomerRegistrationsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
 
   const [cancelSubscription, { isLoading: isCancellingSubscription }] =
     useCancelSubscriptionRegistrationMutation();
@@ -126,67 +123,59 @@ const ManagementSubscriptionsPage = () => {
       setIsResolving(true);
 
       // Resolve files for both Channel and Show images
-      const { resolvedData } = await resolveFiles(customerRegistrationsData, [
-        {
-          path: "PodcastSubscriptionRegistrationList[].PodcastChannel.MainFileKey",
-          type: "PodcastPublic",
-          output:
-            "PodcastSubscriptionRegistrationList[].PodcastChannel.ImageUrl",
-        },
-        {
-          path: "PodcastSubscriptionRegistrationList[].PodcastShow.MainFileKey",
-          type: "PodcastPublic",
-          output: "PodcastSubscriptionRegistrationList[].PodcastShow.ImageUrl",
-        },
-      ]);
-
-      const data = resolvedData as unknown as {
-        PodcastSubscriptionRegistrationList: PodcastSubscriptionRegistrationUI[];
-      };
 
       // Transform to RegistrationUI format
-      const transformedRegistrations: RegistrationUI[] =
-        data.PodcastSubscriptionRegistrationList.map((reg) => {
-          // Calculate next paid date based on cycle type
-          const lastPaidDate = new Date(reg.LastPaidAt);
-          const cycleDays = reg.SubscriptionCycleType.Id === 1 ? 30 : 365; // Monthly or Annually
-          const nextPaidDate = new Date(lastPaidDate);
-          nextPaidDate.setDate(nextPaidDate.getDate() + cycleDays);
+      const transformedRegistrations: Registration[] =
+        customerRegistrationsData.PodcastSubscriptionRegistrationList.map(
+          (reg) => {
+            // Calculate next paid date based on cycle type
+            const lastPaidDate = new Date(reg.LastPaidAt);
+            const cycleDays = reg.SubscriptionCycleType.Id === 1 ? 30 : 365; // Monthly or Annually
+            const nextPaidDate = new Date(lastPaidDate);
+            nextPaidDate.setDate(nextPaidDate.getDate() + cycleDays);
 
-          // Calculate days left
-          const today = new Date();
-          const daysLeft = Math.ceil(
-            (nextPaidDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-          );
+            // Calculate days left
+            const today = new Date();
+            const daysLeft = Math.ceil(
+              (nextPaidDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+            );
 
-          // Determine source information
-          const sourceInfo = reg.PodcastChannel
-            ? {
-                Type: "Channel" as const,
-                Id: reg.PodcastChannel.Id,
-                Name: reg.PodcastChannel.Name,
-                ImageUrl: reg.PodcastChannel.ImageUrl,
-              }
-            : {
-                Type: "Show" as const,
-                Id: reg.PodcastShow!.Id,
-                Name: reg.PodcastShow!.Name,
-                ImageUrl: reg.PodcastShow!.ImageUrl,
-              };
+            // Determine source information
+            const sourceInfo = reg.PodcastChannel
+              ? {
+                  Type: "Channel" as const,
+                  Id: reg.PodcastChannel.Id,
+                  Name: reg.PodcastChannel.Name,
+                  MainImageFileKey: reg.PodcastChannel.MainImageFileKey,
+                }
+              : reg.PodcastShow
+              ? {
+                  Type: "Show" as const,
+                  Id: reg.PodcastShow!.Id,
+                  Name: reg.PodcastShow!.Name,
+                  MainImageFileKey: reg.PodcastShow.MainImageFileKey,
+                }
+              : {
+                  Type: "Show" as const,
+                  Id: "",
+                  Name: "Unknown Show",
+                  MainImageFileKey: "",
+                };
 
-          return {
-            Id: reg.Id,
-            PodcastSubscriptionId: reg.PodcastSubscriptionId,
-            SubscriptionCycleType: reg.SubscriptionCycleType,
-            Price: reg.Price,
-            SourceInformation: sourceInfo,
-            IsAcceptNewestVersionSwitch: reg.IsAcceptNewestVersionSwitch,
-            LastPaidAt: reg.LastPaidAt,
-            NextPaidAt: nextPaidDate.toISOString(),
-            DayLeft: daysLeft,
-          };
-        });
-
+            return {
+              Id: reg.Id,
+              PodcastSubscriptionId: reg.PodcastSubscriptionId,
+              SubscriptionCycleType: reg.SubscriptionCycleType,
+              Price: reg.Price,
+              SourceInformation: sourceInfo,
+              IsAcceptNewestVersionSwitch: reg.IsAcceptNewestVersionSwitch,
+              LastPaidAt: reg.LastPaidAt,
+              NextPaidAt: nextPaidDate.toISOString(),
+              DayLeft: daysLeft,
+            };
+          }
+        );
+      console.log("Transformed Registrations: ", transformedRegistrations);
       setCustomerRegistrations(transformedRegistrations);
 
       // Filter registrations with IsAcceptNewestVersionSwitch === false
@@ -315,13 +304,13 @@ const ManagementSubscriptionsPage = () => {
         <div
           onClick={() => setViewMode("all")}
           className={`
-          w-[154px] py-2 cursor-pointer shadow-md rounded-md font-poppins font-semibold
+          w-38.5 py-2 cursor-pointer shadow-md rounded-md font-poppins font-semibold
           flex items-center justify-center
           transition-all duration-500 ease-out
           ${
             viewMode === "all"
               ? "bg-mystic-green text-black"
-              : "text-white border-white border-[1px] hover:bg-mystic-green"
+              : "text-white border-white border hover:bg-mystic-green"
           }
           `}
         >
@@ -330,13 +319,13 @@ const ManagementSubscriptionsPage = () => {
         <div
           onClick={() => setViewMode("new-version-only")}
           className={`
-          w-[154px] py-2 cursor-pointer shadow-md rounded-md font-poppins font-semibold
+          w-38.5 py-2 cursor-pointer shadow-md rounded-md font-poppins font-semibold
           flex items-center justify-center
           transition-all duration-500 ease-out
           ${
             viewMode === "new-version-only"
               ? "bg-mystic-green text-black"
-              : "text-white border-white border-[1px] hover:bg-mystic-green"
+              : "text-white border-white border hover:bg-mystic-green"
           }
           `}
         >
@@ -417,7 +406,7 @@ const ManagementSubscriptionsPage = () => {
         open={isConfirmingCancelAlertOpen}
         onOpenChange={setIsConfirmingCancelAlertOpen}
       >
-        <AlertDialogContent className="backdrop-blur-md bg-white/10 border border-white/20 text-white">
+        <AlertDialogContent className="z-9999 backdrop-blur-md bg-white/10 border border-white/20 text-white">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl font-bold text-white">
               Cancel Subscription?
