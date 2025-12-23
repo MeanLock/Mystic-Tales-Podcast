@@ -2,6 +2,37 @@
 import { appApi } from "@/core/api/appApi";
 import type { AccountMeFromApi } from "@/core/types/account";
 
+type PodcasterApplyResponse = {
+  PodcastBuddyProfile: {
+    AccountId: number;
+    Name: string;
+    Description: string;
+    AverageRating: number;
+    RatingCount: number;
+    TotalFollow: number;
+    ListenCount: number;
+    PricePerBookingWord: number;
+    BuddyAudioFileKey: string;
+    IsVerified: boolean;
+    IsFollowedByCurrentUser: boolean;
+  };
+  ReviewList: {
+    Id: string;
+    Title: string;
+    Content: string;
+    Rating: number;
+    Account: {
+      Id: number;
+      FullName: string;
+      Email: string;
+      MainImageFileKey: string;
+    };
+    PodcastBuddyId: number;
+    DeletedAt: string;
+    UpdatedAt: string;
+  }[];
+};
+
 export const accountApi = appApi.injectEndpoints({
   endpoints: (build) => ({
     podcasterApply: build.mutation<
@@ -114,5 +145,5 @@ export const {
   useGetAccountInformationsQuery,
   useUpdateAccountInformationsMutation,
   useLazyCheckUserPodcastListenSlotQuery,
-  useLazyUpdateAccountMeQuery
+  useLazyUpdateAccountMeQuery,
 } = accountApi;

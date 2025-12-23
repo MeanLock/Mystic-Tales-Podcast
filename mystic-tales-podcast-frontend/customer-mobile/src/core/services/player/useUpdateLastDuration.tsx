@@ -3,7 +3,7 @@ import {
   useUpdateBookingTrackLastDurationMutation,
   useUpdateEpisodeLastDurationMutation,
 } from "./playerService";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePlayer } from "./usePlayer";
 import { playerEngine } from "./playerEngine";
 import type {
@@ -17,9 +17,9 @@ import { RootState } from "@/src/store/store";
 const useUpdateLastDurationListener = () => {
   // REDUX
   const dispatch = useDispatch();
-  const listenSession = useSelector(
-    (state: RootState) => state.player.listenSession
-  );
+  // const listenSession = useSelector(
+  //   (state: RootState) => state.player.listenSession
+  // );
 
   // PLAYER STATE
   const {
@@ -36,38 +36,54 @@ const useUpdateLastDurationListener = () => {
   const [triggerGetBenefitList] =
     useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery();
 
+  // Prevent concurrent updates
+  const isUpdating = useRef(false);
+
   // UPDATE LAST DURATION EFFECT
   useEffect(() => {
-    if (!state.isPlaying || !state.currentAudio || !listenSession) {
-      console.log(
-        "⏸️ Player is not playing or no current audio/listen session. Skipping last duration update."
-      );
+    if (!state.isPlaying || !state.currentAudio || !state.listenSession) {
+      if (__DEV__) {
+        console.log("[UpdateDuration] Skipping - not playing or no session");
+      }
       return;
     }
 
-    console.log("🎵 Setting up last duration update interval...");
-    console.log("🎵 Current Audio ID:", state.currentAudio.id);
-    console.log("📂 Source Type:", state.sourceType);
+    if (__DEV__) {
+      console.log("[UpdateDuration] Setting up interval");
+      console.log("[UpdateDuration] Audio ID:", state.currentAudio.id);
+      console.log("[UpdateDuration] Source:", state.sourceType);
+    }
 
     const intervalId = setInterval(async () => {
-      // Get fresh state from playerEngine
-      const currentTimeSeconds = Math.floor(state.currentTime);
+      // Prevent concurrent updates
+      if (isUpdating.current) {
+        if (__DEV__) {
+          console.warn("[UpdateDuration] Already updating, skipping");
+        }
+        return;
+      }
 
-      console.log(
-        "⏱️ Updating last duration for source type:",
-        state.sourceType,
-        "at",
-        currentTimeSeconds,
-        "seconds"
-      );
+      isUpdating.current = true;
+
+      // CRITICAL: Get FRESH state from playerEngine to avoid stale closure
+      // Reading from `state` would give stale value because dependencies don't include state.currentTime
+      const freshState = playerEngine.getState();
+      const currentTimeSeconds = Math.floor(freshState.currentTime);
+
+      if (__DEV__) {
+        console.log(
+          `[UpdateDuration] Updating ${freshState.sourceType} at ${currentTimeSeconds}s`
+        );
+      }
 
       try {
         if (
-          state.sourceType === "SavedEpisodes" ||
-          state.sourceType === "SpecifyShowEpisodes"
+          freshState.sourceType === "SavedEpisodes" ||
+          freshState.sourceType === "SpecifyShowEpisodes"
         ) {
           // Update Episode Last Duration
-          const episodeListenSession = listenSession as ListenSessionEpisodes;
+          const episodeListenSession =
+            freshState.listenSession as ListenSessionEpisodes;
 
           let benefitList: any[] = [];
           const benefitData = await triggerGetBenefitList({
@@ -89,11 +105,23 @@ const useUpdateLastDurationListener = () => {
             CurrentPodcastSubscriptionRegistrationBenefitList: benefitList,
           }).unwrap();
 
-          console.log("✅ Episode last duration updated successfully");
-        } else if (state.sourceType === "BookingProducingTracks") {
+          if (__DEV__) {
+            console.log("[UpdateDuration] ✅ Episode updated");
+          }
+        } else if (freshState.sourceType === "BookingProducingTracks") {
           // Update Booking Track Last Duration
           const bookingListenSession =
-            listenSession as ListenSessionBookingTracks;
+            freshState.listenSession as ListenSessionBookingTracks;
+
+          // Safety check for nested properties
+          if (!bookingListenSession?.BookingPodcastTrackListenSession?.Id) {
+            if (__DEV__) {
+              console.warn(
+                "[UpdateDuration] Booking session structure invalid, skipping"
+              );
+            }
+            return;
+          }
 
           await updateBookingTrackLastDuration({
             BookingPodcastTrackListenSessionId:
@@ -101,12 +129,18 @@ const useUpdateLastDurationListener = () => {
             LastListenDurationSeconds: currentTimeSeconds,
           }).unwrap();
 
-          console.log("✅ Booking track last duration updated successfully");
+          if (__DEV__) {
+            console.log("[UpdateDuration] ✅ Booking updated");
+          }
         }
       } catch (error) {
-        console.error("❌ Error updating last duration:", error);
+        if (__DEV__) {
+          console.error("[UpdateDuration] Error:", error);
+        }
+
         // Stop playback and show alert on error (session expired)
-        playerEngine.stopAndUnload();
+        await stop();
+
         dispatch(
           setDataAndShowAlert({
             title: "Session Expired",
@@ -118,45 +152,138 @@ const useUpdateLastDurationListener = () => {
             autoCloseDuration: 5,
           })
         );
+      } finally {
+        isUpdating.current = false;
       }
     }, 2000); // Update every 2 seconds
 
     return () => {
-      console.log("🧹 Cleaning up last duration update interval");
+      if (__DEV__) {
+        console.log("[UpdateDuration] Cleaning up interval");
+      }
+      isUpdating.current = false;
       clearInterval(intervalId);
     };
-  }, [state.isPlaying, state.currentAudio?.id]);
+  }, [
+    state.isPlaying,
+    state.currentAudio?.id,
+    state.sourceType,
+    state.listenSession,
+    updateEpisodeLastDuration,
+    updateBookingTrackLastDuration,
+    triggerGetBenefitList,
+    dispatch,
+  ]);
 
   // Handle Audio End Event
   useEffect(() => {
-    const handleAudioEnd = () => {
-      console.log("🎵 Audio has ended!");
+    const handleAudioEnd = async () => {
+      if (__DEV__) {
+        console.log("[AudioEnd] Audio has ended!");
+      }
 
       // Get fresh state from playerEngine to avoid stale closure
       const currentState = playerEngine.getState();
-      console.log("🎵 isAutoPlay:", currentState.isAutoPlay);
-      console.log("🎵 Source Type:", currentState.sourceType);
-      console.log("🎵 listenSession:", currentState.listenSession !== null);
-      console.log(
-        "🎵 listenSessionProcedure:",
-        currentState.listenSessionProcedure !== null
-      );
+
+      if (__DEV__) {
+        console.log("[AudioEnd] isAutoPlay:", currentState.isAutoPlay);
+        console.log("[AudioEnd] Source:", currentState.sourceType);
+        console.log(
+          "[AudioEnd] hasSession:",
+          currentState.listenSession !== null
+        );
+        console.log(
+          "[AudioEnd] hasProcedure:",
+          currentState.listenSessionProcedure !== null
+        );
+      }
+
+      // Update last duration to full duration when audio ends
+      if (currentState.listenSession && currentState.duration > 0) {
+        const finalDurationSeconds = Math.floor(currentState.duration);
+
+        if (__DEV__) {
+          console.log(
+            "[AudioEnd] Updating final duration:",
+            finalDurationSeconds
+          );
+        }
+
+        try {
+          if (
+            currentState.sourceType === "SavedEpisodes" ||
+            currentState.sourceType === "SpecifyShowEpisodes"
+          ) {
+            const episodeListenSession =
+              currentState.listenSession as ListenSessionEpisodes;
+
+            let benefitList: any[] = [];
+            const benefitData = await triggerGetBenefitList({
+              PodcastEpisodeId: episodeListenSession.PodcastEpisode.Id,
+            }).unwrap();
+
+            if (
+              benefitData &&
+              benefitData.CurrentPodcastSubscriptionRegistrationBenefitList
+            ) {
+              benefitList =
+                benefitData.CurrentPodcastSubscriptionRegistrationBenefitList;
+            }
+
+            await updateEpisodeLastDuration({
+              PodcastEpisodeListenSessionId:
+                episodeListenSession.PodcastEpisodeListenSession.Id,
+              LastListenDurationSeconds: finalDurationSeconds,
+              CurrentPodcastSubscriptionRegistrationBenefitList: benefitList,
+            }).unwrap();
+
+            if (__DEV__) {
+              console.log("[AudioEnd] ✅ Episode final duration updated");
+            }
+          } else if (currentState.sourceType === "BookingProducingTracks") {
+            const bookingListenSession =
+              currentState.listenSession as ListenSessionBookingTracks;
+
+            if (bookingListenSession?.BookingPodcastTrackListenSession?.Id) {
+              await updateBookingTrackLastDuration({
+                BookingPodcastTrackListenSessionId:
+                  bookingListenSession.BookingPodcastTrackListenSession.Id,
+                LastListenDurationSeconds: finalDurationSeconds,
+              }).unwrap();
+
+              if (__DEV__) {
+                console.log("[AudioEnd] ✅ Booking final duration updated");
+              }
+            }
+          }
+        } catch (error) {
+          if (__DEV__) {
+            console.error("[AudioEnd] Error updating final duration:", error);
+          }
+        }
+      }
 
       // Implement auto-play logic here if isAutoPlay is true
       if (currentState.isAutoPlay) {
-        console.log("🎵 Auto-play is enabled - should play next track");
+        if (__DEV__) {
+          console.log("[AudioEnd] Auto-play enabled - playing next");
+        }
 
         if (
           !currentState.listenSessionProcedure ||
           !currentState.listenSession
         ) {
-          console.log("🎵 No session procedure or session - cannot auto-play");
+          if (__DEV__) {
+            console.warn("[AudioEnd] No session/procedure - cannot auto-play");
+          }
           return;
         }
 
         if (currentState.sourceType === "SpecifyShowEpisodes") {
           const ls = currentState.listenSession as ListenSessionEpisodes;
-          console.log("🎵 Navigating to next in SpecifyShowEpisodes");
+          if (__DEV__) {
+            console.log("[AudioEnd] → Next in SpecifyShowEpisodes");
+          }
           navigateInSpecifyShows(
             "Next",
             ls,
@@ -164,7 +291,9 @@ const useUpdateLastDurationListener = () => {
           );
         } else if (currentState.sourceType === "SavedEpisodes") {
           const ls = currentState.listenSession as ListenSessionEpisodes;
-          console.log("🎵 Navigating to next in SavedEpisodes");
+          if (__DEV__) {
+            console.log("[AudioEnd] → Next in SavedEpisodes");
+          }
           navigateInSavedEpisodes(
             "Next",
             ls,
@@ -172,7 +301,9 @@ const useUpdateLastDurationListener = () => {
           );
         } else if (currentState.sourceType === "BookingProducingTracks") {
           const ls = currentState.listenSession as ListenSessionBookingTracks;
-          console.log("🎵 Navigating to next in BookingProducingTracks");
+          if (__DEV__) {
+            console.log("[AudioEnd] → Next in BookingProducingTracks");
+          }
           navigateInBookingTracks(
             "Next",
             ls,
@@ -180,7 +311,9 @@ const useUpdateLastDurationListener = () => {
           );
         }
       } else {
-        console.log("🎵 Auto-play is disabled - not playing next track");
+        if (__DEV__) {
+          console.log("[AudioEnd] Auto-play disabled");
+        }
       }
     };
 

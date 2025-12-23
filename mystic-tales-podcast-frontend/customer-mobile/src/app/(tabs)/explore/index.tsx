@@ -9,6 +9,8 @@ import MixxingText from "@/src/components/ui/MixxingText";
 import ChannelCarousel from "./components/ChannelCarousel/ChannelCarousel";
 import EpisodeCarousel from "./components/EpisodeCarousel/EpisodeCarousel";
 import PodcasterCarousel from "./components/PodcasterCarousel/PodcasterCarousel";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 
 export default function Explore() {
   // Sử dụng hook useHeaderScroll để lấy onScroll và headerHeight
@@ -20,13 +22,19 @@ export default function Explore() {
   // HOOKS
   const {
     data: trendingData,
-    isLoading: trendingIsLoading,
-    error: trendingError,
+    isFetching: trendingIsLoading,
+    refetch,
   } = useGetTrendingFeedQuery(undefined, {
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
     refetchOnReconnect: true,
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   if (trendingIsLoading || !trendingData) {
     return (
@@ -47,7 +55,7 @@ export default function Explore() {
         scrollIndicatorInsets={{ top: headerHeight }}
         scrollEventThrottle={16} // Important for smooth animation
       >
-        <View style={{ height: 20 }}></View>
+        <View style={{ height: 20, backgroundColor: "#000" }}></View>
 
         {/* Content gì thì để ở đây */}
 
@@ -243,7 +251,9 @@ export default function Explore() {
               titleString={trendingData.Category6.PodcastCategory.Name}
             />
           )}
-        <View style={{ height: tabBarHeight + 50 }}></View>
+        <View
+          style={{ height: tabBarHeight + 50, backgroundColor: "#000" }}
+        ></View>
       </ScrollView>
     );
   }

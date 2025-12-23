@@ -3,6 +3,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FcGoogle } from "react-icons/fc";
+import "react-toastify/dist/ReactToastify.css";
+import "@/components/alert/toast/toast.css";
 import {
   useLoginMutation,
   useLoginGoogleMutation,
@@ -504,7 +506,7 @@ const LoginPage = () => {
           if (!open) closeVerifyModal();
         }}
       >
-        <DialogContent className="sm:max-w-[420px] border border-white/10 bg-black/80 text-white">
+        <DialogContent className="z-9999 sm:max-w-[420px] border border-white/10 bg-black/80 text-white">
           <DialogHeader>
             <DialogTitle className="text-[#AAE339]">
               Verify your account
@@ -565,7 +567,7 @@ const LoginPage = () => {
           if (!open) closeForgotPasswordModal();
         }}
       >
-        <DialogContent className="sm:max-w-[440px] border border-white/10 bg-black/80 text-white">
+        <DialogContent className="z-9999 sm:max-w-[440px] border border-white/10 bg-black/80 text-white">
           <DialogHeader>
             <DialogTitle className="text-mystic-green">
               Forgot Password

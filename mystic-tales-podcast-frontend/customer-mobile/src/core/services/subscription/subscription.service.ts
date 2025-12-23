@@ -272,6 +272,19 @@ const subscriptionApi = appApi.injectEndpoints({
         authMode: "required",
       }),
     }),
+
+    getActiveSubscriptionFromEpisodeId: build.query<
+      {
+        PodcastSubscription: SubscriptionDetails | null;
+      },
+      { PodcastEpisodeId: string }
+    >({
+      query: ({ PodcastEpisodeId }) => ({
+        url: `/api/subscription-service/api/podcast-subscriptions/episodes/${PodcastEpisodeId}`,
+        method: "GET",
+        authMode: "public",
+      }),
+    }),
   }),
 });
 
@@ -289,4 +302,5 @@ export const {
   useGetRegistrationDetailsQuery,
   useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery,
   useLazyGetIsHasNonQuotaAccessQuery,
+  useLazyGetActiveSubscriptionFromEpisodeIdQuery
 } = subscriptionApi;

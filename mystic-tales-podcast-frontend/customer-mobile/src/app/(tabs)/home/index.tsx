@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { ActivityIndicator, Pressable, ScrollView } from "react-native";
 import { useHeaderScroll } from "./_layout";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -14,7 +14,7 @@ import { Text } from "@/src/components/ui/Text";
 import EpisodeContinueCarousel from "./components/EpisodeCarousel/EpisodeContinueCarousel";
 import ChannelCarousel from "./components/ChannelCarousel/ChannelCarousel";
 import { useRoute } from "@react-navigation/native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 
 export default function Home() {
   const { onScroll, headerHeight } = useHeaderScroll();
@@ -24,14 +24,21 @@ export default function Home() {
   const user = useSelector((state: RootState) => state.auth.user);
 
   // HOOKS
-  const { data: discoveryData, isLoading: isDiscoveryDataLoading } =
-    useGetDiscoveryFeedQuery(undefined, {
-      refetchOnMountOrArgChange: true,
-      refetchOnFocus: true,
-      refetchOnReconnect: true,
-    });
+  const {
+    data: discoveryData,
+    isFetching: isDiscoveryDataLoading,
+    refetch,
+  } = useGetDiscoveryFeedQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
 
-  const router = useRouter();
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   if (isDiscoveryDataLoading || !discoveryData) {
     return (
@@ -77,7 +84,7 @@ export default function Home() {
               <MixxingText originalText="New Releases" coloredText="New" />
             }
             shows={discoveryData.NewReleases.ShowList}
-            titleString = "New Releases"
+            titleString="New Releases"
           />
         )}
 
@@ -87,7 +94,7 @@ export default function Home() {
             variant="top"
             title={<MixxingText originalText="Hot Shows" coloredText="Hot" />}
             shows={discoveryData.HotThisWeek.ShowList}
-            titleString = "Hot Shows"
+            titleString="Hot Shows"
           />
         )}
 
@@ -121,7 +128,7 @@ export default function Home() {
               <MixxingText originalText="Hot Channels" coloredText="Hot" />
             }
             channels={discoveryData.HotThisWeek.ChannelList}
-            titleString = "Hot Channels"
+            titleString="Hot Channels"
           />
         )}
 

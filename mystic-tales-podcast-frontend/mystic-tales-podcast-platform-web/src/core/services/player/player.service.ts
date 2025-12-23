@@ -1,5 +1,5 @@
-// @ts-nocheck
 import { appApi } from "@/core/api/appApi";
+import { MissingBenefitMessageTransforms } from "@/core/data/alert-message.data";
 import type { ApiErrorModel } from "@/core/types";
 import type {
   ListenSessionBookingTracks,
@@ -14,7 +14,8 @@ type CurrentPodcastSubscriptionRegistrationBenefit = {
 
 type ListenResponse<T> = {
   isError: boolean;
-  message: string;
+  messageId: string;
+  benefits?: string[];
   data: T | null;
 };
 
@@ -102,13 +103,30 @@ export const playerApi = appApi.injectEndpoints({
           // ❌ HTTP error
           if (result.error) {
             console.log("listenToEpisode error:", result);
-            const message = result.error.details.message;
-            let formattedMessage = "";
+            // console.log("message detail:", result.error.details);
+            const message = result.error.details.data.message;
 
-            if (message.includes("no subscription registration")) {
-              formattedMessage = "Unsubscribed";
-            } else if (message.includes("not in Published status")) {
-              formattedMessage = "Content is not available";
+            // Phân loại lỗi listen và trả về messageId tương ứng
+
+            // Episode deactivated
+            if (message.includes("not in Published status")) {
+              return {
+                data: {
+                  isError: true,
+                  messageId: "listen-failed-2",
+                  data: null,
+                },
+              };
+              // Chưa đăng ký subscription hoặc không có gói nào để đăng ký
+            } else if (message.includes("no subscription registration")) {
+              return {
+                data: {
+                  isError: true,
+                  messageId: "listen-failed-3/4",
+                  data: null,
+                },
+              };
+              // Chưa đủ điều kiện nghe dù đã đăng ký subscription
             } else if (
               message.includes("insufficient benefits - missing conditions:")
             ) {
@@ -125,16 +143,28 @@ export const playerApi = appApi.injectEndpoints({
                   .filter(Boolean);
               };
               const missingConditions = parseMissingConditions(message);
-              formattedMessage = `Insufficient benefits: ${missingConditions.join(
-                ", "
-              )}`;
+              const benefitMessages: string[] = [];
+              missingConditions.forEach((condition) => {
+                const benefitMessage =
+                  MissingBenefitMessageTransforms[condition];
+                if (benefitMessage) {
+                  benefitMessages.push(benefitMessage);
+                }
+              });
+              return {
+                data: {
+                  isError: true,
+                  messageId: "listen-failed-5",
+                  benefits: benefitMessages,
+                  data: null,
+                },
+              };
             }
+            // Các lỗi listen khác
             return {
               data: {
                 isError: true,
-                message:
-                  (result.error as any)?.data?.message ||
-                  "Listen episode failed",
+                messageId: "listen-failed-1",
                 data: null,
               },
             };
@@ -145,7 +175,7 @@ export const playerApi = appApi.injectEndpoints({
           return {
             data: {
               isError: false,
-              message: "Listen episode success",
+              messageId: "listen-success-1",
               data: result.data as {
                 ListenSession: ListenSessionEpisodes | null;
                 ListenSessionProcedure: ListenSessionProcedure;
@@ -157,7 +187,7 @@ export const playerApi = appApi.injectEndpoints({
           return {
             data: {
               isError: true,
-              message: e?.message || "Unexpected error",
+              messageId: "listen-failed-1",
               data: null,
             },
           };

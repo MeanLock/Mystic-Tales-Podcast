@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Loading from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +17,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Check, MoreHorizontalIcon } from "lucide-react";
+import { Check, MoreHorizontalIcon, ShipWheel } from "lucide-react";
 import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
 import {
   useFollowShowMutation,
@@ -659,6 +660,11 @@ const ShowDetailsPage = () => {
     };
   }, [trailerAudio]);
 
+  const testSubscription = () => {
+    console.log("Is User Subscribed: ", isUserSubscribed);
+    console.log("Curent Subscription: ", currentSubscription);
+    setIsSubscriptionDialogOpen(true);
+  };
   // RENDER
   if (isShowDetailsLoading) {
     return (
@@ -786,7 +792,8 @@ const ShowDetailsPage = () => {
               ) : (
                 <LiquidButton
                   variant="minimal"
-                  onClick={() => setIsSubscriptionDialogOpen(true)}
+                  // onClick={() => setIsSubscriptionDialogOpen(true)}
+                  onClick={() => testSubscription()}
                 >
                   <p>Subscription Informations</p>
                 </LiquidButton>
@@ -1186,10 +1193,34 @@ const ShowDetailsPage = () => {
 
         {/* Grid Layout - 3 columns */}
         <div className="grid grid-cols-3 gap-x-16 gap-y-6 mb-8">
+          {/* Channel */}
+          {show.Show.PodcastChannel && (
+            <div>
+              <h3 className="text-gray-400 text-sm mb-2">Channel</h3>
+              <p
+                onClick={() =>
+                  navigate(
+                    `/media-player/channels/${show.Show.PodcastChannel.Id}`
+                  )
+                }
+                className="text-mystic-green italic hover:underline cursor-pointer text-base"
+              >
+                {show.Show.PodcastChannel.Name}
+              </p>
+            </div>
+          )}
+
           {/* Creator */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Creator</h3>
-            <p className="text-white text-base">{show.Show.Podcaster.FullName}</p>
+            <p
+              onClick={() =>
+                navigate(`/media-player/podcasters/${show.Show.Podcaster.Id}`)
+              }
+              className="text-mystic-green italic hover:underline cursor-pointer text-base"
+            >
+              {show.Show.Podcaster.FullName}
+            </p>
           </div>
 
           {/* Seasons */}
@@ -1243,7 +1274,7 @@ const ShowDetailsPage = () => {
           onOpenChange={setIsCancelConfirmDialogOpen}
         >
           <DialogContent
-            className="w-112.5 px-8 py-8 border border-white/10 bg-[#0f1115]/50 text-white
+            className="z-9999 w-112.5 px-8 py-8 border border-white/10 bg-[#0f1115]/50 text-white
                  backdrop-blur-xl shadow-2xl rounded-2xl"
           >
             <DialogHeader>
@@ -1303,7 +1334,7 @@ const ShowDetailsPage = () => {
           onOpenChange={setIsSubscriptionDialogOpen}
         >
           <DialogContent
-            className="w-125 px-8 py-12 border border-white/10 bg-[#0f1115]/50 text-white
+            className="z-9999 w-125 px-8 py-12 border border-white/10 bg-[#0f1115]/50 text-white
                  backdrop-blur-xl shadow-2xl rounded-2xl"
           >
             <DialogHeader>

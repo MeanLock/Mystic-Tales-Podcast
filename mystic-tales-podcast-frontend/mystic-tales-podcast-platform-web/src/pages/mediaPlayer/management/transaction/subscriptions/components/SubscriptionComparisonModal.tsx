@@ -88,7 +88,7 @@ const SubscriptionComparisonModal = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         className="scrollbar-hide max-w-[70vw] sm:max-w-[70vw]
-              z-[9999] 
+              z-9999 
               w-full  max-h-[90vh] overflow-y-auto backdrop-blur-md bg-black/20 border-[1px] border-mystic-green rounded-md text-white"
       >
         <DialogHeader>

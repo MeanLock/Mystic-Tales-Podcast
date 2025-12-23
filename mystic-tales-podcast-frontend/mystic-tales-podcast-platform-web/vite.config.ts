@@ -5,6 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: "./", // 👈 cực kỳ quan trọng
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -20,6 +21,15 @@ export default defineConfig({
       },
     },
     host: true,
-    allowedHosts: true
+    allowedHosts: true,
+  },
+  optimizeDeps: {
+    include: ["quill"],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/quill/, /node_modules/],
+      transformMixedEsModules: true,
+    },
   },
 });

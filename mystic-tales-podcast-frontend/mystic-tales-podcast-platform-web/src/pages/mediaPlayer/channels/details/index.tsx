@@ -658,7 +658,7 @@ const ChannelDetailsPage = () => {
           onOpenChange={setIsSubscriptionDialogOpen}
         >
           <DialogContent
-            className="w-125 px-8 py-12 border border-white/10 bg-[#0f1115]/50 text-white
+            className="z-9999 w-125 px-8 py-12 border border-white/10 bg-[#0f1115]/50 text-white
                  backdrop-blur-xl shadow-2xl rounded-2xl"
           >
             <DialogHeader>

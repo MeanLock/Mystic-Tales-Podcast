@@ -25,6 +25,7 @@ import {
 import MixxingText from "@/src/components/ui/MixxingText";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
+import { usePlayer } from "@/src/core/services/player/usePlayer";
 
 type UpdateInformationsForm = {
   AccountUpdateInfo: {
@@ -57,6 +58,7 @@ const ProfilePage = () => {
   const [resetPasswordError, setResetPasswordError] = useState<string>("");
   const [resetPasswordSuccess, setResetPasswordSuccess] = useState<string>("");
 
+  const { stop } = usePlayer();
   const {
     data: dataAccount,
     isLoading: isAccountMeLoading,
@@ -116,6 +118,7 @@ const ProfilePage = () => {
   // FUNCTIONS
   const handleLogout = () => {
     dispatch(logoutLocal());
+    stop();
     router.replace("/(auth)/login");
   };
 

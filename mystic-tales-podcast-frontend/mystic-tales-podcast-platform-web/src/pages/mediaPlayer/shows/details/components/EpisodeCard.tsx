@@ -443,7 +443,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromAPI }) => {
           open={episodeReportDialog}
           onOpenChange={setEpisodeReportDialog}
         >
-          <DialogContent className="sm:max-w-125 bg-[#0f1115]/95 border-white/10 text-white">
+          <DialogContent className="z-9999 sm:max-w-125 bg-[#0f1115]/95 border-white/10 text-white">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-mystic-green">
                 Report Episode
@@ -477,7 +477,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromAPI }) => {
                     <SelectTrigger className="bg-white/5 border-white/10 text-white">
                       <SelectValue placeholder="Select a report type" />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#1a1d24] border-white/10 text-white">
+                    <SelectContent className="z-9999 bg-[#1a1d24] border-white/10 text-white">
                       {episodeAvailableReportTypes?.EpisodeReportTypeList.map(
                         (type) => (
                           <SelectItem

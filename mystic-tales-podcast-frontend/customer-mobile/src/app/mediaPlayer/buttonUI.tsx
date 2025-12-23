@@ -2,16 +2,8 @@ import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingI
 import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
 import { usePlayer } from "@/src/core/services/player/usePlayer";
-import { RootState } from "@/src/store/store";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Pressable, StyleSheet } from "react-native";
-import { useDispatch, useSelector } from "react-redux";
-
-const formatTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-};
+import { ActivityIndicator, Pressable, StyleSheet } from "react-native";
 
 const PlayerButtonUI = () => {
   const { state: UiState, play, pause, seekTo } = usePlayer();
@@ -67,6 +59,10 @@ const PlayerButtonUI = () => {
           {UiState.isPlaying ? (
             <Pressable onPress={handlePlayPausePress}>
               <MaterialIcons name="pause" color="#fff" size={30} />
+            </Pressable>
+          ) : UiState.isAudioLoading ? (
+            <Pressable>
+              <ActivityIndicator color={"#fff"} size={30} />
             </Pressable>
           ) : (
             <Pressable onPress={handlePlayPausePress}>

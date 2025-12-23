@@ -9,7 +9,6 @@ import type {
   PodcastBuddyFromAPI,
 } from "@/core/types/booking";
 
-
 export type CreateBookingPayload = {
   BookingCreateInfo: {
     Title: string;
@@ -56,6 +55,7 @@ export const bookingApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "required",
       }),
+      keepUnusedDataFor: 0,
     }),
     getBookingDetail: build.query<
       { Booking: BookingDetailsFromAPI },
@@ -66,6 +66,7 @@ export const bookingApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "required",
       }),
+      keepUnusedDataFor: 0,
     }),
     confirmAndDeposit: build.mutation<
       { Message: string },
