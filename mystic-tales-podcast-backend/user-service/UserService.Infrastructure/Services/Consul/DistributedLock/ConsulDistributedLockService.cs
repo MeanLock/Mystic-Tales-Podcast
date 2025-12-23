@@ -3,7 +3,7 @@ using System.Text.Json;
 using Consul;
 using Microsoft.Extensions.Logging;
 using UserService.Common.AppConfigurations.App.interfaces;
-using UserService.Common.Configurations.Consul.interfaces;
+using UserService.Infrastructure.Configurations.Consul.interfaces;
 using UserService.Infrastructure.Models.Consul.DistributedLock;
 
 namespace UserService.Infrastructure.Services.Consul.DistributedLock

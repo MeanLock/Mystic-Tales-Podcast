@@ -295,7 +295,7 @@ services:
     volumes:
       # - ./docker/nginx/nginx-nat.conf:/etc/nginx/nginx-nat.conf:ro
       # - ./docker/nginx/ssl:/etc/nginx/ssl:ro
-      - ./docker/nginx/nginx-nat_v3.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/nginx-nat_v4.dev.conf:/etc/nginx/nginx.conf:ro
       - ./docker/nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - api-gateway-service-1
@@ -441,8 +441,10 @@ services:
       - ASPNETCORE_URLS=http://+:8046
       - AppSettings__APP_PORT=8046
       - AppSettings__APP_BASE_URL=http://user-service-dev-001:8046
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
-      - AppSettings__RESET_PASSWORD__Url=http://mystic-tales-podcast.xyz/auth/forgot-password
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__RESET_PASSWORD__Url=http://mystic-tales-podcast.xyz/auth/forgot-password
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - AppSettings__RESET_PASSWORD__Url=http://localhost:5173/auth/forgot-password
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=user-service-dev-001
@@ -489,8 +491,10 @@ services:
       - ASPNETCORE_URLS=http://+:8046
       - AppSettings__APP_PORT=8046
       - AppSettings__APP_BASE_URL=http://user-service-dev-002:8046
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
-      - AppSettings__RESET_PASSWORD__Url=http://mystic-tales-podcast.xyz/auth/forgot-password
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__RESET_PASSWORD__Url=http://mystic-tales-podcast.xyz/auth/forgot-password
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - AppSettings__RESET_PASSWORD__Url=http://localhost:5173/auth/forgot-password
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=user-service-dev-002
@@ -537,7 +541,8 @@ services:
       - ASPNETCORE_URLS=http://+:8051
       - AppSettings__APP_PORT=8051
       - AppSettings__APP_BASE_URL=http://system-configuration-service-dev-001:8051
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=system-configuration-service-dev-001
@@ -584,7 +589,8 @@ services:
       - ASPNETCORE_URLS=http://+:8051
       - AppSettings__APP_PORT=8051
       - AppSettings__APP_BASE_URL=http://system-configuration-service-dev-002:8051
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=system-configuration-service-dev-002
@@ -631,7 +637,8 @@ services:
       - ASPNETCORE_URLS=http://+:8056
       - AppSettings__APP_PORT=8056
       - AppSettings__APP_BASE_URL=http://booking-management-service-dev-001:8056
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=booking-management-service-dev-001
@@ -678,7 +685,7 @@ services:
       - ASPNETCORE_URLS=http://+:8056
       - AppSettings__APP_PORT=8056
       - AppSettings__APP_BASE_URL=http://booking-management-service-dev-002:8056
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=booking-management-service-dev-002
@@ -725,7 +732,8 @@ services:
       - ASPNETCORE_URLS=http://+:8061
       - AppSettings__APP_PORT=8061
       - AppSettings__APP_BASE_URL=http://podcast-service-dev-001:8061
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
       # - AppSettings__AUDIO_TRANSCRIPTION_API_URL=http://audio-transcription-ai-service-dev-001:8001/v7
       - AppSettings__AUDIO_TRANSCRIPTION_API_URL=https://r3v6x19g-8001.asse.devtunnels.ms/v9
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
@@ -775,7 +783,8 @@ services:
       - ASPNETCORE_URLS=http://+:8061
       - AppSettings__APP_PORT=8061
       - AppSettings__APP_BASE_URL=http://podcast-service-dev-002:8061
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
       # - AppSettings__AUDIO_TRANSCRIPTION_API_URL=http://audio-transcription-ai-service-dev-001:8001/v7
       - AppSettings__AUDIO_TRANSCRIPTION_API_URL=https://r3v6x19g-8001.asse.devtunnels.ms/v9
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
@@ -825,7 +834,8 @@ services:
       - ASPNETCORE_URLS=http://+:8066
       - AppSettings__APP_PORT=8066
       - AppSettings__APP_BASE_URL=http://subscription-service-dev-001:8066
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=subscription-service-dev-001
@@ -872,7 +882,8 @@ services:
       - ASPNETCORE_URLS=http://+:8066
       - AppSettings__APP_PORT=8066
       - AppSettings__APP_BASE_URL=http://subscription-service-dev-002:8066
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=subscription-service-dev-002
@@ -919,7 +930,8 @@ services:
       - ASPNETCORE_URLS=http://+:8071
       - AppSettings__APP_PORT=8071
       - AppSettings__APP_BASE_URL=http://moderation-service-dev-001:8071
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=moderation-service-dev-001
@@ -966,7 +978,8 @@ services:
       - ASPNETCORE_URLS=http://+:8071
       - AppSettings__APP_PORT=8071
       - AppSettings__APP_BASE_URL=http://moderation-service-dev-002:8071
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=moderation-service-dev-002
@@ -1013,7 +1026,8 @@ services:
       - ASPNETCORE_URLS=http://+:8076
       - AppSettings__APP_PORT=8076
       - AppSettings__APP_BASE_URL=http://transaction-service-dev-001:8076
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=transaction-service-dev-001
@@ -1060,7 +1074,8 @@ services:
       - ASPNETCORE_URLS=http://+:8076
       - AppSettings__APP_PORT=8076
       - AppSettings__APP_BASE_URL=http://transaction-service-dev-002:8076
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=transaction-service-dev-002
@@ -1106,7 +1121,8 @@ services:
       - ASPNETCORE_URLS=http://+:8081
       - AppSettings__APP_PORT=8081
       - AppSettings__APP_BASE_URL=http://saga-orchestrator-service-dev-001:8081
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=saga-orchestrator-service-dev-001
@@ -1151,7 +1167,8 @@ services:
       - ASPNETCORE_URLS=http://+:8081
       - AppSettings__APP_PORT=8081
       - AppSettings__APP_BASE_URL=http://saga-orchestrator-service-dev-002:8081
-      - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
       - Infrastructure__Redis__Default__ConnectionString=redis:6379
       - Infrastructure__Consul__Service__Host=http://consul:8500
       - Infrastructure__Consul__Service__Id=saga-orchestrator-service-dev-002

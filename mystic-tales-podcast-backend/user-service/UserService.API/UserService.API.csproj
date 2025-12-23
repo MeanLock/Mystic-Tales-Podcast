@@ -42,5 +42,14 @@
     <Folder Include="GraphQL\Features\Product\Inputs\" />
     <Folder Include="GraphQL\Features\Product\Filters\" />
     <Folder Include="GraphQL\Features\Product\Types\" />
+    <!-- <Content Include="..\UserService.Infrastructure\Configurations\Fonts\NotoSansCJKRegular.otf">
+      <Link>Fonts\NotoSansCJKRegular.otf</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content> -->
+    <Content Include="..\UserService.Infrastructure\Configurations\Fonts\**\*.otf">
+      <Link>Fonts\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 </Project>

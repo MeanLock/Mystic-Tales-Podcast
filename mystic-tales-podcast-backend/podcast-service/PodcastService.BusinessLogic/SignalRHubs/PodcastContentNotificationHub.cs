@@ -16,7 +16,7 @@ namespace PodcastService.BusinessLogic.SignalRHubs
         {
             // Lấy userId từ claim "id"
             var userId = Context.User?.FindFirst("id")?.Value;
-            Console.WriteLine($"\n\n\nUserId from claims: {userId}\n\n\n");
+            Console.WriteLine($"\nUserId from claims: {userId}\n\n");
 
             if (!string.IsNullOrEmpty(userId))
             {

@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -170,8 +171,33 @@ namespace UserService.API.Controllers.BaseControllers
         // /api/user-service/api/accounts/buddy-commitment-document/sign/get-file-content
         [HttpPost("buddy-commitment-document/sign/get-file-content")]
         [Authorize(Policy = "Customer.NonPodcasterAccess")]
-        public async Task<IActionResult> GetSignedBuddyCommitmentDocumentTemplateFileContent( [FromForm] IFormFile SignatureImageFile)
+        public async Task<IActionResult> GetSignedBuddyCommitmentDocumentTemplateFileContent(
+
+            //Fullname, Phone, IdentityCardNumber, IdentityCardFrontImageFile, IdentityCardBackImageFile, SignatureImageFile
+            [FromForm][Required] string Fullname,
+            [FromForm][Required] string Phone,
+            [FromForm][Required] string IdentityCardNumber,
+            [FromForm][Required] IFormFile IdentityCardFrontImageFile,
+            [FromForm][Required] IFormFile IdentityCardBackImageFile,
+            [FromForm][Required] IFormFile SignatureImageFile
+            )
         {
+
+            // Validate string fields are not empty
+            if (string.IsNullOrWhiteSpace(Fullname) || string.IsNullOrWhiteSpace(Phone) ||
+                string.IsNullOrWhiteSpace(IdentityCardNumber))
+            {
+                return BadRequest("Fullname, Phone, and IdentityCardNumber cannot be empty.");
+            }
+
+            // Validate file fields are not null and have content
+            if (SignatureImageFile == null || SignatureImageFile.Length == 0 ||
+                IdentityCardFrontImageFile == null || IdentityCardFrontImageFile.Length == 0 ||
+                IdentityCardBackImageFile == null || IdentityCardBackImageFile.Length == 0)
+            {
+                return BadRequest("All image files (Signature, IdentityCardFront, IdentityCardBack) are required.");
+            }
+            
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
             // bắt buộc phải có file chữ kí
@@ -182,12 +208,26 @@ namespace UserService.API.Controllers.BaseControllers
 
             // lấy byte[] signedPdfBytes từ IFormFile SignatureImageFile 
             byte[] signatureImageBytes = null;
+            byte[] identityCardFrontImageBytes = null;
+            byte[] identityCardBackImageBytes = null;
             using (var ms = new MemoryStream())
             {
                 await SignatureImageFile.CopyToAsync(ms);
                 signatureImageBytes = ms.ToArray();
+
+                await ms.FlushAsync();
+                ms.Position = 0;
+
+                await IdentityCardFrontImageFile.CopyToAsync(ms);
+                identityCardFrontImageBytes = ms.ToArray();
+
+                await ms.FlushAsync();
+                ms.Position = 0;
+
+                await IdentityCardBackImageFile.CopyToAsync(ms);
+                identityCardBackImageBytes = ms.ToArray();
             }
-            byte[] signedPdfBytes = await _accountService.GetSignedBuddyCommitmentDocumentTemplatePdf(account, signatureImageBytes);
+            byte[] signedPdfBytes = await _accountService.GetSignedBuddyCommitmentDocumentTemplatePdf(account, Fullname, Phone, IdentityCardNumber, identityCardFrontImageBytes, identityCardBackImageBytes, signatureImageBytes);
 
             // 4. Return signed PDF
             string fileName = $"signed_commitment_document_{account.Id}_{DateTime.Now:yyyyMMddHHmmss}.pdf";

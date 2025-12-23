@@ -9,13 +9,14 @@ using UserService.Infrastructure.Configurations.OpenAI.interfaces;
 using UserService.Infrastructure.Configurations.OpenAI;
 using UserService.Infrastructure.Configurations.Payos.interfaces;
 using UserService.Infrastructure.Configurations.Payos;
-using UserService.Common.Configurations.Consul.interfaces;
-using UserService.Common.Configurations.Consul;
+using UserService.Infrastructure.Configurations.Consul.interfaces;
+using UserService.Infrastructure.Configurations.Consul;
 using UserService.Infrastructure.Configurations.Kafka.interfaces;
 using UserService.Infrastructure.Configurations.Kafka;
 using UserService.Infrastructure.Configurations.Audio.Hls.interfaces;
 using UserService.Infrastructure.Configurations.Audio.Hls;
 using UserService.Infrastructure.Configurations.Audio.Tuning;
+using UserService.Infrastructure.Configurations.Fonts.interfaces;
 
 namespace UserService.Infrastructure.Registrations
 {
@@ -63,6 +64,9 @@ namespace UserService.Infrastructure.Registrations
             services.AddSingleton<IHlsConfig, HlsConfig>();
             services.AddSingleton<IMoodConfig, MoodConfig>();
             services.AddSingleton<IEqualizerConfig, EqualizerConfig>(); // Add this missing registration
+
+            // Fonts
+            services.AddSingleton<IFontProvider, FontProvider>();
 
             return services;
         }
