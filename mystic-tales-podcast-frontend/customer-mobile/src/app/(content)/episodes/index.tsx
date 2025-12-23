@@ -159,7 +159,7 @@ export default function EpisodesScreen() {
                   </View>
                   <View className="w-2/3 items-start mt-5">
                     <PlayButtonVariant2
-                      episodeId={item.Id}
+                      audioId={item.Id}
                       audioLength={item.AudioLength}
                       onPlayPress={() => handlePlayEpisode()}
                     />
@@ -228,7 +228,7 @@ export default function EpisodesScreen() {
                   <View className=" flex flex-row items-center justify-between items-start mt-5">
                     <View className="w-2/3">
                       <PlayButtonVariant2
-                        episodeId={item.Id}
+                        audioId={item.Id}
                         audioLength={item.AudioLength}
                         onPlayPress={() => handlePlayEpisode()}
                       />

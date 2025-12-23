@@ -1,3 +1,4 @@
+import HtmlText from "@/src/components/renderHtml/HtmlText";
 import { EpisodeCardWithImageProps } from "@/src/types/episode";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Image, StyleSheet, Text, View } from "react-native";
@@ -46,9 +47,12 @@ const EpisodeCard = ({
           <Text numberOfLines={1} className="text-white text-[10px] font-bold">
             {episode.Name}
           </Text>
-          <Text numberOfLines={3} className="text-white text-[7px]">
-            {episode.Description}
-          </Text>
+          <HtmlText
+            html={episode.Description}
+            numberOfLines={3}
+            color="white"
+            fontSize={7}
+          />
           <View className="flex-1 flex flex-row items-end gap-2">
             {/* {episode.ExplicitContent && <ExplicitContentTag />} */}
             <AudioLengthTag length={episode.AudioLength} />
@@ -82,4 +86,8 @@ const style = StyleSheet.create({
   },
 
   infomations: {},
+  textHtml: {
+    color: "white",
+    fontSize: 7,
+  },
 });

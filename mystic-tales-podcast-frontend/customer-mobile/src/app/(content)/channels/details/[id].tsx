@@ -698,9 +698,7 @@ export default function ChannelDetailsScreen() {
               <Text style={styles.subscriptionTitle} numberOfLines={1}>
                 {activeSubscription?.PodcastSubscription.Name}
               </Text>
-              <Text style={styles.message} numberOfLines={3}>
-                {activeSubscription?.PodcastSubscription.Description}
-              </Text>
+              <HtmlText html={activeSubscription?.PodcastSubscription.Description || ""} numberOfLines={3} textStyle={styles.message} />
               <View className="w-full px-1 mb-2 flex items-center justify-center">
                 <View className="w-full h-[1px] bg-[#D9D9D9]" />
               </View>
