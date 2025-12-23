@@ -10,15 +10,14 @@ import {
   useNavigationContainerRef,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack, usePathname, useSegments } from "expo-router";
+import { Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Provider, useSelector } from "react-redux";
+import { Provider } from "react-redux";
 import { useColorScheme } from "@/src/components/useColorScheme";
 
 import "../../global.css";
 import { persistor, RootState, store } from "../store/store";
-import { bootstrapAuth } from "../utils/helpers/boostrapHelper";
 import SetUp from "./setUp";
 import { PersistGate } from "redux-persist/integration/react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -135,10 +134,6 @@ function AppBody() {
       friction: 10,
     }).start();
   }, [targetBottom, bottomAnim]);
-
-  useEffect(() => {
-    bootstrapAuth(store.dispatch);
-  }, []);
 
   // Bottom Sheet Modal state
   const [isButtonVisibleLocal, setIsButtonVisibleLocal] = useState(true);

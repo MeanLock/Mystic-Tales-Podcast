@@ -283,14 +283,16 @@ const WithDrawPage = () => {
                               Status:{" "}
                               <span
                                 className={`font-semibold ${
-                                  transaction.CompletedAt
+                                  transaction.CompletedAt &&
+                                  !transaction.IsRejected
                                     ? "text-mystic-green"
                                     : !transaction.IsRejected
                                     ? "text-yellow-400"
                                     : "text-[#FEA863]"
                                 }`}
                               >
-                                {transaction.CompletedAt
+                                {transaction.CompletedAt &&
+                                !transaction.IsRejected
                                   ? "Completed"
                                   : !transaction.IsRejected
                                   ? "Pending"
@@ -300,7 +302,7 @@ const WithDrawPage = () => {
                           </div>
                         </div>
 
-                        {transaction.CompletedAt && (
+                        {transaction.CompletedAt && !transaction.IsRejected && (
                           <Button
                             onClick={() => handleViewImageReceipt(transaction)}
                             variant="outline"
@@ -372,7 +374,7 @@ const WithDrawPage = () => {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="flex w-full items-center justify-center py-2">
+            <div className="scrollbar-hide flex w-full items-center justify-center py-2 overflow-y-auto h-130">
               <AutoResolveImage
                 FileKey={selectedWithdrawal.TransferReceiptImageFileKey}
                 type="WithdrawalReceipt"
