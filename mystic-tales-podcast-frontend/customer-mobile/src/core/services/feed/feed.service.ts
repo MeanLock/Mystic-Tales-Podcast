@@ -13,6 +13,7 @@ const feedApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "hybrid",
       }),
+      keepUnusedDataFor: 0,
     }),
     getTrendingFeed: build.query<TrendingData, void>({
       query: () => ({
@@ -20,6 +21,7 @@ const feedApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "hybrid",
       }),
+      keepUnusedDataFor: 30,
     }),
     getCategoryFeed: build.query<
       CategoryFeedData,

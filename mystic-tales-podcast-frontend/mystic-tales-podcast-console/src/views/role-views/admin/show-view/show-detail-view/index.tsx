@@ -10,7 +10,7 @@ import { formatDate, getTimeAgo } from '@/core/utils/date.util';
 import './styles.scss';
 import { SmartAudioPlayer } from '@/views/components/common/audio';
 import { getPublicSource } from '@/core/services/file/file.service';
-import { renderDescriptionHTML } from '@/core/utils/htmlRender.utils';
+import { getTruncatedDescription, renderDescriptionHTML } from '@/core/utils/htmlRender.utils';
 
 
 const ShowDetailView = () => {
@@ -163,7 +163,7 @@ const ShowDetailView = () => {
                                 Channel
                             </Typography>
                             {showDetail.PodcastChannel ? (
-                                <div className="show-detail__channel">
+                                <div className="show-detail__channel hover:cursor-pointer" onClick={() => navigate(`/channel/${showDetail.PodcastChannel.Id}`)}> 
                                     <Image
                                         mainImageFileKey={showDetail.PodcastChannel.MainImageFileKey}
                                         alt={showDetail.PodcastChannel.Name}
@@ -172,7 +172,7 @@ const ShowDetailView = () => {
                                     <div className="show-detail__channel-info">
                                         <h4>{showDetail.PodcastChannel.Name}</h4>
                                         <div className="mb-0" dangerouslySetInnerHTML={{
-                                            __html: renderDescriptionHTML(showDetail.PodcastChannel.Description || ""),
+                                            __html: getTruncatedDescription(showDetail.PodcastChannel.Description, 20)
                                         }}></div>
                                     </div>
                                 </div>
@@ -263,7 +263,11 @@ const ShowDetailView = () => {
                                         return (
                                             <div key={sub.Id} className="show-detail__subscription-card">
                                                 <h4>{sub.Name}</h4>
-                                                <p>{sub.Description || 'No description'}</p>
+                                                <div 
+                                                dangerouslySetInnerHTML={{
+                                                    __html: renderDescriptionHTML(sub.Description)
+                                                }}
+                                                />
                                                 <div className="show-detail__subscription-prices">
                                                     {latestPrices.map((price: any) => (
                                                         <div key={price?.SubscriptionCycleType?.Id ?? price?.SubscriptionCycleTypeId} className="show-detail__price-item">

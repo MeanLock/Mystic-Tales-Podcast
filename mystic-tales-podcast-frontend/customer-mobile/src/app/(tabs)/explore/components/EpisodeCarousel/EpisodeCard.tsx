@@ -1,9 +1,12 @@
 import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
+import PlayButtonVariant2 from "@/src/components/buttons/playButton/playButtonVariant2";
 import HtmlText from "@/src/components/renderHtml/HtmlText";
+import { usePlayer } from "@/src/core/services/player/usePlayer";
 import { Episode } from "@/src/core/types/episode.type";
 import { EpisodeCardWithImageProps } from "@/src/types/episode";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 const ExplicitContentTag = () => {
   return (
@@ -29,40 +32,57 @@ const AudioLengthTag = ({ length }: { length: number }) => {
 };
 
 const EpisodeCard = ({ episode }: { episode: Episode }) => {
+  const router = useRouter();
+  const { state: uiState, play, pause, listenFromEpisode } = usePlayer();
+  const handlePlayPause = (episodeId: string) => {
+    if (uiState.isAudioLoading) {
+      return;
+    }
+    if (uiState.currentAudio) {
+      if (uiState.isPlaying && uiState.currentAudio.id === episodeId) {
+        pause();
+      } else if (uiState.currentAudio.id === episodeId) {
+        play();
+      } else {
+        listenFromEpisode(episodeId, "SpecifyShowEpisodes");
+      }
+    } else {
+      listenFromEpisode(episodeId, "SpecifyShowEpisodes");
+    }
+  };
   return (
     <View style={style.card} key={episode.Id} className="grid grid-cols-12">
-      <View className="col-span-2 flex items-center justify-center">
+      <Pressable
+        onPress={() =>
+          router.push(`/(content)/episodes/details/${episode.Id})`)
+        }
+        className="col-span-2 flex items-center justify-center"
+      >
         <AutoResolvingImage
           FileKey={episode.MainImageFileKey}
           type="PodcastPublicSource"
           style={style.episodeImage}
         />
-      </View>
+      </Pressable>
       {/* <View className="col-span-1 flex items-center justify-center">
         <Text className="text-white font-bold text-[10px]">#{episode.Top}</Text>
       </View> */}
       <View
         style={style.infomations}
-        className="col-span-8  gap-2 flex items-center justify-center"
+        className="col-span-9  gap-2 flex items-center justify-center"
       >
         <View className="flex flex-col gap-1 h-[60px] w-[220px]">
           <Text numberOfLines={1} className="text-white text-[10px] font-bold">
             {episode.Name}
           </Text>
-          <HtmlText
-            html={episode.Description ?? ""}
-            color="#D9D9D9"
-            fontSize={7}
-            numberOfLines={3}
-          />
-          <View className="flex-1 flex flex-row items-end gap-2">
-            {/* {episode.ExplicitContent && <ExplicitContentTag />} */}
-            <AudioLengthTag length={episode.AudioLength} />
+          <View className="w-full items-start mt-5">
+            <PlayButtonVariant2
+              audioId={episode.Id}
+              audioLength={episode.AudioLength}
+              onPlayPress={() => handlePlayPause(episode.Id)}
+            />
           </View>
         </View>
-      </View>
-      <View className="col-span-1 flex items-center justify-center">
-        <MaterialIcons name="more-vert" size={20} color="white" />
       </View>
     </View>
   );

@@ -1,55 +1,80 @@
-export function renderDescriptionHTML(description: string | null) {
+/**
+ * Lấy description ngắn gọn với dấu "..."
+ * @param description - Mô tả đầy đủ
+ * @param maxLength - Độ dài tối đa (mặc định: 100)
+ * @returns Description đã được cắt ngắn
+ */
+export function getTruncatedDescription(
+  description: string | null,
+  maxLength: number = 100
+): string {
   if (!description) return "";
 
-  // --- Tách link và script với custom markers ---
+  // --- Loại bỏ các phần đặc biệt (link, script) ---
   const linkRegex = /\$-\[link\]\$-([\s\S]*?)\$-\[link\]\$-/;
-  const linkMatch = description.match(linkRegex);
-  const customLink = linkMatch ? linkMatch[1].trim() : null;
-
   const scriptRegex = /\$-\[script\]\$-([\s\S]*?)\$-\[script\]\$-/;
-  const scriptMatch = description.match(scriptRegex);
-  const scriptContent = scriptMatch ? scriptMatch[1].trim() : null;
-
-  // --- Loại bỏ các phần đặc biệt khỏi phần mô tả ---
-  let mainContent = description
+  
+  let cleanDescription = description
     .replace(linkRegex, "")
     .replace(scriptRegex, "")
     .trim();
 
-  // --- Kiểm tra xem content có phải là HTML hợp lệ không ---
-  const hasHTMLTags = /<[^>]+>/.test(mainContent);
-  
-  // Nếu không có HTML tags và không có custom link/script, return plain text
-  if (!hasHTMLTags && !customLink && !scriptContent) {
-    return mainContent;
+  // --- Loại bỏ HTML tags ---
+  cleanDescription = cleanDescription.replace(/<[^>]*>/g, "");
+
+  // --- Loại bỏ khoảng trắng thừa ---
+  cleanDescription = cleanDescription.replace(/\s+/g, " ").trim();
+
+  // --- Cắt ngắn và thêm dấu "..." ---
+  if (cleanDescription.length <= maxLength) {
+    return cleanDescription;
   }
 
-  // --- Xử lý HTML content ---
-  let html = '';
-  
-  if (hasHTMLTags) {
-    // Content đã có HTML tags, giữ nguyên
-    html = mainContent;
-  } else {
-    // Plain text, wrap trong <p>
-    html = `<p>${mainContent}</p>`;
-  }
+  return cleanDescription.substring(0, maxLength).trim() + "...";
+}
 
-  // --- Thêm custom link nếu có ---
-  if (customLink) {
+export function renderDescriptionHTML(description: string | null) {
+  if (!description) return "";
+
+
+  // --- Tách link ---
+  const linkRegex = /\$-\[link\]\$-([\s\S]*?)\$-\[link\]\$-/;
+  const linkMatch = description.match(linkRegex);
+  const link = linkMatch ? linkMatch[1].trim() : null;
+
+
+  // --- Tách script ---
+  const scriptRegex = /\$-\[script\]\$-([\s\S]*?)\$-\[script\]\$-/;
+  const scriptMatch = description.match(scriptRegex);
+  const scriptContent = scriptMatch ? scriptMatch[1].trim() : null;
+
+
+  // --- Loại bỏ các phần đặc biệt khỏi phần mô tả còn lại ---
+  let cleanDescription = description
+    .replace(linkRegex, "")
+    .replace(scriptRegex, "")
+    .trim();
+
+
+  // --- Tạo HTML ---
+  let html = ` ${cleanDescription}`;
+
+
+  if (link) {
     html += `
-    <p><strong>Link</strong>: <a href="${customLink}" target="_blank" rel="noopener noreferrer">${customLink}</a></p>`;
+    <p><strong>Link</strong>: <a href="${link}" target="_blank" rel="noopener noreferrer">${link}</a></p>`;
   }
 
-  // --- Thêm script content nếu có ---
+
   if (scriptContent) {
     html += `
     <p><strong>Script</strong>:</p>
-    <div style="margin-top: 10px; border: 1px solid #ccc; padding: 10px; border-radius: 5px; background-color: #f9f9f9;">
+    <div style="margin-top: 10px; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
       ${scriptContent}
     </div>
     `;
   }
+
 
   return html.trim();
 }

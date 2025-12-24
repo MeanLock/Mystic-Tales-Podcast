@@ -23,6 +23,7 @@ interface GetMeResponse {
     PodcastListenSlot: number;
     DeactivatedAt: string;
     IsPodcaster: boolean;
+    IsPodcasterApplying: boolean;
   };
 }
 

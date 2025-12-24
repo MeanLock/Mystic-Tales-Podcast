@@ -1,15 +1,23 @@
 import { pauseAudio } from "@/src/features/mediaPlayer/playerSlice";
 import { RootState } from "@/src/store/store";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { EqualizerVariant1 } from "../../equalizer/Variant1";
 import { usePlayer } from "@/src/core/services/player/usePlayer";
 
 interface PlayButtonProps {
-  episodeId: string;
+  audioId: string;
   audioLength: number;
   onPlayPress: () => void;
+  stopPropagation?: boolean;
 }
 
 const formatAudioLength = (seconds: number): string => {
@@ -42,46 +50,81 @@ const formatAudioLength = (seconds: number): string => {
 };
 
 const PlayButtonVariant2 = ({
-  episodeId,
+  audioId,
   audioLength,
   onPlayPress,
+  stopPropagation = false,
 }: PlayButtonProps) => {
-  // REDUX Play Control
-  const player = useSelector((state: RootState) => state.player);
-
   // HOOKS
-  const dispatch = useDispatch();
-  const { checkIsCurrentPlay } = usePlayer();
-  if (checkIsCurrentPlay(episodeId)) {
-    return (
-      <Pressable
-        style={style.playButton}
-        onPress={() => dispatch(pauseAudio())}
-        className="w-8/12"
-      >
-        <EqualizerVariant1 color="#AEE339" />
-        <Text className="text-[#AEE339] text-xs font-bold">
-          {formatAudioLength(audioLength)}
-        </Text>
-      </Pressable>
-    );
-  } else {
-    return (
-      <Pressable
-        style={style.playButton}
-        className="w-8/12"
-        onPress={onPlayPress}
-      >
+  const { state: uiState } = usePlayer();
+  const debounceTimerRef = useRef<number | null>(null);
+
+  const handlePress = useCallback(
+    (event: any) => {
+      if (stopPropagation) {
+        event.stopPropagation();
+      }
+
+      // Clear previous timer if exists
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      // Set new timer for debounce
+      debounceTimerRef.current = setTimeout(() => {
+        onPlayPress();
+        debounceTimerRef.current = null;
+      }, 1000);
+    },
+    [onPlayPress, stopPropagation]
+  );
+
+  return (
+    <Pressable
+      style={style.playButton}
+      className="w-8/12"
+      onPress={handlePress}
+    >
+      {uiState.isAudioLoading && uiState.loadingAudioId === audioId ? (
+        // Đang load và chính nó đang load
+        <ActivityIndicator size="small" color="#AEE339" />
+      ) : uiState.isAudioLoading ? (
+        // Đang load nhưng không phải nó
+        <MaterialIcons name="play-disabled" size={17} color="#d9d9d9" />
+      ) : uiState.currentAudio && uiState.currentAudio.id === audioId ? (
+        // Đây là currentAudio - hiển thị progress bar
+        <View className="flex flex-row items-center gap-2 h-[17px]">
+          {uiState.isPlaying ? (
+            <EqualizerVariant1 color="#aee339" key={audioId} />
+          ) : (
+            <MaterialIcons name="play-arrow" size={17} color="#AEE339" />
+          )}
+          <View className="w-8 h-[4px] rounded-full bg-slate-50 flex flex-row items-center justify-start overflow-hidden">
+            <View
+              style={{
+                width: `${(uiState.currentTime / uiState.duration) * 100}%`,
+              }}
+              className="h-[4px] rounded-l-full bg-[#aee339]"
+            ></View>
+          </View>
+        </View>
+      ) : (
+        // Không phải currentAudio
         <MaterialIcons name="play-arrow" size={17} color="#AEE339" />
-        <Text
-          numberOfLines={1}
-          className="text-[10px] font-bold text-[#AEE339]"
-        >
-          {formatAudioLength(audioLength)}
-        </Text>
-      </Pressable>
-    );
-  }
+      )}
+
+      <Text
+        numberOfLines={1}
+        className={`text-[10px] font-bold ${
+          uiState.isAudioLoading && uiState.loadingAudioId !== audioId
+            ? "text-[#d9d9d9]"
+            : "text-[#aee339]"
+        }`}
+      >
+        {formatAudioLength(audioLength)}
+      </Text>
+    </Pressable>
+  );
 };
 
 export default PlayButtonVariant2;
@@ -95,6 +138,6 @@ const style = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
+    gap: 7,
   },
 });

@@ -116,7 +116,7 @@ interface Clip {
     trimEnd: number
     track: number
     volume?: number
-
+    imageUrl?: string
     fadeInSec?: number
     fadeOutSec?: number
 }
@@ -136,7 +136,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     const authSlice = ctx?.authSlice;
     const episodeDetail = ctx?.episodeDetail;
     const refreshEpisode = ctx?.refreshEpisode;
-    
+
     // ============ REFS ============
     const waveformRefOriginal = useRef<HTMLDivElement>(null)
     const waveformRefPreview = useRef<HTMLDivElement>(null)
@@ -193,7 +193,6 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         timeoutSeconds: 200,
         intervalSeconds: 5,
     })
-
 
     const fetchBackgroundSounds = async () => {
         setLoading(true);
@@ -253,11 +252,11 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
 
     const progressBarRefSequencer = useRef<HTMLDivElement>(null)
     const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
-    const rulerScrollRef = useRef<HTMLDivElement>(null) 
+    const rulerScrollRef = useRef<HTMLDivElement>(null)
 
     // Sequencer state
     const [clips, setClips] = useState<Clip[]>([])
-    const [pixelsPerSecond, setPPS] = useState(30) 
+    const [pixelsPerSecond, setPPS] = useState(30)
 
     const [isPlayingSequencer, setIsPlayingSequencer] = useState(false)
     const [playhead, setPlayhead] = useState(0)
@@ -270,7 +269,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     const activeNodesRef = useRef<Array<{ src: AudioBufferSourceNode }>>([])
     const rafRef = useRef<number | undefined>(undefined)
     const trackGainsRef = useRef<Array<{ gain: GainNode }>>([])
-    const rowH = 120 
+    const rowH = 120
 
     const [segmentPlayingClipId, setSegmentPlayingClipId] = useState<string | null>(null);
 
@@ -540,6 +539,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                 const newClip: Clip = {
                     id: `${bgSound.Id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
                     name: bgSound.Name,
+                    imageUrl: bgSound.MainImageFileKey,
                     file,
                     fileKey: bgSound.AudioFileKey,
                     buffer,
@@ -562,6 +562,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                 const newClip: Clip = {
                     id: `${bgSound.Id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
                     name: bgSound.Name,
+                    imageUrl: bgSound.MainImageFileKey,
                     file,
                     fileKey: bgSound.AudioFileKey,
                     buffer,
@@ -1392,49 +1393,19 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         const tail = base.slice(-Math.floor(room / 2));
         return `${head}...${tail}${ext}`;
     };
-const connectionRef = useRef<signalR.HubConnection | null>(null);
+    const connectionRef = useRef<signalR.HubConnection | null>(null);
     const authSlice2 = useSelector((state: RootState) => state.auth);
 
     const token = authSlice2.token || "";
     const REST_API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
-    useEffect(() => {
-        // Build connection
-        console.log("Setting up SignalR connection...", token);
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl(`${REST_API_BASE_URL}/api/podcast-service/hubs/podcast-content-notification`, {
-                accessTokenFactory: () => {
-                    return token;
-                }
-            })
-            .withAutomaticReconnect()
-            .build();
-
-        connectionRef.current = connection;
-
-        // Register events
-        connection.on("PodcastEpisodeAudioProcessingCompletedNotification", async (data) => {
-            console.log("Audio processing :", data);
-
-            if (!data.IsSuccess) {
-                console.error("Audio processing failed:", data.ErrorMessage);
-                return;
-            }
-
-            //alert(`Audio processing completed for Podcast ID: ${data}`);
-            await refreshEpisode?.();
-        });
-
-        // Start connection
-        connection.start()
-            .then(() => console.log("SignalR connected"))
-            .catch(err => console.error("SignalR connection error:", err));
-
-        // Cleanup
-        return () => {
-            connection.stop();
-        };
-    }, []);
+    const stopGlobalSegment = useCallback(() => {
+        if (currentSegment.src) {
+            try { currentSegment.src.stop() } catch { }
+            currentSegment = { src: null, clipId: null }
+        }
+        setSegmentPlayingClipId(null)
+    }, [])
     // if (!episodeDetail) {
     //     return (
     //         <div className="flex justify-center items-center h-100">
@@ -1647,7 +1618,13 @@ const connectionRef = useRef<signalR.HubConnection | null>(null);
                                         totalLengthSec={totalLengthSec}
                                         playhead={playhead}
                                         selectedClipId={selectedClipId}
-                                        onSelectClip={(id: string) => setSelectedClipId(id)}
+                                        onSelectClip={(id: string) => {
+                                            if (selectedClipId !== id) {
+                                                stopGlobalSegment();
+                                            }
+                                            setSelectedClipId(id);
+                                        }}
+                                        onStopSegment={stopGlobalSegment}
                                     />
                                 </div>
 
@@ -1716,127 +1693,223 @@ const connectionRef = useRef<signalR.HubConnection | null>(null);
                         </header>
 
 
-                        {selectedClipId && clips.find(c => c.id === selectedClipId && c.track === 1) && (() => {
-                            const selectedClip = clips.find(c => c.id === selectedClipId)!;
-                            const visibleDur = Math.max(0, selectedClip.duration - selectedClip.trimStart - selectedClip.trimEnd);
-                            const isPlaying = segmentPlayingClipId === selectedClip.id; // cần tách state này ra ngoài ClipRnd
+                        {clips.some(c => c.track === 1) && (
+                            selectedClipId && clips.find(c => c.id === selectedClipId && c.track === 1) ? (
+                                (() => {
+                                    const selectedClip = clips.find(c => c.id === selectedClipId)!;
+                                    const visibleDur = Math.max(0, selectedClip.duration - selectedClip.trimStart - selectedClip.trimEnd);
+                                    const isPlaying = segmentPlayingClipId === selectedClip.id; // cần tách state này ra ngoài ClipRnd
+                                    {/* Selected Clip Detail */ }
+                                    return (
+                                        <div className="mt-6 p-3  ">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Image
+                                                        mainImageFileKey={`${selectedClip?.imageUrl || ''}`}
+                                                        className="w-12 h-12 object-cover rounded-sm"
+                                                    />
+                                                    <span className="text-sm text-[#AEE339] font-semibold" title={selectedClip.name}>{selectedClip.name}</span>
 
-                            return (
-                                <div className="mt-4 p-3 rounded border border-slate-700 bg-slate-800">
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {/* Play/Stop */}
+                                                    <IconButton
+                                                        onClick={() => {
+                                                            const from = selectedClip.trimStart;
+                                                            const dur = visibleDur;
+                                                            if (isPlaying) {
+                                                                stopGlobalSegment();
+                                                            } else {
+                                                                // play
+                                                                const ac = getAC();
+                                                                stopGlobalSegment()
+                                                                try {
+                                                                    const source = ac.createBufferSource();
+                                                                    source.buffer = selectedClip.buffer;
+                                                                    const gain = ac.createGain();
+                                                                    const linearBase = Math.pow(10, (selectedClip.volume ?? -5) / 20);
+                                                                    gain.gain.value = 0;
+                                                                    source.connect(gain).connect(ac.destination);
+                                                                    source.start(0, from, dur);
+
+                                                                    // fade
+                                                                    const fi = 0.5, fo = 0.5;
+                                                                    const now = ac.currentTime;
+                                                                    const segStart = now;
+                                                                    const segEnd = now + dur;
+                                                                    if (fi > 0) {
+                                                                        gain.gain.setValueAtTime(0, segStart);
+                                                                        gain.gain.linearRampToValueAtTime(linearBase, segStart + Math.min(fi, dur));
+                                                                    } else {
+                                                                        gain.gain.setValueAtTime(linearBase, segStart);
+                                                                    }
+                                                                    if (fo > 0) {
+                                                                        const fadeOutStart = Math.max(segStart, segEnd - fo);
+                                                                        gain.gain.setValueAtTime(linearBase, fadeOutStart);
+                                                                        gain.gain.linearRampToValueAtTime(0.0001, segEnd);
+                                                                    }
+
+                                                                    currentSegment = { src: source, clipId: selectedClip.id };
+                                                                    setSegmentPlayingClipId(selectedClip.id);
+                                                                    source.onended = () => {
+                                                                        if (currentSegment.src === source) {
+                                                                            currentSegment = { src: null, clipId: null };
+                                                                        }
+                                                                        setSegmentPlayingClipId(null);
+                                                                    };
+                                                                } catch (e) {
+                                                                    toast.info(`Playing segment ${from.toFixed(2)}s → ${(from + dur).toFixed(2)}s`);
+                                                                }
+                                                            }
+                                                        }}
+                                                        size="small"
+                                                        sx={{ color: '#888', '&:hover': { color: '#AEE339' } }}
+                                                        title={isPlaying ? "Stop segment" : "Play segment"}
+                                                    >
+                                                        {isPlaying ? <Pause /> : <PlayArrow />}
+                                                    </IconButton>
+
+                                                    {/* Delete */}
+                                                    <IconButton
+                                                        onClick={() => {
+                                                            stopGlobalSegment();
+                                                            setClips(prev => prev.filter(c => c.id !== selectedClip.id));
+                                                            setSelectedClipId(null);
+                                                        }}
+                                                        size="small"
+                                                        sx={{ color: '#888', '&:hover': { color: '#f44336' } }}
+                                                        title="Delete clip"
+                                                    >
+                                                        <Delete />
+                                                    </IconButton>
+                                                    <div className="text-[#888] text-sm">{secondsToTime(visibleDur)}</div>
+
+                                                </div>
+                                            </div>
+                                            {/* Volume slider */}
+                                            <div>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <h4 className="text-xs font-medium text-white flex items-center gap-2">
+                                                        <span style={{ color: '#999' }}>Background Volumes</span>
+                                                        <Tooltip placement="top-start" title="Adjust volume for each background before merging, suggested range is -15 dB to -5 dB">
+                                                            <Question color="var(--third-grey)" size={14} />
+                                                        </Tooltip>
+                                                    </h4>
+                                                    <span className="text-xs text-[#aee339]">{(selectedClip.volume ?? -5).toFixed(1)} dB</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min={-20}
+                                                    max={10}
+                                                    step={0.5}
+                                                    value={selectedClip.volume ?? -5}
+                                                    onChange={(e) => {
+                                                        const newVolume = Number.parseFloat(e.target.value);
+                                                        setClips(prev => prev.map(c =>
+                                                            c.id === selectedClip.id ? { ...c, volume: newVolume } : c
+                                                        ));
+                                                    }}
+                                                    className="episode-audio__volume-slider is-active"
+                                                />
+                                                <div className="flex justify-between text-xs mt-1" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                                    <span>-20</span><span>+10</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })()
+                            ) : (
+                                <div className="mt-6 p-3">
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm font-semibold text-white">Selected:</span>
-                                            <span className="text-sm text-[#AEE339]" title={selectedClip.name}>{selectedClip.name}</span>
+                                            <Skeleton
+                                                variant="rectangular"
+                                                width={48}
+                                                height={48}
+                                                sx={{
+                                                    bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                                    borderRadius: '4px'
+                                                }}
+                                            />
+                                            <Skeleton
+                                                variant="text"
+                                                width={150}
+                                                height={20}
+                                                sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }}
+                                            />
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            {/* Play/Stop */}
-                                            <IconButton
-                                                onClick={() => {
-                                                    const from = selectedClip.trimStart;
-                                                    const dur = visibleDur;
-                                                    if (isPlaying) {
-                                                        // stop
-                                                        if (currentSegment.src && currentSegment.clipId === selectedClip.id) {
-                                                            try { currentSegment.src.stop() } catch { }
-                                                            currentSegment = { src: null, clipId: null };
-                                                        }
-                                                        setSegmentPlayingClipId(null);
-                                                    } else {
-                                                        // play
-                                                        const ac = getAC();
-                                                        if (currentSegment.src) {
-                                                            try { currentSegment.src.stop() } catch { }
-                                                            currentSegment = { src: null, clipId: null };
-                                                            setSegmentPlayingClipId(null);
-                                                        }
-                                                        try {
-                                                            const source = ac.createBufferSource();
-                                                            source.buffer = selectedClip.buffer;
-                                                            const gain = ac.createGain();
-                                                            const linearBase = Math.pow(10, (selectedClip.volume ?? -5) / 20);
-                                                            gain.gain.value = 0;
-                                                            source.connect(gain).connect(ac.destination);
-                                                            source.start(0, from, dur);
-
-                                                            // fade
-                                                            const fi = 0.5, fo = 0.5;
-                                                            const now = ac.currentTime;
-                                                            const segStart = now;
-                                                            const segEnd = now + dur;
-                                                            if (fi > 0) {
-                                                                gain.gain.setValueAtTime(0, segStart);
-                                                                gain.gain.linearRampToValueAtTime(linearBase, segStart + Math.min(fi, dur));
-                                                            } else {
-                                                                gain.gain.setValueAtTime(linearBase, segStart);
-                                                            }
-                                                            if (fo > 0) {
-                                                                const fadeOutStart = Math.max(segStart, segEnd - fo);
-                                                                gain.gain.setValueAtTime(linearBase, fadeOutStart);
-                                                                gain.gain.linearRampToValueAtTime(0.0001, segEnd);
-                                                            }
-
-                                                            currentSegment = { src: source, clipId: selectedClip.id };
-                                                            setSegmentPlayingClipId(selectedClip.id);
-                                                            source.onended = () => {
-                                                                if (currentSegment.src === source) {
-                                                                    currentSegment = { src: null, clipId: null };
-                                                                }
-                                                                setSegmentPlayingClipId(null);
-                                                            };
-                                                        } catch (e) {
-                                                            toast.info(`Playing segment ${from.toFixed(2)}s → ${(from + dur).toFixed(2)}s`);
-                                                        }
-                                                    }
-                                                }}
-                                                size="small"
-                                                sx={{ color: '#AEE339', '&:hover': { color: '#7BA225' } }}
-                                                title={isPlaying ? "Stop segment" : "Play segment"}
-                                            >
-                                                {isPlaying ? <Pause /> : <PlayArrow />}
-                                            </IconButton>
-
-                                            {/* Delete */}
-                                            <IconButton
-                                                onClick={() => {
-                                                    setClips(prev => prev.filter(c => c.id !== selectedClip.id));
-                                                    setSelectedClipId(null);
-                                                }}
-                                                size="small"
-                                                sx={{ color: '#888', '&:hover': { color: '#f44336' } }}
-                                                title="Delete clip"
-                                            >
-                                                <Delete />
-                                            </IconButton>
+                                            <Skeleton
+                                                variant="circular"
+                                                width={32}
+                                                height={32}
+                                                sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }}
+                                            />
+                                            <Skeleton
+                                                variant="circular"
+                                                width={32}
+                                                height={32}
+                                                sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }}
+                                            />
+                                            <Skeleton
+                                                variant="text"
+                                                width={60}
+                                                height={20}
+                                                sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }}
+                                            />
                                         </div>
                                     </div>
 
-                                    {/* Volume slider */}
+                                    {/* Volume slider skeleton */}
                                     <div>
                                         <div className="flex justify-between items-center mb-1">
-                                            <span className="text-xs text-slate-300">Volume</span>
-                                            <span className="text-xs text-slate-400">{(selectedClip.volume ?? -5).toFixed(1)} dB</span>
+                                            <Skeleton
+                                                variant="text"
+                                                width={100}
+                                                height={16}
+                                                sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }}
+                                            />
+                                            <Skeleton
+                                                variant="text"
+                                                width={50}
+                                                height={16}
+                                                sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }}
+                                            />
                                         </div>
-                                        <input
-                                            type="range"
-                                            min={-20}
-                                            max={10}
-                                            step={0.5}
-                                            value={selectedClip.volume ?? -5}
-                                            onChange={(e) => {
-                                                const newVolume = Number.parseFloat(e.target.value);
-                                                setClips(prev => prev.map(c =>
-                                                    c.id === selectedClip.id ? { ...c, volume: newVolume } : c
-                                                ));
+                                        <Skeleton
+                                            variant="rectangular"
+                                            width="100%"
+                                            height={4}
+                                            sx={{
+                                                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                                borderRadius: '2px'
                                             }}
-                                            className="episode-audio__volume-slider is-active"
                                         />
-                                        <div className="flex justify-between text-xs mt-1" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                                            <span>-20</span><span>0</span><span>+10</span>
+                                        <div className="flex justify-between mt-1">
+                                            <Skeleton
+                                                variant="text"
+                                                width={30}
+                                                height={14}
+                                                sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)' }}
+                                            />
+                                            <Skeleton
+                                                variant="text"
+                                                width={30}
+                                                height={14}
+                                                sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)' }}
+                                            />
                                         </div>
                                     </div>
+
+                                    {/* Hint text */}
+                                    <div className="mt-3 text-center">
+                                        <p className="text-xs text-white/70 italic">
+                                            Click on a background clip to view details
+                                        </p>
+                                    </div>
                                 </div>
-                            );
-                        })()}
+                            )
+                        )}
                     </div>
                 )}
                 {/* Preview Audio Section */}
@@ -2132,7 +2205,7 @@ const connectionRef = useRef<signalR.HubConnection | null>(null);
                                 ))}
                             </div>
 
-                            {clips.filter(c => c.track === 1).length > 0 && (
+                            {/* {clips.filter(c => c.track === 1).length > 0 && (
                                 <div className="mt-4 pt-3 border-t" style={{ borderColor: 'rgba(174, 227, 57, 0.15)' }}>
                                     <h4 className="text-sm font-medium mb-3 text-white flex items-center gap-2">
                                         <span style={{ color: '#999' }}>Background Volumes</span>
@@ -2181,13 +2254,13 @@ const connectionRef = useRef<signalR.HubConnection | null>(null);
                                                     className={`episode-audio__volume-slider ${isActive ? 'is-active' : ''}`}
                                                 />
                                                 <div className="flex justify-between text-xs mt-1" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                                                    <span>-20</span><span>0</span><span>+10</span>
+                                                    <span>-20</span><span>+10</span>
                                                 </div>
                                             </div>
                                         )
                                     })}
                                 </div>
-                            )}
+                            )} */}
                         </div>
                     )}
                 </div>

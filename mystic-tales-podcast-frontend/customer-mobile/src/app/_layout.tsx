@@ -10,15 +10,14 @@ import {
   useNavigationContainerRef,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack, usePathname, useSegments } from "expo-router";
+import { Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Provider, useSelector } from "react-redux";
+import { Provider } from "react-redux";
 import { useColorScheme } from "@/src/components/useColorScheme";
 
 import "../../global.css";
 import { persistor, RootState, store } from "../store/store";
-import { bootstrapAuth } from "../utils/helpers/boostrapHelper";
 import SetUp from "./setUp";
 import { PersistGate } from "redux-persist/integration/react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -136,10 +135,6 @@ function AppBody() {
     }).start();
   }, [targetBottom, bottomAnim]);
 
-  useEffect(() => {
-    bootstrapAuth(store.dispatch);
-  }, []);
-
   // Bottom Sheet Modal state
   const [isButtonVisibleLocal, setIsButtonVisibleLocal] = useState(true);
   const bottomSheetModalRef = useRef<MediaPlayerModalRef>(null);
@@ -156,10 +151,6 @@ function AppBody() {
     console.log("handleSheetChanges", index);
   }, []);
 
-  // derive from Redux: hide button when player stopped
-  const playStatus = useSelector(
-    (s: RootState) => s.player.playMode.playStatus
-  );
   const { state: UiState } = usePlayer();
 
   // Auto-update last duration every 2 seconds when playing

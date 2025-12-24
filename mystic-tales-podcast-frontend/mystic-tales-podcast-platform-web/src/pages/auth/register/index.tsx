@@ -593,7 +593,7 @@ const RegisterPage = () => {
           if (!open) closeVerificationModal();
         }}
       >
-        <DialogContent className="sm:max-w-[420px] border border-white/10 bg-black/80 text-white">
+        <DialogContent className="z-9999 sm:max-w-[420px] border border-white/10 bg-black/80 text-white">
           <DialogHeader>
             <DialogTitle className="text-mystic-green">
               Verify Your Account

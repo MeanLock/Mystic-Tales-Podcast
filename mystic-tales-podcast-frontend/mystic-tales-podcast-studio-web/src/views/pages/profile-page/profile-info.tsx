@@ -25,15 +25,12 @@ import {
 import { ExpandMore, ExpandLess, Search } from '@mui/icons-material';
 
 import { useQuill } from 'react-quilljs';
-import 'quill/dist/quill.snow.css';
 import { ProfileViewContext } from '.';
 import { useSagaPolling } from '@/core/hooks/useSagaPolling';
 import { updatePodcasterProfile } from '@/core/services/account/account.service';
 import { loginRequiredAxiosInstance } from '@/core/api/rest-api/config/instances/v2';
 import { toast } from 'react-toastify';
 import Loading from '@/views/components/common/loading';
-import { s } from 'graphql-ws/dist/common-DY-PBNYy';
-import { format } from 'path';
 import { formatDate } from '@/core/utils/date.util';
 import { getBuddyCommitment } from '@/core/services/file/file.service';
 import { DocumentViewer } from '@/views/components/common/document';
@@ -44,7 +41,6 @@ import { setAuthToken } from '@/redux/auth/authSlice';
 import { RootState } from '@/redux/rootReducer';
 import { getBookingTone, getBookingToneList, updateBookingTone } from '@/core/services/booking/booking.service';
 import { BookingTone } from '@/core/types';
-import { set } from 'lodash';
 
 
 interface ProfileInfoProps {

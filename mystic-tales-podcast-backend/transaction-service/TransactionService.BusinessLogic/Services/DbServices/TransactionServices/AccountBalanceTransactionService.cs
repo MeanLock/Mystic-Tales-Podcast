@@ -24,6 +24,7 @@ using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain
 using TransactionService.BusinessLogic.DTOs.PodcastSubscription;
 using TransactionService.BusinessLogic.DTOs.Snippet;
 using TransactionService.BusinessLogic.DTOs.Transaction;
+using TransactionService.BusinessLogic.DTOs.Account;
 using TransactionService.BusinessLogic.Enums;
 using TransactionService.BusinessLogic.Enums.Account;
 using TransactionService.BusinessLogic.Enums.Kafka;
@@ -68,7 +69,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
         private readonly IMessagingService _messagingService;
         private readonly DateHelper _dateHelper;
         public AccountBalanceTransactionService(
-            AppDbContext appDbContext, 
+            AppDbContext appDbContext,
             ILogger<AccountBalanceTransactionService> logger,
             IGenericRepository<AccountBalanceTransaction> accountBalanceTransactionGenericRepository,
             IGenericRepository<AccountBalanceWithdrawalRequest> accountBalanceWithdrawalRequestGenericRepository,
@@ -125,7 +126,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
 
                     // Save payment history to the database
                     AccountBalanceTransaction newAccountBalanceTransaction = await _accountBalanceTransactionGenericRepository.CreateAsync(accountBalanceTransaction);
-                    
+
 
                     PaymentData paymentData = new PaymentData(orderCode, (int)parameter.Amount, parameter.Description ?? "MTP BANKING NAP TIEN",
                                              [], parameter.CancelUrl, parameter.ReturnUrl);
@@ -377,6 +378,16 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
+                    var account = await GetAccount(parameter.AccountId);
+                    if (account == null)
+                    {
+                        throw new Exception("Account not found.");
+                    }
+                    if(account.Balance < parameter.Amount)
+                    {
+                        throw new Exception("Insufficient balance.");
+                    }
+
                     var newAccountBalanceWithdrawalRequest = new AccountBalanceWithdrawalRequest
                     {
                         AccountId = parameter.AccountId,
@@ -480,7 +491,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     await transaction.CommitAsync();
                     var newRequestData = command.RequestData;
                     newRequestData["AccountId"] = accountBalanceWithdrawalRequest.AccountId;
-                    newRequestData["Amount"] = parameter.IsReject ? 0 : accountBalanceWithdrawalRequest.Amount;
+                    newRequestData["Amount"] = parameter.IsReject ? accountBalanceWithdrawalRequest.Amount : 0;
                     var newResponseData = command.RequestData;
                     newResponseData["UpdatedAt"] = accountBalanceWithdrawalRequest.UpdatedAt;
                     var newMessageName = messageName + ".success";
@@ -616,7 +627,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     .OrderByDescending(abwr => abwr.CreatedAt)
                     .ToListAsync();
 
-                if(roleId != (int)RoleEnum.Admin)
+                if (roleId != (int)RoleEnum.Admin)
                 {
                     query = query.Where(abwr => abwr.AccountId == accountId).ToList();
                 }
@@ -626,7 +637,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     var account = await _accountCachingService.GetAccountStatusCacheById(ab.AccountId);
                     return new AccountBalanceWithdrawalRequestListItemResponseDTO
                     {
-                        Id =  ab.Id,
+                        Id = ab.Id,
                         Account = new AccountSnippetResponseDTO
                         {
                             Id = account.Id,
@@ -988,7 +999,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 .Where(ab => ab.CompletedAt.HasValue && ab.IsRejected == false
                 && DateOnly.FromDateTime(ab.CompletedAt.Value) >= startDate && DateOnly.FromDateTime(ab.CompletedAt.Value) <= endDate);
 
-            if(accountId.HasValue)
+            if (accountId.HasValue)
             {
                 query = query.Where(ab => ab.AccountId == accountId.Value);
             }
@@ -1001,7 +1012,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
         {
             var random = new Random();
             long result;
-            
+
             do
             {
                 int length = random.Next(minDigits, maxDigits + 1);
@@ -1011,7 +1022,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
             }
             while (await _accountBalanceTransactionGenericRepository.FindAll()
                 .AnyAsync(a => a.OrderCode == result.ToString()));
-    
+
             return result;
         }
         public async Task<List<BookingDTO>?> GetBookingsByAccountId(int accountId)
@@ -1085,6 +1096,42 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 _logger.LogError(ex, "Error occurred while query podcast subscription registration with accountId: {AccountId}", accountId);
                 throw new HttpRequestException($"Error while querying podcast subscription registration for accountId: {accountId}. Error: {ex.Message}");
             }
+        }
+        public async Task<AccountDTO?> GetAccount(int accountId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                    {
+                        Key = "account",
+                        QueryType = "findbyid",
+                        EntityType = "Account",
+                        Parameters = JObject.FromObject(new
+                        {
+                            id = accountId
+                        }),
+                        Fields = new[] {
+                            "Id",
+                            "Email",
+                            "Password",
+                            "RoleId",
+                            "FullName",
+                            "Dob",
+                            "Gender",
+                            "Address",
+                            "Phone",
+                            "Balance"
+                        }
+                    }
+                }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+
+            if (result.Results["account"] == null) return null;
+
+            return (result.Results["account"] as JObject).ToObject<AccountDTO>();
         }
     }
 }

@@ -187,12 +187,13 @@ export default function SearchScreen() {
   const searchInputRef = useRef<TextInput>(null);
   const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
 
   // HOOKS
   const { data: categoriesData, isLoading: isLoadingCategories } =
     useGetCategoriesQuery();
-  const [getSuggesstKeyword] = useLazyGetAutocompleteWordRealTimeQuery();
+  const [getSuggestKeyword] = useLazyGetAutocompleteWordRealTimeQuery();
   const [getPodcastContentOnKeyword] =
     useLazyGetPodcastContentOnKeywordRealTimeQuery();
 
@@ -201,34 +202,50 @@ export default function SearchScreen() {
     return mapping ? mapping.source : null;
   };
 
-  // Debounce search API calls
+  // Debounce search API calls - Keywords Suggestions
   useEffect(() => {
     if (!searchQuery.trim() || !isSearching) {
       setKeywordSuggestions([]);
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+    const delayTimer = setTimeout(async () => {
+      try {
+        const suggestionsResponse = await getSuggestKeyword({
+          keyword: searchQuery,
+        }).unwrap();
+        setKeywordSuggestions(suggestionsResponse || []);
+      } catch (error) {
+        console.error("Suggestions error:", error);
+        setKeywordSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(delayTimer);
+  }, [searchQuery, isSearching]);
+
+  // Debounce search API calls - Content Results
+  useEffect(() => {
+    if (!searchQuery.trim() || !isSearching) {
       setSearchResults([]);
       return;
     }
 
-    setIsLoadingSearch(true);
+    setIsLoadingContent(true);
     const delayTimer = setTimeout(async () => {
       try {
-        // Get keyword suggestions
-        const suggestionsResponse = await getSuggesstKeyword({
-          keyword: searchQuery,
-        }).unwrap();
-        setKeywordSuggestions(suggestionsResponse || []);
-
-        // Get content results
         const contentResponse = await getPodcastContentOnKeyword({
           keyword: searchQuery,
         }).unwrap();
         setSearchResults(contentResponse?.SearchItemList || []);
       } catch (error) {
-        console.error("Search error:", error);
-        setKeywordSuggestions([]);
+        console.error("Content error:", error);
         setSearchResults([]);
       } finally {
-        setIsLoadingSearch(false);
+        setIsLoadingContent(false);
       }
     }, 500); // 500ms debounce
 
@@ -251,9 +268,7 @@ export default function SearchScreen() {
   const handleSearchSubmit = () => {
     if (searchQuery.trim()) {
       // Navigate to full search results page
-      router.push(
-        `/(tabs)/search/results?keyword=${searchQuery}`
-      );
+      router.push(`/(tabs)/search/results?keyword=${searchQuery}`);
       Keyboard.dismiss();
     }
   };
@@ -264,9 +279,7 @@ export default function SearchScreen() {
 
   const handleKeywordSuggestionPress = (keyword: string) => {
     setSearchQuery(keyword);
-    router.push(
-      `/(tabs)/search/results?keyword=${keyword}`
-    );
+    router.push(`/(tabs)/search/results?keyword=${keyword}`);
   };
 
   const handleContentPress = (item: any) => {
@@ -405,17 +418,23 @@ export default function SearchScreen() {
                   Start typing to search
                 </Text>
               </View>
-            ) : isLoadingSearch ? (
-              // Loading state
-              <View style={searchStyles.loadingContainer}>
-                <ActivityIndicator size="large" color="#AEE339" />
-                <Text style={searchStyles.loadingText}>Searching...</Text>
-              </View>
             ) : (
               // Search results
               <View style={searchStyles.suggestionsContainer}>
-                {/* Keyword Suggestions */}
-                {keywordSuggestions.length > 0 && (
+                {/* Keyword Suggestions Section */}
+                {isLoadingSuggestions ? (
+                  <View style={{ marginBottom: 16 }}>
+                    <Text style={searchStyles.suggestionsHeader}>
+                      Search Suggestions
+                    </Text>
+                    <View style={searchStyles.sectionLoadingContainer}>
+                      <ActivityIndicator size="small" color="#AEE339" />
+                      <Text style={searchStyles.loadingText}>
+                        Loading suggestions...
+                      </Text>
+                    </View>
+                  </View>
+                ) : keywordSuggestions.length > 0 ? (
                   <View style={{ marginBottom: 16 }}>
                     <Text style={searchStyles.suggestionsHeader}>
                       Search Suggestions
@@ -443,10 +462,20 @@ export default function SearchScreen() {
                       </Pressable>
                     ))}
                   </View>
-                )}
+                ) : null}
 
-                {/* Content Results */}
-                {searchResults.length > 0 && (
+                {/* Content Results Section */}
+                {isLoadingContent ? (
+                  <View>
+                    <Text style={searchStyles.suggestionsHeader}>Results</Text>
+                    <View style={searchStyles.sectionLoadingContainer}>
+                      <ActivityIndicator size="small" color="#AEE339" />
+                      <Text style={searchStyles.loadingText}>
+                        Loading results...
+                      </Text>
+                    </View>
+                  </View>
+                ) : searchResults.length > 0 ? (
                   <View>
                     <Text style={searchStyles.suggestionsHeader}>Results</Text>
                     {searchResults.map((item, index) => {
@@ -491,10 +520,11 @@ export default function SearchScreen() {
                       );
                     })}
                   </View>
-                )}
+                ) : null}
 
-                {/* No results */}
-                {!isLoadingSearch &&
+                {/* No results - Chỉ hiển thị khi cả 2 đều load xong và không có kết quả */}
+                {!isLoadingSuggestions &&
+                  !isLoadingContent &&
                   keywordSuggestions.length === 0 &&
                   searchResults.length === 0 && (
                     <View style={searchStyles.noResultsContainer}>
@@ -708,10 +738,16 @@ const searchStyles = StyleSheet.create({
     justifyContent: "center",
     paddingTop: 100,
   },
+  sectionLoadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 4,
+    gap: 12,
+  },
   loadingText: {
     color: "#8E8E93",
-    fontSize: 16,
-    marginTop: 12,
+    fontSize: 14,
   },
   emptyState: {
     flex: 1,

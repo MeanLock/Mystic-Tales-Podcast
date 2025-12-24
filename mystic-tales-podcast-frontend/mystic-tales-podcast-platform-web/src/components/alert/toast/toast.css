@@ -1,0 +1,42 @@
+/* Override react-toastify default styles */
+
+/* Remove default background and padding */
+.Toastify__toast {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  min-height: auto !important;
+}
+
+/* Remove default toast body padding */
+.Toastify__toast-body {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Optional: Adjust container positioning */
+.Toastify__toast-container {
+  width: auto !important;
+  max-width: 500px !important;
+}
+
+/* Remove progress bar if you don't want it */
+.Toastify__progress-bar {
+  background: linear-gradient(to right, #aae339, #4ade80) !important;
+}
+
+/* Optional: Add animation */
+.Toastify__toast--default {
+  animation: toastSlideIn 0.3s ease-out;
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

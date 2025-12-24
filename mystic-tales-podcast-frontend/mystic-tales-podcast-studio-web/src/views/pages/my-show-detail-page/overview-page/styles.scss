@@ -26,7 +26,7 @@
 
     }
 
-      &__action-btn {
+    &__action-btn {
         text-transform: none !important;
         border-radius: 20px !important;
         padding: 6px 2rem !important;
@@ -41,17 +41,19 @@
                 color: white !important;
             }
         }
+
         &--unpublish {
             color: white !important;
             background: linear-gradient(90deg, #ff9800 0%, #f57c00 100%);
-                border: none !important;
+            border: none !important;
 
             &:hover {
                 background: linear-gradient(90deg, #f57c00 0%, #e65100 100%);
                 color: white !important;
                 border: none !important;
             }
-             &:disabled {
+
+            &:disabled {
                 background-color: rgba(255, 255, 255, 0.1) !important;
                 color: rgba(255, 255, 255, 0.4) !important;
             }
@@ -157,13 +159,11 @@
         display: flex;
         flex-wrap: wrap;
         gap: 16px;
-        padding: 20px;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        padding: 18px 30px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.05));
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 12px;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
     }
 
     &__row {
@@ -201,12 +201,39 @@
 
             }
         }
+ &--channel {
+            flex: 2;
+            min-width: 300px;
 
+            .MuiInputLabel-root {
+                color: var(--third-grey);
+            }
+
+            .MuiInputBase-root {
+                color: var(--third-grey);
+                font-family: 'inter', sans-serif !important;
+
+                &::before {
+                    border-bottom: 1px solid var(--third-grey);
+                }
+
+                &:hover:not(.Mui-disabled):before {
+                    border-bottom: 1px solid var(--third-grey);
+                }
+
+                &::after {
+                    border-bottom: 1px solid var(--third-grey);
+                }
+
+            }
+
+        }
         &--status {
             flex: 1;
             min-width: 120px;
-  background-color: #99999912;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+            background-color: #99999912;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+
             .MuiInputLabel-root {
                 color: var(--third-grey);
                 font-size: 0.9rem;
@@ -259,8 +286,9 @@
     &__input-small {
         flex: 1;
         max-width: fit-content;
-  background-color: #99999912;
+        background-color: #99999912;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+
         .MuiInputLabel-root {
             color: var(--third-grey);
             font-size: 0.8em;
@@ -277,7 +305,7 @@
 
     }
 
-   &__hashtags {
+    &__hashtags {
         display: flex;
         flex-direction: column;
         gap: 12px;
@@ -597,6 +625,7 @@
         }
     }
 }
+
 .show-trailer {
     padding: 0;
     color: white;
@@ -1057,10 +1086,12 @@
         cursor: pointer;
         flex: 1;
         margin: 0 12px;
-         overflow: visible; 
+        overflow: visible;
+
         &:hover {
-                    height: 4px;
+            height: 4px;
         }
+
         @media (max-width: 968px) {
             margin: 8px 0;
         }
@@ -1086,36 +1117,39 @@
     }
 
     &__progress-thumb {
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 10px;
-    height: 10px;
-    background-color: #ffffff;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 3;
-    transition: transform 120ms ease, box-shadow 120ms ease;
-
-    /* outer soft halo */
-    &::before {
-        content: '';
         position: absolute;
-        left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
-        width: 20px;   /* outer circle size */
-        height: 20px;
+        width: 10px;
+        height: 10px;
+        background-color: #ffffff;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.15); /* subtle green halo */
-        z-index: 1;
         pointer-events: none;
+        z-index: 3;
+        transition: transform 120ms ease, box-shadow 120ms ease;
+
+        /* outer soft halo */
+        &::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            /* outer circle size */
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            /* subtle green halo */
+            z-index: 1;
+            pointer-events: none;
+        }
+
+
     }
 
-    
 }
 
-}
 .detail-tabs {
     .MuiTabs-root {
         box-shadow: 0 9px 9.4px rgba(0, 0, 0, 0.25);
@@ -1134,7 +1168,8 @@
     .MuiTabs-indicator {
         background-color: var(--primary-green) !important;
     }
-     [role="tabpanel"] {
+
+    [role="tabpanel"] {
         padding: 0.5rem 2.8rem 2rem 2.8rem;
     }
 }
@@ -1427,10 +1462,18 @@
         }
     }
 }
+
 .swal2-container {
     z-index: 99999 !important;
 }
 
 .swal2-popup {
     z-index: 99999 !important;
+}
+
+.slick-track {
+    display: flex !important;
+    flex-direction: row !important;
+    width: auto !important;
+    gap: 16px;
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // usePlayer.ts
 import { useEffect, useState, useCallback } from "react";
 import {
@@ -14,7 +13,10 @@ import {
   useGetBookingLatestSessionMutation,
   useUpdatePlayModeMutation,
 } from "@/core/services/player/player.service"; // file RTK Query của bạn
-import type { SubscriptionBenefit } from "../subscription/subscription.service";
+import {
+  useLazyGetActiveSubscriptionFromEpisodeIdQuery,
+  type SubscriptionBenefit,
+} from "../subscription/subscription.service";
 import type {
   ListenSessionBookingTracks,
   ListenSessionEpisodes,
@@ -33,6 +35,7 @@ import {
   getBookingLatestSession,
   getEpisodeLatestSession,
 } from "./get-latest.service";
+import { alertMessages } from "@/core/data/alert-message.data";
 
 export function usePlayer() {
   const controller = getPlayerController();
@@ -58,6 +61,8 @@ export function usePlayer() {
   const [getPodcastListenSlotCount] = useLazyCheckUserPodcastListenSlotQuery();
   // Update PlayMode
   const [updatePlayMode] = useUpdatePlayModeMutation();
+  const [getActiveSubscriptionFromEpisodeId] =
+    useLazyGetActiveSubscriptionFromEpisodeIdQuery();
 
   useEffect(() => {
     const unsubscribe = controller.attachEvents({
@@ -98,7 +103,11 @@ export function usePlayer() {
       let retryCount = 0;
       const MAX_RETRIES = 3;
 
-      const attemptLoad = async (): Promise<boolean> => {
+      const attemptLoad = async (): Promise<{
+        success: boolean;
+        shouldRetry: boolean;
+        errorData?: { messageId: string; benefits?: string[] };
+      }> => {
         try {
           const listenSlot = await getPodcastListenSlotCount().unwrap();
 
@@ -115,7 +124,8 @@ export function usePlayer() {
                     isClosable: true,
                   })
                 );
-                return false;
+                // Không retry vì đây là lỗi quota
+                return { success: false, shouldRetry: false };
               }
             }
           } else {
@@ -130,25 +140,42 @@ export function usePlayer() {
                   isClosable: true,
                 })
               );
-              return false;
+              // Không retry vì đây là lỗi quota
+              return { success: false, shouldRetry: false };
             }
           }
 
-          const resAPI = await listenToEpisode({
+          const res = await listenToEpisode({
             PodcastEpisodeId: audioId,
             SourceType: "SpecifyShowEpisodes",
             CurrentPodcastSubscriptionRegistrationBenefitList: benefitsList,
           }).unwrap();
 
-          const res = resAPI.data;
+          if (res.isError) {
+            console.log("Res khi lỗi: ", res);
+            const { messageId, benefits } = res;
 
-          if (res === null || res === undefined) {
-            return;
+            // Nếu là các lỗi cụ thể (không phải listen-failed-1), KHÔNG retry
+            if (messageId !== "listen-failed-1") {
+              return {
+                success: false,
+                shouldRetry: false,
+                errorData: { messageId, benefits },
+              };
+            }
+
+            // Nếu là listen-failed-1, cho phép retry
+            return {
+              success: false,
+              shouldRetry: true,
+              errorData: { messageId },
+            };
           }
 
-          const session = res.ListenSession as ListenSessionEpisodes;
-          const procedure =
-            res.ListenSessionProcedure as ListenSessionProcedure;
+          // SUCCESS case
+          const session = res.data?.ListenSession as ListenSessionEpisodes;
+          const procedure = res.data
+            ?.ListenSessionProcedure as ListenSessionProcedure;
 
           // Lưu session và procedure vào redux store
           dispatch(setListenSession(session));
@@ -161,20 +188,32 @@ export function usePlayer() {
             seekTo: 0,
             isSeekThenPlay: true,
           });
-          return true;
+          return { success: true, shouldRetry: false };
         } catch (error) {
           console.error(
             `Error in playEpisodeFromSpecifyShow (attempt ${retryCount + 1}):`,
             error
           );
-          return false;
+          // Exception cũng cho phép retry
+          return { success: false, shouldRetry: true };
         }
       };
 
       try {
-        while (retryCount < MAX_RETRIES) {
-          const success = await attemptLoad();
-          if (success) break;
+        let shouldStopRetrying = false;
+        let errorData: { messageId: string; benefits?: string[] } | undefined;
+
+        while (retryCount < MAX_RETRIES && !shouldStopRetrying) {
+          const result = await attemptLoad();
+
+          if (result.success) break;
+
+          // Nếu không nên retry (lỗi cụ thể), break ngay
+          if (!result.shouldRetry) {
+            shouldStopRetrying = true;
+            errorData = result.errorData;
+            break;
+          }
 
           retryCount++;
           if (retryCount < MAX_RETRIES) {
@@ -185,7 +224,79 @@ export function usePlayer() {
           }
         }
 
-        if (retryCount >= MAX_RETRIES) {
+        // Xử lý lỗi không retry (lỗi cụ thể)
+        if (shouldStopRetrying && errorData) {
+          controller.stop();
+          dispatch(setListenSession(null));
+          dispatch(setListenSessionProcedure(null));
+
+          if (errorData.messageId === "listen-failed-3/4") {
+            // TỪ TỪ XỬ LÝ
+            const activeSubscription = await getActiveSubscriptionFromEpisodeId(
+              { PodcastEpisodeId: audioId }
+            ).unwrap();
+            if (!activeSubscription.PodcastSubscription) {
+              const alertMessage = alertMessages.find(
+                (alert) => alert.id === "listen-failed-3"
+              );
+              if (alertMessage) {
+                dispatch(
+                  showAlert({
+                    type: "error",
+                    title: alertMessage.title,
+                    description: errorData.benefits
+                      ? alertMessage.description + errorData.benefits.join(", ")
+                      : alertMessage.description,
+                    isAutoClose: true,
+                    autoCloseDuration: 10,
+                    isClosable: true,
+                    isFunctional: false,
+                  })
+                );
+              }
+            } else {
+              const alertMessage = alertMessages.find(
+                (alert) => alert.id === "listen-failed-4"
+              );
+              if (alertMessage) {
+                dispatch(
+                  showAlert({
+                    type: "error",
+                    title: alertMessage.title,
+                    description: errorData.benefits
+                      ? alertMessage.description + errorData.benefits.join(", ")
+                      : alertMessage.description,
+                    isAutoClose: true,
+                    autoCloseDuration: 10,
+                    isClosable: true,
+                    isFunctional: false,
+                  })
+                );
+              }
+            }
+          }
+          // Hiển thị lỗi cụ thể dựa trên messageId
+          const alertMessage = alertMessages.find(
+            (alert) => alert.id === errorData.messageId
+          );
+          if (alertMessage) {
+            dispatch(
+              showAlert({
+                type: "error",
+                title: alertMessage.title,
+                description: errorData.benefits
+                  ? alertMessage.description + errorData.benefits.join(", ")
+                  : alertMessage.description,
+                isAutoClose: true,
+                autoCloseDuration: 10,
+                isClosable: true,
+                isFunctional: false,
+              })
+            );
+          }
+        }
+        // Xử lý lỗi retry hết lần (listen-failed-1)
+        else if (retryCount >= MAX_RETRIES) {
           console.error("Max retries reached. Clearing state.");
           controller.stop();
           dispatch(setListenSession(null));
@@ -193,9 +304,8 @@ export function usePlayer() {
           dispatch(
             showAlert({
               type: "error",
-              title: "Playback Failed",
-              description:
-                "Unable to load audio after multiple attempts. Please try again later.",
+              title: "Opps!",
+              description: "Something wrong happended. Please try again later.",
               isAutoClose: true,
               isClosable: true,
             })
@@ -228,7 +338,11 @@ export function usePlayer() {
       let retryCount = 0;
       const MAX_RETRIES = 3;
 
-      const attemptLoad = async (): Promise<boolean> => {
+      const attemptLoad = async (): Promise<{
+        success: boolean;
+        shouldRetry: boolean;
+        errorData?: { messageId: string; benefits?: string[] };
+      }> => {
         try {
           const res = await listenToEpisode({
             PodcastEpisodeId: audioId,
@@ -237,9 +351,29 @@ export function usePlayer() {
             continue_listen_session_id: continueSessionId,
           }).unwrap();
 
-          const session = res.ListenSession as ListenSessionEpisodes;
-          const procedure =
-            res.ListenSessionProcedure as ListenSessionProcedure;
+          if (res.isError) {
+            const { messageId, benefits } = res;
+
+            // Nếu là các lỗi cụ thể (không phải listen-failed-1), KHÔNG retry
+            if (messageId !== "listen-failed-1") {
+              return {
+                success: false,
+                shouldRetry: false,
+                errorData: { messageId, benefits },
+              };
+            }
+
+            // Nếu là listen-failed-1, cho phép retry
+            return {
+              success: false,
+              shouldRetry: true,
+              errorData: { messageId },
+            };
+          }
+
+          const session = res.data?.ListenSession as ListenSessionEpisodes;
+          const procedure = res.data
+            ?.ListenSessionProcedure as ListenSessionProcedure;
 
           dispatch(setListenSession(session));
           dispatch(setListenSessionProcedure(procedure));
@@ -251,20 +385,30 @@ export function usePlayer() {
             seekTo: seekTo,
             isSeekThenPlay: true,
           });
-          return true;
+          return { success: true, shouldRetry: false };
         } catch (error) {
           console.error(
             `Error in playContinueListening (attempt ${retryCount + 1}):`,
             error
           );
-          return false;
+          return { success: false, shouldRetry: true };
         }
       };
 
       try {
-        while (retryCount < MAX_RETRIES) {
-          const success = await attemptLoad();
-          if (success) break;
+        let shouldStopRetrying = false;
+        let errorData: { messageId: string; benefits?: string[] } | undefined;
+
+        while (retryCount < MAX_RETRIES && !shouldStopRetrying) {
+          const result = await attemptLoad();
+
+          if (result.success) break;
+
+          if (!result.shouldRetry) {
+            shouldStopRetrying = true;
+            errorData = result.errorData;
+            break;
+          }
 
           retryCount++;
           if (retryCount < MAX_RETRIES) {
@@ -275,7 +419,33 @@ export function usePlayer() {
           }
         }
 
-        if (retryCount >= MAX_RETRIES) {
+        if (shouldStopRetrying && errorData) {
+          controller.stop();
+          dispatch(setListenSession(null));
+          dispatch(setListenSessionProcedure(null));
+
+          // Hiển thị lỗi cụ thể dựa trên messageId
+          const alertMessage = alertMessages.find(
+            (alert) => alert.id === errorData.messageId
+          );
+          if (alertMessage) {
+            dispatch(
+              showAlert({
+                type: "error",
+                title: alertMessage.title,
+                description: errorData.benefits
+                  ? alertMessage.description + errorData.benefits.join(", ")
+                  : alertMessage.description,
+                isAutoClose: true,
+                autoCloseDuration: 10,
+                isClosable: true,
+                isFunctional: false,
+              })
+            );
+          }
+        }
+        // Xử lý lỗi retry hết lần (listen-failed-1)
+        else if (retryCount >= MAX_RETRIES) {
           console.error("Max retries reached. Clearing state.");
           controller.stop();
           dispatch(setListenSession(null));
@@ -314,7 +484,11 @@ export function usePlayer() {
       let retryCount = 0;
       const MAX_RETRIES = 3;
 
-      const attemptLoad = async (): Promise<boolean> => {
+      const attemptLoad = async (): Promise<{
+        success: boolean;
+        shouldRetry: boolean;
+        errorData?: { messageId: string; benefits?: string[] };
+      }> => {
         try {
           const listenSlot = await getPodcastListenSlotCount().unwrap();
 
@@ -331,7 +505,8 @@ export function usePlayer() {
                     isClosable: true,
                   })
                 );
-                return false;
+                // Không retry vì đây là lỗi quota
+                return { success: false, shouldRetry: false };
               }
             }
           } else {
@@ -346,7 +521,8 @@ export function usePlayer() {
                   isClosable: true,
                 })
               );
-              return false;
+              // Không retry vì đây là lỗi quota
+              return { success: false, shouldRetry: false };
             }
           }
 
@@ -356,9 +532,30 @@ export function usePlayer() {
             CurrentPodcastSubscriptionRegistrationBenefitList: benefitsList,
           }).unwrap();
 
-          const session = res.ListenSession as ListenSessionEpisodes;
-          const procedure =
-            res.ListenSessionProcedure as ListenSessionProcedure;
+          if (res.isError) {
+            const { messageId, benefits } = res;
+
+            // Nếu là các lỗi cụ thể (không phải listen-failed-1), KHÔNG retry
+            if (messageId !== "listen-failed-1") {
+              return {
+                success: false,
+                shouldRetry: false,
+                errorData: { messageId, benefits },
+              };
+            }
+
+            // Nếu là listen-failed-1, cho phép retry
+            return {
+              success: false,
+              shouldRetry: true,
+              errorData: { messageId },
+            };
+          }
+
+          // SUCCESS case
+          const session = res.data?.ListenSession as ListenSessionEpisodes;
+          const procedure = res.data
+            ?.ListenSessionProcedure as ListenSessionProcedure;
 
           dispatch(setListenSession(session));
           dispatch(setListenSessionProcedure(procedure));
@@ -370,7 +567,7 @@ export function usePlayer() {
             seekTo: 0,
             isSeekThenPlay: true,
           });
-          return true;
+          return { success: true, shouldRetry: false };
         } catch (error) {
           console.error(
             `Error in playEpisodeFromSavedEpisodes (attempt ${
@@ -378,14 +575,26 @@ export function usePlayer() {
             }):`,
             error
           );
-          return false;
+          // Exception cũng cho phép retry
+          return { success: false, shouldRetry: true };
         }
       };
 
       try {
-        while (retryCount < MAX_RETRIES) {
-          const success = await attemptLoad();
-          if (success) break;
+        let shouldStopRetrying = false;
+        let errorData: { messageId: string; benefits?: string[] } | undefined;
+
+        while (retryCount < MAX_RETRIES && !shouldStopRetrying) {
+          const result = await attemptLoad();
+
+          if (result.success) break;
+
+          // Nếu không nên retry (lỗi cụ thể), break ngay
+          if (!result.shouldRetry) {
+            shouldStopRetrying = true;
+            errorData = result.errorData;
+            break;
+          }
 
           retryCount++;
           if (retryCount < MAX_RETRIES) {
@@ -396,7 +605,34 @@ export function usePlayer() {
           }
         }
 
-        if (retryCount >= MAX_RETRIES) {
+        // Xử lý lỗi không retry (lỗi cụ thể)
+        if (shouldStopRetrying && errorData) {
+          controller.stop();
+          dispatch(setListenSession(null));
+          dispatch(setListenSessionProcedure(null));
+
+          // Hiển thị lỗi cụ thể dựa trên messageId
+          const alertMessage = alertMessages.find(
+            (alert) => alert.id === errorData.messageId
+          );
+          if (alertMessage) {
+            dispatch(
+              showAlert({
+                type: "error",
+                title: alertMessage.title,
+                description: errorData.benefits
+                  ? alertMessage.description + errorData.benefits.join(", ")
+                  : alertMessage.description,
+                isAutoClose: true,
+                autoCloseDuration: 10,
+                isClosable: true,
+                isFunctional: false,
+              })
+            );
+          }
+        }
+        // Xử lý lỗi retry hết lần (listen-failed-1)
+        else if (retryCount >= MAX_RETRIES) {
           console.error("Max retries reached. Clearing state.");
           controller.stop();
           dispatch(setListenSession(null));

@@ -73,11 +73,21 @@ const useProducingRequestColumnDefs = () => {
             headerName: "Created At",
             cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.8rem' },
             valueGetter: (params: { data: any }) => formatDate(params.data.CreatedAt),
+             comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                const dateA = new Date(nodeA.data.CreatedAt).getTime();
+                const dateB = new Date(nodeB.data.CreatedAt).getTime();
+                return dateA - dateB;
+            },
         },
         {
             headerName: "Accept",
             cellClass: 'd-flex align-items-center justify-content-center',
             cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+             valueGetter: (params: { data: any }) => {
+                if (params.data.IsAccepted) return 0;
+                if (!params.data.IsAccepted === false) return 1;
+                return 2;
+            },
             cellRenderer: (params: any) => {
                 let status = {
                     title: '',
@@ -228,8 +238,10 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
             case 'Quotation Dealing':
                 return { color: '#ffb300', bg: 'rgba(255, 179, 0, 0.15)' };
             case 'Quotation Cancelled':
-                case 'Cancelled Manually':
-                case 'Podcast Buddy Cancel Request':
+            case 'Cancelled Manually':
+            case 'Cancelled Automatically':
+            case 'Customer Cancel Request':
+            case 'Podcast Buddy Cancel Request':
             case 'Quotation Rejected':
                 return { color: '#f2545b', bg: 'rgba(242, 84, 91, 0.15)' };
             default:
@@ -293,27 +305,27 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
                     <Typography variant="h4" className="booking-detail__title">
                         {Booking.Title}
                     </Typography>
-                      {Booking.BookingManualCancelledReason && (
-                <div className="flex items-center gap-2 bg-red-100 border border-red-400  rounded px-3 py-2 mb-3 " style={{ width: "fit-content" }}>
-                    <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
-                    </svg>
-                    <span className="text-xs text-red-700 font-medium">
-                        <strong>Cancel Reason:</strong> {Booking.BookingManualCancelledReason}
-                    </span>
-                </div>
-            )}
-                          {Booking.BookingAutoCancelledReason && (
-                <div className="flex items-center gap-2 bg-red-100 border border-red-400  rounded px-3 py-2 mb-3 " style={{ width: "fit-content" }}>
-                    <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
-                    </svg>
-                    <span className="text-xs text-red-700 font-medium">
-                        <strong>Cancel Reason:</strong> {Booking.BookingAutoCancelledReason}
-                    </span>
-                </div>
-            )}
-               
+                    {Booking.BookingManualCancelledReason && (
+                        <div className="flex items-center gap-2 bg-red-100 border border-red-400  rounded px-3 py-2 mb-3 " style={{ width: "fit-content" }}>
+                            <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
+                            </svg>
+                            <span className="text-xs text-red-700 font-medium">
+                                <strong>Cancel Reason:</strong> {Booking.BookingManualCancelledReason}
+                            </span>
+                        </div>
+                    )}
+                    {Booking.BookingAutoCancelledReason && (
+                        <div className="flex items-center gap-2 bg-red-100 border border-red-400  rounded px-3 py-2 mb-3 " style={{ width: "fit-content" }}>
+                            <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
+                            </svg>
+                            <span className="text-xs text-red-700 font-medium">
+                                <strong>Cancel Reason:</strong> {Booking.BookingAutoCancelledReason}
+                            </span>
+                        </div>
+                    )}
+
                     {isProducing && (
                         <div className="flex gap-6">
                             <Modal_Button

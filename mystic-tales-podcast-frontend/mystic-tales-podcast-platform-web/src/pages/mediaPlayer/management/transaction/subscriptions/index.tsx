@@ -406,7 +406,7 @@ const ManagementSubscriptionsPage = () => {
         open={isConfirmingCancelAlertOpen}
         onOpenChange={setIsConfirmingCancelAlertOpen}
       >
-        <AlertDialogContent className="backdrop-blur-md bg-white/10 border border-white/20 text-white">
+        <AlertDialogContent className="z-9999 backdrop-blur-md bg-white/10 border border-white/20 text-white">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl font-bold text-white">
               Cancel Subscription?

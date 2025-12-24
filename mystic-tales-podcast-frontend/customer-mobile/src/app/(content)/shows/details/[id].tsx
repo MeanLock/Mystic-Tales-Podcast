@@ -33,6 +33,8 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/src/store/store";
 import { setDataAndShowAlert } from "@/src/features/alert/alertSlice";
+import MTPCoinOutline from "@/src/components/coinIcon/CoinIconOuline";
+import HtmlText from "@/src/components/renderHtml/HtmlText";
 
 export default function ShowDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -430,9 +432,7 @@ export default function ShowDetailsScreen() {
                   <Text style={styles.subscriptionTitle} numberOfLines={1}>
                     {activeSubscription?.PodcastSubscription.Name}
                   </Text>
-                  <Text style={styles.message} numberOfLines={3}>
-                    {activeSubscription?.PodcastSubscription.Description}
-                  </Text>
+                  <HtmlText html={activeSubscription?.PodcastSubscription.Description || ""} numberOfLines={3} textStyle={styles.message} />
                   <View className="w-full px-1 mb-2 flex items-center justify-center">
                     <View className="w-full h-[1px] bg-[#D9D9D9]" />
                   </View>
@@ -493,7 +493,7 @@ export default function ShowDetailsScreen() {
 
                     <View className="flex flex-col items-start gap-1">
                       <Text className="text-[#D9D9D9] text-2xl font-semibold">
-                        {selectedCycle.Price.toLocaleString()} đ
+                        {selectedCycle.Price.toLocaleString()} coins
                       </Text>
                       <Text className="text-sm font-semibold text-[#9CA3AF]">
                         per user /{selectedCycle.SubscriptionCycleType.Name}
@@ -558,13 +558,16 @@ export default function ShowDetailsScreen() {
                       <Text className="text-sm font-bold text-white">
                         Your Subscription
                       </Text>
-                      <Text className="text-lg font-bold text-white">
-                        {customerRegistrationInfo
-                          .PodcastSubscriptionRegistration.Price
-                          ? customerRegistrationInfo.PodcastSubscriptionRegistration.Price.toLocaleString()
-                          : "100,000"}{" "}
-                        đ
-                      </Text>
+                      <View className="flex flex-row items-center gap-1">
+                        <Text className="text-lg font-bold text-white">
+                          {customerRegistrationInfo
+                            .PodcastSubscriptionRegistration.Price
+                            ? customerRegistrationInfo.PodcastSubscriptionRegistration.Price.toLocaleString()
+                            : "100,000"}{" "}
+                          coins
+                        </Text>
+                        <MTPCoinOutline size={16} />
+                      </View>
                       <View className="gap-2 mt-2">
                         {customerRegistrationInfo.PodcastSubscriptionRegistration.PodcastSubscriptionBenefitList.map(
                           (benefit) => (
@@ -589,8 +592,9 @@ export default function ShowDetailsScreen() {
                               .PodcastSubscriptionRegistration
                               ?.SubscriptionCycleType.Id
                         )?.Price.toLocaleString()}
-                        đ
+                        coins
                       </Text>
+                      <MTPCoinOutline size={16} />
                       <View className="gap-2 mt-2">
                         {activeSubscription.PodcastSubscription.PodcastSubscriptionBenefitMappingList.map(
                           (benefit) => (

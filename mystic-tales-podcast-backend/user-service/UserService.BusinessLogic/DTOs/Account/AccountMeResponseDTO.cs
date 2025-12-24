@@ -14,6 +14,7 @@ namespace UserService.BusinessLogic.DTOs.Account
         public int? PodcastListenSlot { get; set; }
         public string? DeactivatedAt { get; set; }
         public bool IsPodcaster { get; set; }
+        public bool IsPodcasterApplying { get; set; }
     }
 
 

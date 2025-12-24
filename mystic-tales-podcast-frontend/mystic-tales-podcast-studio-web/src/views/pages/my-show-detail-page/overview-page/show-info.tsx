@@ -23,7 +23,6 @@ import Slider from 'react-slick';
 
 import { Add } from '@mui/icons-material';
 import { useQuill } from 'react-quilljs';
- import 'quill/dist/quill.snow.css';
 import './styles.scss';
 import { useNavigate, useParams } from 'react-router-dom';
 import { deleteShow, getShowDetail, publishShow, updateShow } from '@/core/services/show/show.service';
@@ -42,10 +41,14 @@ import { fetchImage } from '@/core/utils/image.util';
 import { formatDate, getTimeAgo } from '@/core/utils/date.util';
 import Image from '@/views/components/common/image';
 import Modal_Button from '@/views/components/common/modal/ModalButton';
-import { X } from 'phosphor-react';
+import { Headphones, X } from 'phosphor-react';
 import { isEqual } from 'lodash';
 import { confirmAlert } from '@/core/utils/alert.util';
 import AssignChannelModal from './AssignChannelModal';
+import { StatCard } from '@/views/components/common/statcard';
+import { Star, Users } from 'lucide-react';
+import { MetadataField } from '@/views/components/common/metadata';
+import StatusChip from '@/views/components/common/statuschip';
 export const Language = [
     { Id: 1, Name: "English" },
     { Id: 2, Name: "Vietnamese" },
@@ -553,14 +556,14 @@ const ShowInfo = () => {
     return (
         <ShowInfoViewContext.Provider value={{ handleDataChange: fetchShowDetail, channel: showDetail.PodcastChannel ? showDetail.PodcastChannel : null }}>
             <div className="show-info-page">
-                {showDetail.CurrentStatus?.Id === 5 && (
+                {/* {showDetail.CurrentStatus?.Id === 5 && (
                     <div
                         className="flex items-center  px-3 py-2 mt-6 mb-10"
                         style={{ width: "fit-content" }}
                     >
 
                     </div>
-                )}
+                )} */}
                 {showDetail.TakenDownReason && (
                     <div className="flex items-center gap-2 bg-red-100 border border-red-400  rounded px-3 py-2 mb-3" style={{ width: "fit-content" }}>
                         <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -671,126 +674,41 @@ const ShowInfo = () => {
 
                 <div className="show-info-page__content">
                     <div className="show-info-page__form">
-                        {/* Stats Cards Section */}
-                        <div className="show-info-page__stats-section">
-                            <div className="show-info-page__stat-card">
-                                <div className="show-info-page__stat-icon">👥</div>
-                                <div className="show-info-page__stat-content">
-                                    <div className="show-info-page__stat-label">Total Followers</div>
-                                    <div className="show-info-page__stat-value">{showDetail.TotalFollow}</div>
-                                </div>
-                            </div>
-                            <div className="show-info-page__stat-card">
-                                <div className="show-info-page__stat-icon">🎧</div>
-                                <div className="show-info-page__stat-content">
-                                    <div className="show-info-page__stat-label">Listen Count</div>
-                                    <div className="show-info-page__stat-value">{showDetail.ListenCount}</div>
-                                </div>
-                            </div>
-                            <div className="show-info-page__stat-card">
-                                <div className="show-info-page__stat-icon">⭐</div>
-                                <div className="show-info-page__stat-content">
-                                    <div className="show-info-page__stat-label">Rating Average</div>
-                                    <div className="show-info-page__stat-value">{showDetail.AverageRating}</div>
-                                </div>
-                            </div>
-                        </div>
-
                         {/* Metadata Section with Glassmorphism */}
-                        <div className="show-info-page__metadata-section">
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                <Typography variant="caption" sx={{ color: '#999', fontSize: '0.75rem', mb: 0.5 }}>
-                                    Status
-                                </Typography>
-                                <Chip
-                                    label={showDetail.CurrentStatus.Name}
-                                    sx={{
-                                        background: showDetail.CurrentStatus.Id === 1 
-                                            ? 'rgba(255, 193, 7, 0.2)' 
-                                            : 'rgba(76, 175, 80, 0.2)',
-                                        backdropFilter: 'blur(10px)',
-                                        WebkitBackdropFilter: 'blur(10px)',
-                                        border: showDetail.CurrentStatus.Id === 1
-                                            ? '1px solid rgba(255, 193, 7, 0.3)'
-                                            : '1px solid rgba(76, 175, 80, 0.3)',
-                                        color: showDetail.CurrentStatus.Id === 1 ? '#FFC107' : '#4CAF50',
-                                        fontWeight: 700,
-                                        fontSize: '0.875rem',
-                                        height: '32px',
-                                        boxShadow: showDetail.CurrentStatus.Id === 1
-                                            ? '0 8px 32px rgba(255, 193, 7, 0.15)'
-                                            : '0 8px 32px rgba(76, 175, 80, 0.15)',
-                                        '& .MuiChip-label': {
-                                            padding: '0 12px',
-                                            textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-                                        },
-                                    }}
-                                />
-                            </Box>
+                        <div className="show-info-page__metadata-section mb-6 rounded-xl">
+                            <div className="flex flex-wrap w-full justify-between  items-center gap-6 md:gap-8">
+                                <MetadataField label="Total Followers" value={showDetail.TotalFollow.toString()} />
+                                <MetadataField label="Listen Count" value={showDetail.ListenCount.toString()} />
+                                <MetadataField label="Rating Average" value={showDetail.AverageRating.toFixed(2) } />
 
-                            <TextField
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Channel"
-                                value={showDetail.PodcastChannel?.Name || 'Single Show'}
-                                className="show-info-page__input-small"
-                            />
+                                <MetadataField label="Is Released" value={showDetail.IsReleased ? "Yes" : "No"} />
+                                <MetadataField label="Release Date" value={formatDate(showDetail.ReleaseDate)} />
+                                <MetadataField label="Created At" value={formatDate(showDetail.CreatedAt)} />
 
-                            {showDetail.ReleaseDate !== null && (
-                                <TextField
-                                    variant="filled"
-                                    slotProps={{
-                                        input: {
-                                            readOnly: true,
-                                        },
-                                    }}
-                                    label="Release Date"
-                                    value={formatDate(showDetail.ReleaseDate)}
-                                    className="show-info-page__input-small"
-                                />
-                            )}
 
-                            <TextField
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Is Released"
-                                value={showDetail.IsReleased ? 'Yes' : 'No'}
-                                className="show-info-page__input-small"
-                            />
-
-                            <TextField
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Created At"
-                                value={formatDate(showDetail.CreatedAt)}
-                                className="show-info-page__input-small"
-                            />
-
-                            <TextField
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Updated At"
-                                value={formatDate(showDetail.UpdatedAt)}
-                                className="show-info-page__input-small"
-                            />
+                            </div>
                         </div>
 
+                        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <StatCard
+                                icon={<Users className="w-8  h-8" />}
+                                label="Total Followers"
+                                value={showDetail.TotalFollow}
+                                iconColor="primary"
+                            />
+                            <StatCard
+                                icon={<Headphones className="w-8 h-8" />}
+                                label="Listen Count"
+                                value={showDetail.ListenCount}
+                                iconColor="primary"
+                            />
+                            <StatCard
+                                icon={<Star className="w-8 h-8 fill-yellow-400" />}
+                                label="Rating Average"
+                                value={showDetail.AverageRating.toFixed(2)}
+                                iconColor="warning"
+                            />
+                        </div> */}
                         {/* Editable Information Section */}
                         <div className="show-info-page__row">
                             <TextField
@@ -807,21 +725,35 @@ const ShowInfo = () => {
                                     },
                                 }}
                             />
-                              <TextField
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Channel"
-                                value={showDetail.PodcastChannel?.Name || 'Single Show'}
-                                className="show-info-page__input--name"
-                            />
 
+                            <StatusChip
+                                statusId={showDetail.CurrentStatus.Id}
+                                statusName={showDetail.CurrentStatus.Name}
+                                type="show"
+                            />
                         </div>
                         <div className="show-info-page__row">
+                            <TextField
+                                select
+                                label="Subscription Type"
+                                variant="standard"
+                                value={showDetail.PodcastShowSubscriptionType?.Id || 1}
+                                onChange={(e) => setShowDetail({ ...showDetail, PodcastShowSubscriptionType: { ...showDetail.PodcastShowSubscriptionType, Id: e.target.value as unknown as number } })}
+                                className="show-info-page__select"
+                            >
+                                {mockSubscriptionTypes.map((type) => (
+                                    <MenuItem
+                                        key={type.Id}
+                                        value={type.Id}
+                                        sx={{
+                                            '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
 
+                                        }}
+                                    >
+                                        {type.Name}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
                             <TextField
                                 select
                                 label="Language"
@@ -901,44 +833,35 @@ const ShowInfo = () => {
                                 ))}
                             </TextField>
 
-                            <TextField
-                                select
-                                label="Subscription Type"
-                                variant="standard"
-                                value={showDetail.PodcastShowSubscriptionType?.Id || 1}
-                                onChange={(e) => setShowDetail({ ...showDetail, PodcastShowSubscriptionType: { ...showDetail.PodcastShowSubscriptionType, Id: e.target.value as unknown as number } })}
-                                className="show-info-page__select"
-                            >
-                                {mockSubscriptionTypes.map((type) => (
-                                    <MenuItem
-                                        key={type.Id}
-                                        value={type.Id}
-                                        sx={{
-                                            '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
 
-                                        }}
-                                    >
-                                        {type.Name}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
                         </div>
-
-                        <TextField
-                            label="Copyright"
-                            value={showDetail.Copyright}
-                            variant="standard"
-                            onChange={(e) => setShowDetail({ ...showDetail, Copyright: e.target.value })}
-                            className="show-info-page__input show-info-page__input--name"
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    '& fieldset': { borderColor: '#999999 !important' },
-                                    '&:hover fieldset': { borderColor: '#999999 !important' },
-                                    '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
-                                },
-                            }}
-                        />
-
+                        <div className="show-info-page__row">
+                            <TextField
+                                label="Copyright"
+                                value={showDetail.Copyright}
+                                variant="standard"
+                                onChange={(e) => setShowDetail({ ...showDetail, Copyright: e.target.value })}
+                                className="show-info-page__input show-info-page__input--name"
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        '& fieldset': { borderColor: '#999999 !important' },
+                                        '&:hover fieldset': { borderColor: '#999999 !important' },
+                                        '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
+                                    },
+                                }}
+                            />
+                            <TextField
+                                variant="filled"
+                                slotProps={{
+                                    input: {
+                                        readOnly: true,
+                                    },
+                                }}
+                                label="Channel"
+                                value={showDetail.PodcastChannel?.Name || 'Single Show'}
+                                className="show-info-page__input--channel"
+                            />
+                        </div>
                         <div className="show-info-page__hashtags">
                             <div className="show-info-page__hashtag-input ">
                                 <TextField

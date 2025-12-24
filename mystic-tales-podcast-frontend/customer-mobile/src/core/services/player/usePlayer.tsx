@@ -1,22 +1,13 @@
 import { RootState } from "@/src/store/store";
 import { useDispatch, useSelector } from "react-redux";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   SubscriptionBenefit,
+  useLazyGetActiveSubscriptionFromEpisodeIdQuery,
   useLazyGetIsHasNonQuotaAccessQuery,
   useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery,
 } from "../subscription/subscription.service";
 import { useLazyGetCustomerPodcastListenSlotQuery } from "../account/account.service";
-import {
-  useLazyGetBookingLatestSessionQuery,
-  useLazyGetEpisodeLatestSessionQuery,
-  useListenToBookingTrackMutation,
-  useListenToEpisodeMutation,
-  useNavigateBookingTrackInProcedureMutation,
-  useNavigateEpisodeInProcedureMutation,
-  useUpdateBookingTrackLastDurationMutation,
-  useUpdateEpisodeLastDurationMutation,
-} from "./playerService";
 import { playerEngine, PlayerTrack, PlayerUiState } from "./playerEngine";
 import { useRouter } from "expo-router";
 import { setDataAndShowAlert } from "@/src/features/alert/alertSlice";
@@ -25,7 +16,6 @@ import {
   unregisterAlertAction,
 } from "@/src/components/alert/GlobalAlert";
 import {
-  ListenSession,
   ListenSessionBookingTracks,
   ListenSessionEpisodes,
   ListenSessionProcedure,
@@ -34,6 +24,18 @@ import {
   setListenSession,
   setListenSessionProcedure,
 } from "@/src/features/mediaPlayer/playerSlice";
+import {
+  getLatestBookingListenSessionV2,
+  getLatestEpisodeListenSessionV2,
+  listenToBookingTrackV2,
+  listenToEpisodeV2,
+  navigateBookingTrackInProcedureV2,
+  navigateEpisodeInProcedureV2,
+} from "./playerService-v2";
+import {
+  alertMessages,
+  benefitTransformDescriptions,
+} from "@/src/data/alert-messages";
 
 export function usePlayer() {
   // REDUX STATE AND DISPATCH
@@ -55,32 +57,41 @@ export function usePlayer() {
   const [triggerGetListenSlot] = useLazyGetCustomerPodcastListenSlotQuery();
   const [triggerCheckNonQuota] = useLazyGetIsHasNonQuotaAccessQuery();
 
-  const [listenToEpisode] = useListenToEpisodeMutation();
-  const [listenToBookingTrack] = useListenToBookingTrackMutation();
+  const [getActiveSubscriptionFromEpisodeId] =
+    useLazyGetActiveSubscriptionFromEpisodeIdQuery();
 
-  const [navigateEpisode] = useNavigateEpisodeInProcedureMutation();
-  const [navigateBookingTrack] = useNavigateBookingTrackInProcedureMutation();
+  // Prevent concurrent loadLatest calls
+  const isLoadingLatest = useRef(false);
 
-  const [getLatestEpisodeListenSession] = useLazyGetEpisodeLatestSessionQuery();
-  const [getLatestBookingListenSession] = useLazyGetBookingLatestSessionQuery();
+  // Prevent concurrent listen/navigate calls
+  const isProcessingAudio = useRef(false);
 
-  const [updateEpisodeLastDuration] = useUpdateEpisodeLastDurationMutation();
-  const [updateBookingTrackLastDuration] =
-    useUpdateBookingTrackLastDurationMutation();
+  // Global debounce timer for listen functions
+  const listenDebounceTimer = useRef<number | null>(null);
 
-  // Player UI State
-  const [state, setState] = useState<PlayerUiState>({
-    isPlaying: false,
-    buffering: false,
-    listenSession: null,
-    listenSessionProcedure: null,
-    seeking: false,
-    currentTime: 0,
-    duration: 0,
-    currentAudio: null,
-    sourceType: null,
-    volume: 1.0,
-    isAutoPlay: false,
+  // Player UI State - Initialize with current engine state to prevent flash of empty state
+  const [state, setState] = useState<PlayerUiState>(() => {
+    // Get current state from engine on mount to avoid initial render with duration = 0
+    try {
+      return playerEngine.getState();
+    } catch {
+      // Fallback to default if getState fails
+      return {
+        isPlaying: false,
+        buffering: false,
+        listenSession: null,
+        listenSessionProcedure: null,
+        seeking: false,
+        currentTime: 0,
+        duration: 0,
+        currentAudio: null,
+        sourceType: null,
+        volume: 1.0,
+        isAutoPlay: false,
+        isAudioLoading: false,
+        loadingAudioId: null,
+      };
+    }
   });
 
   useEffect(() => {
@@ -101,124 +112,251 @@ export function usePlayer() {
       episodeId: string,
       sourceType: "SavedEpisodes" | "SpecifyShowEpisodes"
     ) => {
-      if (!user) {
-        dispatch(
-          setDataAndShowAlert({
-            title: "Login Required",
-            description: "Please log in to listen to podcasts.",
-            type: "warning",
-            isCloseable: true,
-            isFunctional: true,
-            functionalButtonText: "Log In",
-            autoCloseDuration: 5,
-            actionId,
-          })
-        );
+      // Clear any pending debounce timer
+      if (listenDebounceTimer.current) {
+        clearTimeout(listenDebounceTimer.current);
+        listenDebounceTimer.current = null;
+      }
+
+      // Prevent concurrent calls
+      if (isProcessingAudio.current) {
+        if (__DEV__) {
+          console.warn("[ListenFromEpisode] Already processing, skipping");
+        }
         return;
       }
 
-      try {
-        // Check Subscription Benefits
-        let benefitList: SubscriptionBenefit[] = [];
+      // Set debounce timer - only the last click will execute
+      listenDebounceTimer.current = setTimeout(async () => {
+        listenDebounceTimer.current = null;
 
-        // Check Non-Quota Access
-        const isNonQuota = await triggerCheckNonQuota({
-          PodcastEpisodeId: episodeId,
-        }).unwrap();
-
-        // If not Non-Quota, check listen slots
-        // If listen slots are 0, show alert and return
-        if (!isNonQuota) {
-          const listenSlot = (await triggerGetListenSlot().unwrap())
-            .PodcastListenSlot;
-          if (listenSlot <= 0) {
-            dispatch(
-              setDataAndShowAlert({
-                title: "No Remaining Listen Slots",
-                description:
-                  "You have no remaining podcast listen slots. Please subscribe to a podcast plan to continue listening.",
-                type: "error",
-                isCloseable: true,
-                isFunctional: false,
-                autoCloseDuration: 10,
-              })
+        // Double-check flag after debounce
+        if (isProcessingAudio.current) {
+          if (__DEV__) {
+            console.warn(
+              "[ListenFromEpisode] Already processing after debounce, skipping"
             );
-            return;
           }
+          return;
         }
 
-        const benefitData = await triggerGetBenefitList({
-          PodcastEpisodeId: episodeId,
-        }).unwrap();
+        // Set flag IMMEDIATELY to block spam
+        isProcessingAudio.current = true;
+        playerEngine.setLoadingState(true, episodeId);
 
-        if (
-          benefitData &&
-          benefitData.CurrentPodcastSubscriptionRegistrationBenefitList
-        ) {
-          benefitList =
-            benefitData.CurrentPodcastSubscriptionRegistrationBenefitList;
+        if (!user) {
+          dispatch(
+            setDataAndShowAlert({
+              title: "Login Required",
+              description: "Please log in to listen to podcasts.",
+              type: "warning",
+              isCloseable: true,
+              isFunctional: true,
+              functionalButtonText: "Log In",
+              autoCloseDuration: 5,
+              actionId,
+            })
+          );
+          isProcessingAudio.current = false;
+          playerEngine.setLoadingState(false, null);
+          return;
         }
 
-        const listenResponse = await listenToEpisode({
-          PodcastEpisodeId: episodeId,
-          SourceType: sourceType,
-          CurrentPodcastSubscriptionRegistrationBenefitList: benefitList,
-        }).unwrap();
+        try {
+          // Check Subscription Benefits
+          let benefitList: SubscriptionBenefit[] = [];
 
-        if (!listenResponse) {
+          // Check Non-Quota Access
+          const isNonQuota = await triggerCheckNonQuota({
+            PodcastEpisodeId: episodeId,
+          }).unwrap();
+
+          // If not Non-Quota, check listen slots
+          // If listen slots are 0, show alert and return
+          if (!isNonQuota) {
+            const listenSlot = (await triggerGetListenSlot().unwrap())
+              .PodcastListenSlot;
+            if (listenSlot <= 0) {
+              dispatch(
+                setDataAndShowAlert({
+                  title: "No Remaining Listen Slots",
+                  description:
+                    "You have no remaining podcast listen slots. Please subscribe to a podcast plan to continue listening.",
+                  type: "error",
+                  isCloseable: true,
+                  isFunctional: false,
+                  autoCloseDuration: 10,
+                })
+              );
+              isProcessingAudio.current = false;
+              playerEngine.setLoadingState(false, null);
+              return;
+            }
+          }
+
+          const benefitData = await triggerGetBenefitList({
+            PodcastEpisodeId: episodeId,
+          }).unwrap();
+
+          if (
+            benefitData &&
+            benefitData.CurrentPodcastSubscriptionRegistrationBenefitList
+          ) {
+            benefitList =
+              benefitData.CurrentPodcastSubscriptionRegistrationBenefitList;
+          }
+
+          const listenResponse = await listenToEpisodeV2({
+            CurrentPodcastSubscriptionRegistrationBenefitList: benefitList,
+            PodcastEpisodeId: episodeId,
+            SourceType: sourceType,
+          });
+
+          if (listenResponse.isError || !listenResponse.data) {
+            const messageId = listenResponse.messageId;
+            if (messageId === "listen-failed-2") {
+              const messageData = alertMessages["listen-failed-2"];
+              if (messageData) {
+                dispatch(
+                  setDataAndShowAlert({
+                    title: messageData.title,
+                    description: messageData.description,
+                    isCloseable: true,
+                    isFunctional: false,
+                    type: messageData.type,
+                    autoCloseDuration: 10,
+                  })
+                );
+                return;
+              }
+            } else if (messageId === "listen-failed-3/4") {
+              const activeSubscription = (
+                await getActiveSubscriptionFromEpisodeId({
+                  PodcastEpisodeId: episodeId,
+                }).unwrap()
+              ).PodcastSubscription;
+              if (activeSubscription) {
+                const messageData = alertMessages["listen-failed-3"];
+                if (messageData) {
+                  dispatch(
+                    setDataAndShowAlert({
+                      title: messageData.title,
+                      description: messageData.description,
+                      isCloseable: true,
+                      isFunctional: false,
+                      type: messageData.type,
+                      autoCloseDuration: 10,
+                    })
+                  );
+                  return;
+                }
+              } else {
+                const messageData = alertMessages["listen-failed-4"];
+                if (messageData) {
+                  dispatch(
+                    setDataAndShowAlert({
+                      title: messageData.title,
+                      description: messageData.description,
+                      isCloseable: true,
+                      isFunctional: false,
+                      type: messageData.type,
+                      autoCloseDuration: 10,
+                    })
+                  );
+                  return;
+                }
+              }
+            } else if (
+              messageId === "listen-failed-5" &&
+              listenResponse.missingBenefits
+            ) {
+              const messageData = alertMessages["listen-failed-5"];
+              const formatDescription =
+                `${messageData.description}` +
+                listenResponse.missingBenefits
+                  .map((key) => benefitTransformDescriptions[key])
+                  .filter(Boolean)
+                  .map((text) => `• ${text}`)
+                  .join("\n");
+
+              if (messageData) {
+                dispatch(
+                  setDataAndShowAlert({
+                    title: messageData.title,
+                    description: formatDescription,
+                    isCloseable: true,
+                    isFunctional: false,
+                    type: messageData.type,
+                    autoCloseDuration: 10,
+                  })
+                );
+                return;
+              }
+            } else {
+              const messageData = alertMessages["listen-failed-1"];
+              if (messageData) {
+                dispatch(
+                  setDataAndShowAlert({
+                    title: messageData.title,
+                    description: messageData.description,
+                    isCloseable: true,
+                    isFunctional: false,
+                    type: messageData.type,
+                    autoCloseDuration: 10,
+                  })
+                );
+                return;
+              }
+            }
+          } else {
+            // Success: Always set ListenSessionProcedure (never null)
+            dispatch(
+              setListenSessionProcedure(
+                listenResponse.data.ListenSessionProcedure
+              )
+            );
+            // Only play if ListenSession exists
+            if (listenResponse.data.ListenSession) {
+              const ls = listenResponse.data
+                .ListenSession as ListenSessionEpisodes;
+              const track: PlayerTrack = {
+                id: ls.PodcastEpisode.Id,
+                url: ls.AudioFileUrl,
+                artist: ls.Podcaster.FullName,
+                title: ls.PodcastEpisode.Name,
+                artwork: ls.PodcastEpisode.MainImageFileKey,
+              };
+
+              playerEngine.setSourceType(sourceType);
+              dispatch(setListenSession(listenResponse.data.ListenSession));
+              await playerEngine.loadAndPlay(
+                track,
+                listenResponse.data.ListenSession,
+                listenResponse.data.ListenSessionProcedure,
+                true,
+                ls.PodcastEpisodeListenSession.LastListenDurationSeconds,
+                listenResponse.data.ListenSessionProcedure?.IsAutoPlay
+              );
+            }
+          }
+        } catch (error) {
+          playerEngine.setLoadingState(false, null);
+          console.error("Error in listenFromEpisode:", error);
           dispatch(
             setDataAndShowAlert({
               title: "Listen Error",
-              description:
-                "An error occurred while trying to play the episode. Please try again later.",
+              description: `${error}`,
               type: "error",
               isCloseable: true,
               isFunctional: false,
               autoCloseDuration: 5,
             })
           );
-          return;
+        } finally {
+          isProcessingAudio.current = false;
+          playerEngine.setLoadingState(false, null);
         }
-
-        // Always set ListenSessionProcedure (never null)
-        dispatch(
-          setListenSessionProcedure(listenResponse.ListenSessionProcedure)
-        );
-        // Only play if ListenSession exists
-        if (listenResponse.ListenSession) {
-          const ls = listenResponse.ListenSession as ListenSessionEpisodes;
-          const track: PlayerTrack = {
-            id: ls.PodcastEpisode.Id,
-            url: ls.AudioFileUrl,
-            artist: ls.Podcaster.FullName,
-            title: ls.PodcastEpisode.Name,
-            artwork: ls.PodcastEpisode.MainImageFileKey,
-          };
-
-          playerEngine.setSourceType(sourceType);
-          dispatch(setListenSession(listenResponse.ListenSession));
-          await playerEngine.loadAndPlay(
-            track,
-            listenResponse.ListenSession,
-            listenResponse.ListenSessionProcedure,
-            true,
-            ls.PodcastEpisodeListenSession.LastListenDurationSeconds,
-            listenResponse.ListenSessionProcedure?.IsAutoPlay
-          );
-        }
-      } catch (error) {
-        console.error("Error in listenFromEpisode:", error);
-        dispatch(
-          setDataAndShowAlert({
-            title: "Listen Error",
-            description: `${error}`,
-            type: "error",
-            isCloseable: true,
-            isFunctional: false,
-            autoCloseDuration: 5,
-          })
-        );
-      }
+      }, 300); // 300ms debounce - quick enough for UX, long enough to prevent double clicks
     },
     [
       user,
@@ -227,13 +365,24 @@ export function usePlayer() {
       triggerCheckNonQuota,
       triggerGetListenSlot,
       triggerGetBenefitList,
-      listenToEpisode,
+      getActiveSubscriptionFromEpisodeId,
     ]
   );
 
   // 2. Continue Listen From Episode
   const continueListenFromEpisode = useCallback(
     async (episodeId: string, continue_listen_session_id: string) => {
+      if (isProcessingAudio.current) {
+        if (__DEV__) {
+          console.warn("[ListenFromEpisode] Already processing, skipping");
+        }
+        return;
+      }
+
+      // Set flag IMMEDIATELY to block spam
+      isProcessingAudio.current = true;
+      playerEngine.setLoadingState(true, episodeId);
+
       if (!user) {
         const actionId = "login-required-continue-episode";
         registerAlertAction(actionId, () => {
@@ -253,6 +402,8 @@ export function usePlayer() {
             actionId,
           })
         );
+        isProcessingAudio.current = false;
+        playerEngine.setLoadingState(false, null);
         return;
       }
 
@@ -282,6 +433,8 @@ export function usePlayer() {
                 autoCloseDuration: 10,
               })
             );
+            isProcessingAudio.current = false;
+            playerEngine.setLoadingState(false, null);
             return;
           }
         }
@@ -298,67 +451,156 @@ export function usePlayer() {
             benefitData.CurrentPodcastSubscriptionRegistrationBenefitList;
         }
 
-        const listenResponse = await listenToEpisode({
+        const listenResponse = await listenToEpisodeV2({
           PodcastEpisodeId: episodeId,
           SourceType: "SpecifyShowEpisodes",
           CurrentPodcastSubscriptionRegistrationBenefitList: benefitList,
           continue_listen_session_id: continue_listen_session_id,
-        }).unwrap();
+        });
 
-        if (!listenResponse) {
+        if (listenResponse.isError || !listenResponse.data) {
+          const messageId = listenResponse.messageId;
+          if (messageId === "listen-failed-2") {
+            const messageData = alertMessages["listen-failed-2"];
+            if (messageData) {
+              dispatch(
+                setDataAndShowAlert({
+                  title: messageData.title,
+                  description: messageData.description,
+                  isCloseable: true,
+                  isFunctional: false,
+                  type: messageData.type,
+                  autoCloseDuration: 10,
+                })
+              );
+              return;
+            }
+          } else if (messageId === "listen-failed-3/4") {
+            const activeSubscription = (
+              await getActiveSubscriptionFromEpisodeId({
+                PodcastEpisodeId: episodeId,
+              }).unwrap()
+            ).PodcastSubscription;
+            if (activeSubscription) {
+              const messageData = alertMessages["listen-failed-3"];
+              if (messageData) {
+                dispatch(
+                  setDataAndShowAlert({
+                    title: messageData.title,
+                    description: messageData.description,
+                    isCloseable: true,
+                    isFunctional: false,
+                    type: messageData.type,
+                    autoCloseDuration: 10,
+                  })
+                );
+                return;
+              }
+            } else {
+              const messageData = alertMessages["listen-failed-4"];
+              if (messageData) {
+                dispatch(
+                  setDataAndShowAlert({
+                    title: messageData.title,
+                    description: messageData.description,
+                    isCloseable: true,
+                    isFunctional: false,
+                    type: messageData.type,
+                    autoCloseDuration: 10,
+                  })
+                );
+                return;
+              }
+            }
+          } else if (
+            messageId === "listen-failed-5" &&
+            listenResponse.missingBenefits
+          ) {
+            const messageData = alertMessages["listen-failed-5"];
+            const formatDescription =
+              `${messageData.description}` +
+              listenResponse.missingBenefits
+                .map((key) => benefitTransformDescriptions[key])
+                .filter(Boolean)
+                .map((text) => `• ${text}`)
+                .join("\n");
+
+            if (messageData) {
+              dispatch(
+                setDataAndShowAlert({
+                  title: messageData.title,
+                  description: formatDescription,
+                  isCloseable: true,
+                  isFunctional: false,
+                  type: messageData.type,
+                  autoCloseDuration: 10,
+                })
+              );
+              return;
+            }
+          } else {
+            const messageData = alertMessages["listen-failed-1"];
+            if (messageData) {
+              dispatch(
+                setDataAndShowAlert({
+                  title: messageData.title,
+                  description: messageData.description,
+                  isCloseable: true,
+                  isFunctional: false,
+                  type: messageData.type,
+                  autoCloseDuration: 10,
+                })
+              );
+              return;
+            }
+          }
+        } else {
+          // Always set ListenSessionProcedure (never null)
           dispatch(
-            setDataAndShowAlert({
-              title: "Listen Error",
-              description:
-                "An error occurred while trying to play the episode. Please try again later.",
-              type: "error",
-              isCloseable: true,
-              isFunctional: false,
-              autoCloseDuration: 5,
-            })
+            setListenSessionProcedure(
+              listenResponse.data.ListenSessionProcedure
+            )
           );
-          return;
-        }
 
-        // Always set ListenSessionProcedure (never null)
-        dispatch(
-          setListenSessionProcedure(listenResponse.ListenSessionProcedure)
-        );
+          // Only play if ListenSession exists
+          if (listenResponse.data.ListenSession) {
+            const ls = listenResponse.data
+              .ListenSession as ListenSessionEpisodes;
+            const track: PlayerTrack = {
+              id: ls.PodcastEpisode.Id,
+              url: ls.AudioFileUrl,
+              artist: ls.Podcaster.FullName,
+              title: ls.PodcastEpisode.Name,
+              artwork: ls.PodcastEpisode.MainImageFileKey,
+            };
 
-        // Only play if ListenSession exists
-        if (listenResponse.ListenSession) {
-          const ls = listenResponse.ListenSession as ListenSessionEpisodes;
-          const track: PlayerTrack = {
-            id: ls.PodcastEpisode.Id,
-            url: ls.AudioFileUrl,
-            artist: ls.Podcaster.FullName,
-            title: ls.PodcastEpisode.Name,
-            artwork: ls.PodcastEpisode.MainImageFileKey,
-          };
-
-          playerEngine.setSourceType("SpecifyShowEpisodes");
-          dispatch(setListenSession(listenResponse.ListenSession));
-          await playerEngine.loadAndPlay(
-            track,
-            listenResponse.ListenSession,
-            listenResponse.ListenSessionProcedure,
-            true,
-            ls.PodcastEpisodeListenSession.LastListenDurationSeconds,
-            listenResponse.ListenSessionProcedure?.IsAutoPlay
-          );
+            playerEngine.setSourceType("SpecifyShowEpisodes");
+            dispatch(setListenSession(listenResponse.data.ListenSession));
+            await playerEngine.loadAndPlay(
+              track,
+              listenResponse.data.ListenSession,
+              listenResponse.data.ListenSessionProcedure,
+              true,
+              ls.PodcastEpisodeListenSession.LastListenDurationSeconds,
+              listenResponse.data.ListenSessionProcedure?.IsAutoPlay
+            );
+          }
         }
       } catch (error) {
-        console.error("Error in listenFromEpisode:", error);
+        console.log("Error while listening continue: ", error);
         dispatch(
           setDataAndShowAlert({
-            title: "Listen Error",
-            description: `${error}`,
+            title: alertMessages["listen-failed-1"].title,
+            description: alertMessages["listen-failed-1"].description,
             type: "error",
             isCloseable: true,
             isFunctional: false,
             autoCloseDuration: 5,
           })
         );
+      } finally {
+        isProcessingAudio.current = false;
+        playerEngine.setLoadingState(false, null);
       }
     },
     [
@@ -368,7 +610,7 @@ export function usePlayer() {
       triggerCheckNonQuota,
       triggerGetListenSlot,
       triggerGetBenefitList,
-      listenToEpisode,
+      getActiveSubscriptionFromEpisodeId,
     ]
   );
 
@@ -376,11 +618,27 @@ export function usePlayer() {
   const loadFromLatestListenSessionAndPlay = useCallback(async () => {
     if (!user) {
       return;
-    } else {
+    }
+
+    // Prevent concurrent calls
+    if (isLoadingLatest.current) {
+      if (__DEV__) {
+        console.warn("[LoadLatest] Already loading, skipping duplicate call");
+      }
+      return;
+    }
+
+    isLoadingLatest.current = true;
+
+    try {
+      if (__DEV__) {
+        console.log("[LoadLatest] Starting to load latest session");
+      }
+
       const episodeListenSessionResponse =
-        await getLatestEpisodeListenSession().unwrap();
+        await getLatestEpisodeListenSessionV2();
       const bookingListenSessionResponse =
-        await getLatestBookingListenSession().unwrap();
+        await getLatestBookingListenSessionV2();
 
       const isNoEpisodeListenSession =
         !episodeListenSessionResponse.ListenSession ||
@@ -389,26 +647,28 @@ export function usePlayer() {
         !bookingListenSessionResponse.ListenSession ||
         bookingListenSessionResponse.ListenSession === null;
 
-      console.log("Episode Listen Session:", episodeListenSessionResponse);
-      console.log("Booking Listen Session:", bookingListenSessionResponse);
-      console.log("isNoEpisodeListenSession:", isNoEpisodeListenSession);
-      console.log("isNoBookingListenSession:", isNoBookingListenSession);
+      if (__DEV__) {
+        console.log("[LoadLatest] Episode:", episodeListenSessionResponse);
+        console.log("[LoadLatest] Booking:", bookingListenSessionResponse);
+      }
 
       if (isNoEpisodeListenSession && isNoBookingListenSession) {
-        console.log("No listen sessions - returning");
+        if (__DEV__) console.log("[LoadLatest] No sessions found");
         return;
-      } else if (!isNoEpisodeListenSession && isNoBookingListenSession) {
-        console.log("Loading Episode Listen Session");
+      }
+
+      if (!isNoEpisodeListenSession && isNoBookingListenSession) {
+        if (__DEV__) console.log("[LoadLatest] Loading Episode session");
         const ls =
           episodeListenSessionResponse.ListenSession as ListenSessionEpisodes;
         const lsp =
           episodeListenSessionResponse.ListenSessionProcedure as ListenSessionProcedure;
-        // Không có listen session procedure => Chắc chắn lỗi
+
         if (!lsp) {
+          if (__DEV__) console.warn("[LoadLatest] No procedure for episode");
           return;
         }
 
-        // Listen Session thì tùy
         if (ls) {
           const track: PlayerTrack = {
             id: ls.PodcastEpisode.Id,
@@ -432,17 +692,21 @@ export function usePlayer() {
         }
 
         dispatch(setListenSessionProcedure(lsp));
-      } else if (isNoEpisodeListenSession && !isNoBookingListenSession) {
-        console.log("Loading Booking Listen Session");
+        return;
+      }
+
+      if (isNoEpisodeListenSession && !isNoBookingListenSession) {
+        if (__DEV__) console.log("[LoadLatest] Loading Booking session");
         const ls =
           bookingListenSessionResponse.ListenSession as ListenSessionBookingTracks;
         const lsp =
           bookingListenSessionResponse.ListenSessionProcedure as ListenSessionProcedure;
-        // Không có listen session procedure => Chắc chắn lỗi
+
         if (!lsp) {
+          if (__DEV__) console.warn("[LoadLatest] No procedure for booking");
           return;
         }
-        // Listen Session thì tùy
+
         if (ls) {
           const track: PlayerTrack = {
             id: ls.BookingPodcastTrack.Id,
@@ -465,31 +729,40 @@ export function usePlayer() {
           );
         }
         dispatch(setListenSessionProcedure(lsp));
-      } else {
-        // Both exist - error case
-        console.log("Episode Listen Session:", episodeListenSessionResponse);
-        console.log("Booking Listen Session:", bookingListenSessionResponse);
-        console.error(
-          "Both episode and booking listen sessions exist - cannot determine which to load."
-        );
         return;
       }
-      try {
-      } catch (error) {
-        console.error("Error in loadFromLatestListenSessionAndPlay:", error);
-        playerEngine.stopAndUnload();
+
+      // Both exist - conflict
+      if (__DEV__) {
+        console.error("[LoadLatest] Both sessions exist - conflict!");
+      }
+    } catch (error) {
+      if (__DEV__) {
+        console.error("[LoadLatest] Error:", error);
+      }
+      playerEngine.stopAndUnload();
+    } finally {
+      isLoadingLatest.current = false;
+      if (__DEV__) {
+        console.log("[LoadLatest] Finished");
       }
     }
-  }, [
-    user,
-    dispatch,
-    getLatestEpisodeListenSession,
-    getLatestBookingListenSession,
-  ]);
+  }, [user, dispatch]);
 
   // 4. Listen From Booking Track
   const listenFromBookingTrack = useCallback(
     async (bookingTrackId: string, bookingId: number) => {
+      if (isProcessingAudio.current) {
+        if (__DEV__) {
+          console.warn("[ListenFromEpisode] Already processing, skipping");
+        }
+        return;
+      }
+
+      // Set flag IMMEDIATELY to block spam
+      isProcessingAudio.current = true;
+      playerEngine.setLoadingState(true, bookingTrackId);
+
       if (!user) {
         dispatch(
           setDataAndShowAlert({
@@ -503,14 +776,20 @@ export function usePlayer() {
             actionId,
           })
         );
+        isProcessingAudio.current = false;
+        playerEngine.setLoadingState(false, null);
         return;
       } else {
         try {
-          const listenResponse = await listenToBookingTrack({
+          const listenResponse = await listenToBookingTrackV2({
             BookingId: bookingId,
             BookingPodcastTrackId: bookingTrackId,
-          }).unwrap();
-          if (!listenResponse) {
+          });
+          if (
+            !listenResponse ||
+            (!listenResponse.ListenSession &&
+              !listenResponse.ListenSessionProcedure)
+          ) {
             return;
           } else {
             // Always set ListenSessionProcedure (never null)
@@ -539,6 +818,10 @@ export function usePlayer() {
                 listenResponse.ListenSessionProcedure?.IsAutoPlay
               );
             } else {
+              console.log(
+                ">>>>>>>>>>>LISTEN FROM BOOKING TRACKS RESPONSE: ",
+                listenResponse
+              );
               console.error(
                 "No ListenSession returned from listenToBookingTrack"
               );
@@ -546,10 +829,13 @@ export function usePlayer() {
           }
         } catch (error) {
           console.error("Error in listenFromBookingTrack:", error);
+        } finally {
+          isProcessingAudio.current = false;
+          playerEngine.setLoadingState(false, null);
         }
       }
     },
-    [dispatch, listenToBookingTrack, router, user]
+    [dispatch, router, user]
   );
 
   // NAVIGATE
@@ -560,6 +846,12 @@ export function usePlayer() {
       listenSession: ListenSessionEpisodes,
       listenSessionProcedure: ListenSessionProcedure
     ) => {
+      if (isProcessingAudio.current) {
+        if (__DEV__) {
+          console.warn("[ListenFromEpisode] Already processing, skipping");
+        }
+        return;
+      }
       if (!listenSessionProcedure) {
         return;
       }
@@ -595,13 +887,17 @@ export function usePlayer() {
           benefitData.CurrentPodcastSubscriptionRegistrationBenefitList;
       }
 
+      isProcessingAudio.current = true;
+      playerEngine.setLoadingState(true, "");
+
       try {
-        const navigateResponse = await navigateEpisode({
+        const navigateResponse = await navigateEpisodeInProcedureV2({
           ListenSessionNavigateType: navigateType,
           ListenSessionId: listenSession.PodcastEpisodeListenSession.Id,
           ListenSessionProcedureId: listenSessionProcedure.Id,
           CurrentPodcastSubscriptionRegistrationBenefitList: benefitList,
-        }).unwrap();
+        });
+
         if (!navigateResponse) {
           return;
         } else {
@@ -635,9 +931,17 @@ export function usePlayer() {
         }
       } catch (error) {
         console.error("Error in navigateInSpecifyShows:", error);
+      } finally {
+        isProcessingAudio.current = false;
+        playerEngine.setLoadingState(false, null);
       }
     },
-    [navigateEpisode]
+    [
+      dispatch,
+      triggerCheckNonQuota,
+      triggerGetListenSlot,
+      triggerGetBenefitList,
+    ]
   );
 
   // 2. Navigate Episode In Procedure: Source Type === SavedEpisodes
@@ -647,16 +951,25 @@ export function usePlayer() {
       listenSession: ListenSessionEpisodes,
       listenSessionProcedure: ListenSessionProcedure
     ) => {
+      if (isProcessingAudio.current) {
+        if (__DEV__) {
+          console.warn("[ListenFromEpisode] Already processing, skipping");
+        }
+        return;
+      }
       if (!listenSessionProcedure) {
         return;
       }
+
+      isProcessingAudio.current = true;
+      playerEngine.setLoadingState(true, "");
       try {
-        const navigateResponse = await navigateEpisode({
+        const navigateResponse = await navigateEpisodeInProcedureV2({
           ListenSessionNavigateType: navigateType,
           ListenSessionId: listenSession.PodcastEpisodeListenSession.Id,
           ListenSessionProcedureId: listenSessionProcedure.Id,
-          CurrentPodcastSubscriptionRegistrationBenefitList: [], // SAVED EPISODES ON NAVIGATE DOESN'T CHECK BENEFITS
-        }).unwrap();
+          CurrentPodcastSubscriptionRegistrationBenefitList: null, // SAVED EPISODES ON NAVIGATE DOESN'T CHECK BENEFITS
+        });
         if (!navigateResponse) {
           return;
         } else {
@@ -689,10 +1002,13 @@ export function usePlayer() {
           }
         }
       } catch (error) {
-        console.error("Error in navigateInSpecifyShows:", error);
+        console.error("Error in navigateInSavedEpisodes:", error);
+      } finally {
+        isProcessingAudio.current = false;
+        playerEngine.setLoadingState(false, null);
       }
     },
-    [navigateEpisode]
+    [dispatch]
   );
 
   // 3. Navigate Booking Track In Procedure
@@ -702,16 +1018,23 @@ export function usePlayer() {
       listenSession: ListenSessionBookingTracks,
       listenSessionProcedure: ListenSessionProcedure
     ) => {
+      if (isProcessingAudio.current) {
+        if (__DEV__) {
+          console.warn("[ListenFromEpisode] Already processing, skipping");
+        }
+        return;
+      }
       if (!listenSessionProcedure) {
         return;
       }
+      isProcessingAudio.current = true;
+      playerEngine.setLoadingState(true, "");
       try {
-        const navigateResponse = await navigateBookingTrack({
+        const navigateResponse = await navigateBookingTrackInProcedureV2({
           ListenSessionNavigateType: navigateType,
           ListenSessionId: listenSession.BookingPodcastTrackListenSession.Id,
           ListenSessionProcedureId: listenSessionProcedure.Id,
-          CurrentPodcastSubscriptionRegistrationBenefitList: [],
-        }).unwrap();
+        });
         if (!navigateResponse) {
           return;
         } else {
@@ -730,7 +1053,7 @@ export function usePlayer() {
               title: ls.BookingPodcastTrack.BookingRequirementName,
               artwork: "",
             };
-            playerEngine.setSourceType("SpecifyShowEpisodes");
+            playerEngine.setSourceType("BookingProducingTracks");
             dispatch(setListenSession(navigateResponse.ListenSession));
             await playerEngine.loadAndPlay(
               track,
@@ -745,10 +1068,13 @@ export function usePlayer() {
           }
         }
       } catch (error) {
-        console.error("Error in navigateInSpecifyShows:", error);
+        console.error("Error in navigateInBookingTracks:", error);
+      } finally {
+        isProcessingAudio.current = false;
+        playerEngine.setLoadingState(false, null);
       }
     },
-    [navigateEpisode]
+    [dispatch]
   );
 
   const play = async () => {

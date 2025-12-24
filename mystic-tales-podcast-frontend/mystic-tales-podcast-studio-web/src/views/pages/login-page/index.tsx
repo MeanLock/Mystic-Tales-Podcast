@@ -118,16 +118,16 @@ const LoginPage: FC<LoginPageProps> = (props) => {
                     }
 
                     dispatch(setAuthToken({ token }));
-                   const tempInstance = axios.create({
-    ...loginRequiredAxiosInstance.defaults,
-    headers: {
-        ...loginRequiredAxiosInstance.defaults.headers,
-        Authorization: `Bearer ${token}`
-    }
-});
+                    const tempInstance = axios.create({
+                        ...loginRequiredAxiosInstance.defaults,
+                        headers: {
+                            ...loginRequiredAxiosInstance.defaults.headers,
+                            Authorization: `Bearer ${token}`
+                        }
+                    });
 
                     const res = await getAccountProfile(tempInstance);
-console.log("res", res);
+                    console.log("res", res);
                     if (!res?.success) {
                         toast.error("Login failed.");
                         return;
@@ -155,7 +155,7 @@ console.log("res", res);
         }
     }
 
-       useEffect(() => {
+    useEffect(() => {
         // Kiểm tra nếu đã có token thì redirect về dashboard
         if (token) {
             const decode = JwtUtil.decodeToken(token);
@@ -218,9 +218,15 @@ console.log("res", res);
                         }
 
                         dispatch(setAuthToken({ token }));
-                        await new Promise((r) => setTimeout(r, 100));
+                    const tempInstance = axios.create({
+                        ...loginRequiredAxiosInstance.defaults,
+                        headers: {
+                            ...loginRequiredAxiosInstance.defaults.headers,
+                            Authorization: `Bearer ${token}`
+                        }
+                    });
 
-                        const res = await getAccountProfile(loginRequiredAxiosInstance);
+                        const res = await getAccountProfile(tempInstance);
 
                         if (!res?.success) {
                             toast.error("Login failed.");

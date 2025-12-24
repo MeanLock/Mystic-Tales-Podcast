@@ -18,6 +18,7 @@ import { useSagaPolling } from "@/core/hooks/useSagaPolling"
 import Loading from "@/views/components/common/loading"
 import { getTruncatedDescription, renderDescriptionHTML } from "@/core/utils/htmlRender.utils"
 import { get } from "lodash"
+import { v } from "graphql-ws/dist/common-DY-PBNYy"
 
 
 interface Subscription {
@@ -207,6 +208,7 @@ const state_creator = (table: any[]) => {
                 headerName: "Status",
                 cellClass: 'd-flex align-items-center justify-content-center',
                 cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+               valueGetter: (params: { data: any }) => params.data.IsActive,
                 cellRenderer: (params: any) => {
                     let status = {
                         title: '',

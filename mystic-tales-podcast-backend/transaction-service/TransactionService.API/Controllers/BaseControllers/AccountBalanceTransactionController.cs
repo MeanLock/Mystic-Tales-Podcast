@@ -219,11 +219,12 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "RejectedReason", rejectReason.RejectedReason ?? string.Empty },
                 { "IsReject", IsReject }
             };
+            var messageName = IsReject ? "account-balance-withdrawal-rejection-flow" : "account-balance-withdrawal-acceptance-flow";
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
-                messageName: "account-balance-withdrawal-confirmation-flow");
+                messageName: messageName);
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {

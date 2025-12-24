@@ -29,7 +29,6 @@ import { RootState } from "@/src/store/store";
 import { setCredentials } from "@/src/features/auth/authSlice";
 import { User } from "@/src/types/user";
 import { getCapacitorDevice } from "@/src/core/utils/device";
-import { showError, showSuccess } from "@/src/features/alert/alertSlice";
 
 type IconInputProps = {
   value: string;
@@ -58,14 +57,13 @@ const IconInput = forwardRef<TextInput, IconInputProps>(
     },
     ref
   ) => {
-    const colorScheme = useColorScheme();
     return (
       <RNView
         style={[
           style.pill,
           {
-            backgroundColor: colorScheme === "dark" ? "#0f0f10" : "#f4f4f4",
-            borderColor: colorScheme === "dark" ? "#333" : "#ccc",
+            backgroundColor: "#f4f4f4",
+            borderColor: "#ccc",
           },
         ]}
       >
@@ -85,7 +83,7 @@ const IconInput = forwardRef<TextInput, IconInputProps>(
           keyboardType={keyboardType}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
-          style={style.pillInput}
+          style={[style.pillInput, { color: "#000" }]}
           underlineColorAndroid="transparent"
         />
 
@@ -148,26 +146,27 @@ export default function Login() {
       }).unwrap();
 
       if (result.isError) {
-        if (result.isUnVerified) {
-          dispatch(
-            showError({
-              message:
-                "Your account is not verified. Please verify your email before logging in.",
-              seconds: 10,
-            })
-          );
-        } else {
-          dispatch(
-            showError({
-              message: result.message || "Login failed. Please try again.",
-              seconds: 10,
-            })
-          );
-        }
+        // if (result.isUnVerified) {
+        //   dispatch(
+        //     showError({
+        //       message:
+        //         "Your account is not verified. Please verify your email before logging in.",
+        //       seconds: 10,
+        //     })
+        //   );
+        // } else {
+        //   dispatch(
+        //     showError({
+        //       message: result.message || "Login failed. Please try again.",
+        //       seconds: 10,
+        //     })
+        //   );
+        // }
+        console.log("Error: ", result);
         return;
       } else {
         // Navigate to home after successful login
-        dispatch(showSuccess({ message: "Login successful!", seconds: 5 }));
+        // dispatch(showSuccess({ message: "Login successful!", seconds: 5 }));
         router.replace("/(tabs)/home");
       }
     } catch (error: any) {
@@ -189,21 +188,22 @@ export default function Login() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1, paddingTop: 30, position: "relative" }}
+      style={{
+        flex: 1,
+        paddingTop: 30,
+        position: "relative",
+        backgroundColor: "#000",
+      }}
     >
       <Pressable className="p-5" onPress={() => router.back()}>
-        <MaterialIcons
-          name="keyboard-backspace"
-          size={40}
-          color={colorScheme === "dark" ? "#fff" : "#929292"}
-        />
+        <MaterialIcons name="keyboard-backspace" size={40} color="#fff" />
       </Pressable>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View variant="normal" className="p-5 gap-5">
           <View className="mb-5 py-10">
-            <Text className="text-7xl font-bold">Hey,</Text>
-            <Text className="text-7xl font-bold">Welcome</Text>
-            <Text className="text-7xl font-bold">Back!</Text>
+            <Text className="text-7xl font-bold text-white">Hey,</Text>
+            <Text className="text-7xl font-bold text-white">Welcome</Text>
+            <Text className="text-7xl font-bold text-white">Back!</Text>
           </View>
 
           {/* Form với pill inputs */}
@@ -332,7 +332,7 @@ const style = StyleSheet.create({
   },
   pillInput: {
     flex: 1,
-    color: "#fff",
+    color: "#000"!,
     fontSize: 16,
     paddingVertical: 0,
   },

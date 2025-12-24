@@ -1280,7 +1280,7 @@ const BookingDetailsPage = () => {
 
         {/* ----- ALERT BÁO KHÔNG ĐỦ TIỀN ----- */}
         <Dialog open={isTopUpDialogOpen} onOpenChange={setIsTopUpDialogOpen}>
-          <DialogContent className="bg-black/50 backdrop-blur-sm text-white border border-white/10">
+          <DialogContent className="z-9999 bg-black/50 backdrop-blur-sm text-white border border-white/10">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold">
                 Account Balance Not Enough!

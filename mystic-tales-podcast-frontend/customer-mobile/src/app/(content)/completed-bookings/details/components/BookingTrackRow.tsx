@@ -2,9 +2,10 @@ import { EqualizerVariant1 } from "@/src/components/equalizer/Variant1";
 import { usePlayer } from "@/src/core/services/player/usePlayer";
 import { CompletedBookingTrack } from "@/src/core/types/booking.type";
 import TimeUtil from "@/src/core/utils/time";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Image, Pressable, Text } from "react-native";
+import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
+import { ActivityIndicator, Image, Pressable, Text } from "react-native";
 import { View } from "react-native";
+import { useRef, useCallback } from "react";
 
 const BookingTrackRow = ({
   track,
@@ -14,21 +15,32 @@ const BookingTrackRow = ({
   index: number;
 }) => {
   const { play, pause, state: uiState, listenFromBookingTrack } = usePlayer();
+  const debounceTimerRef = useRef<number | null>(null);
 
-  const handlePlayPause = () => {
-    console.log("Handle play/pause for track:", track.Id);
-    if (uiState.currentAudio) {
-      if (uiState.isPlaying && uiState.currentAudio.id === track.Id) {
-        pause();
-      } else if (!uiState.isPlaying && uiState.currentAudio.id === track.Id) {
-        play();
+  const handlePlayPause = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      console.log("Handle play/pause for track:", track.Id);
+      if (uiState.isAudioLoading) {
+        return;
+      }
+      if (uiState.currentAudio) {
+        if (uiState.isPlaying && uiState.currentAudio.id === track.Id) {
+          pause();
+        } else if (!uiState.isPlaying && uiState.currentAudio.id === track.Id) {
+          play();
+        } else {
+          listenFromBookingTrack(track.Id, track.BookingId);
+        }
       } else {
         listenFromBookingTrack(track.Id, track.BookingId);
       }
-    } else {
-      listenFromBookingTrack(track.Id, track.BookingId);
-    }
-  };
+      debounceTimerRef.current = null;
+    }, 1000);
+  }, [uiState, play, pause, listenFromBookingTrack, track.Id, track.BookingId]);
 
   return (
     <View className="w-full h-[100px] flex flex-row items-center justify-center border-b-[0.5px] border-b-[#333]">
@@ -48,7 +60,7 @@ const BookingTrackRow = ({
           {TimeUtil.formatAudioLength(track.AudioLength, "numberOnly")}
         </Text>
         <View className="flex-1 items-start justify-end pb-2">
-          {uiState.isPlaying &&
+          {/* {uiState.isPlaying &&
           uiState.currentAudio &&
           uiState.currentAudio.id === track.Id ? (
             <Pressable
@@ -94,7 +106,57 @@ const BookingTrackRow = ({
               <MaterialCommunityIcons name="play" size={16} color="white" />
               <Text className="text-xs text-white font-bold">Play Track</Text>
             </Pressable>
-          )}
+          )} */}
+
+          <Pressable
+            onPress={() => handlePlayPause()}
+            className="flex flex-row items-center gap-2 bg-white/60 px-2 py-1 rounded-lg"
+          >
+            {uiState.isAudioLoading && uiState.loadingAudioId === track.Id ? (
+              <View style={{ transform: [{ scale: 0.5 }] }}>
+                <ActivityIndicator size="small" color="white" />
+              </View>
+            ) : uiState.isAudioLoading ? (
+              <MaterialIcons name="play-disabled" size={16} color="white" />
+            ) : uiState.currentAudio &&
+              uiState.currentAudio.id === track.Id &&
+              uiState.isPlaying ? (
+              <EqualizerVariant1 />
+            ) : (
+              <MaterialCommunityIcons name="play" size={14} color="white" />
+            )}
+
+            {uiState.isAudioLoading && uiState.loadingAudioId === track.Id ? (
+              <Text className="text-white text-xs font-bold">Loading ...</Text>
+            ) : uiState.isAudioLoading ? (
+              <Text className="text-xs text-white font-bold">
+                {TimeUtil.formatAudioLength(track.AudioLength, "numberOnly")}
+              </Text>
+            ) : uiState.currentAudio && uiState.currentAudio.id === track.Id ? (
+              <>
+                <View className="w-[30px] h-[4px] bg-white rounded-full flex flex-row items-center justify-start">
+                  <View
+                    style={{
+                      width: `${
+                        (uiState.currentTime / uiState.duration) * 100
+                      }%`,
+                    }}
+                    className="h-[4px] bg-primaryThemeColor rounded-l-full"
+                  />
+                </View>
+                <Text className="text-xs text-white font-bold">
+                  {TimeUtil.formatAudioLength(
+                    uiState.currentTime,
+                    "numberOnly"
+                  )}
+                </Text>
+              </>
+            ) : (
+              <Text className="text-xs text-white font-bold">
+                {TimeUtil.formatAudioLength(track.AudioLength, "numberOnly")}
+              </Text>
+            )}
+          </Pressable>
         </View>
       </View>
     </View>
