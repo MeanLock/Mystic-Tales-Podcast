@@ -26,6 +26,8 @@ using TransactionService.DataAccess.Repositories.interfaces;
 using TransactionService.Infrastructure.Configurations.Payos.interfaces;
 using TransactionService.Infrastructure.Models.Kafka;
 using TransactionService.Infrastructure.Services.Kafka;
+using TransactionService.BusinessLogic.DTOs.PodcastSubscriptionTransaction.ListItems;
+using TransactionService.BusinessLogic.DTOs.Transaction;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServices
@@ -59,7 +61,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
             _dateHelper = dateHelper;
             _httpServiceQueryClient = httpServiceQueryClient;
         }
-        public async Task<List<PodcastSubscriptionTransaction>> GetPodcastSubscriptionTransactions(Guid podcastSubscriptionRegistartionId)
+        public async Task<List<PodcastSubscriptionTransactionListItemResponseDTO>> GetPodcastSubscriptionTransactions(Guid podcastSubscriptionRegistartionId)
         {
             return await _podcastSubscriptionTransactionGenericRepository.FindAll()
                 .Include(pst => pst.TransactionType)
@@ -70,13 +72,21 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment,
                     (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund
                 }.Contains(pst.TransactionTypeId))
-                .Select(pst => new PodcastSubscriptionTransaction
+                .Select(pst => new PodcastSubscriptionTransactionListItemResponseDTO
                 {
                     Id = pst.Id,
                     PodcastSubscriptionRegistrationId = pst.PodcastSubscriptionRegistrationId,
                     Amount = pst.Amount,
-                    TransactionType = pst.TransactionType,
-                    TransactionStatus = pst.TransactionStatus,
+                    TransactionType = new TransactionTypeResponseDTO
+                    {
+                        Id = pst.TransactionType.Id,
+                        Name = pst.TransactionType.Name
+                    },
+                    TransactionStatus = new TransactionStatusResponseDTO
+                    {
+                        Id = pst.TransactionStatus.Id,
+                        Name = pst.TransactionStatus.Name
+                    },
                     CreatedAt = pst.CreatedAt,
                     UpdatedAt = pst.UpdatedAt
                 })
