@@ -7250,16 +7250,84 @@ flows:
           emit: "create-withdrawal-request.success"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: []
+          nextSteps: 
+            - name: "subtract-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
           nextFlows: []
         onFailure:
           emit: "create-withdrawal-request.failed"
-          topic: "user-management-domain"
+          topic: "payment-processing-domain"
           handle-service: "UserService"
           nextSteps: []
           nextFlows: []
+      - name: "subtract-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Trừ tiền từ ví"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - AccountId
+          - Amount
+        response-data:
+          - AccountId
+          - NewBalance
+          - UpdatedAt
+        onSuccess:
+          emit: "subtract-account-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "subtract-account-balance-amount.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
 
-  account-balance-withdrawal-confirmation-flow:
+  account-balance-withdrawal-acceptance-flow:
+    topic: "payment-processing-domain"
+    handler-service: "PaymentService"
+    description: "Handles the confirmation of account balance withdrawals."
+    save-files: ""
+    steps:
+      - name: "confirm-account-balance-withdrawal"
+        topic: "payment-processing-domain"
+        handler-service: "PaymentService"
+        description: "Confirms an account balance withdrawal."
+        parameters:
+          - AccountBalanceWithdrawalRequestId
+          - ImageFileKey
+          - RejectedReason
+          - IsReject
+        next-request-data:
+          - AccountBalanceWithdrawalRequestId
+          - ImageFileKey
+          - RejectedReason
+          - IsReject
+        response-data:
+          - AccountBalanceWithdrawalRequestId
+          - ImageFileKey
+          - RejectedReason
+          - IsReject
+          - UpdatedAt
+        onSuccess:
+          emit: "confirm-account-balance-withdrawal.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "confirm-account-balance-withdrawal.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  account-balance-withdrawal-rejection-flow:
     topic: "payment-processing-domain"
     handler-service: "PaymentService"
     description: "Handles the confirmation of account balance withdrawals."
@@ -7290,7 +7358,7 @@ flows:
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
-            - name: "subtract-account-balance-amount"
+            - name: "add-account-balance-amount"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
@@ -7300,28 +7368,29 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "subtract-account-balance-amount"
+      - name: "add-account-balance-amount"
         topic: "user-management-domain"
         handle-service: "UserService"
-        description: "Trừ tiền từ ví"
+        description: "Thêm tiền vô ví"
         parameters:
           - AccountId
           - Amount
         next-request-data:
           - AccountId
           - Amount
+          - AccountBalanceTransactionId
         response-data:
           - AccountId
+          - Amount
           - NewBalance
-          - UpdatedAt
         onSuccess:
-          emit: "subtract-account-balance-amount.success"
+          emit: "add-account-balance-amount.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "subtract-account-balance-amount.failed"
+          emit: "add-account-balance-amount.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
