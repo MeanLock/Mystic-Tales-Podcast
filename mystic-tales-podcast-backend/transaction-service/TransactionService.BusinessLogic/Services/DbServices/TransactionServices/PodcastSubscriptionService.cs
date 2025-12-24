@@ -64,7 +64,12 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
             return await _podcastSubscriptionTransactionGenericRepository.FindAll()
                 .Include(pst => pst.TransactionType)
                 .Include(pst => pst.TransactionStatus)
-                .Where(pst => pst.PodcastSubscriptionRegistrationId.Equals(podcastSubscriptionRegistartionId))
+                .Where(pst => pst.PodcastSubscriptionRegistrationId.Equals(podcastSubscriptionRegistartionId) && 
+                pst.TransactionStatusId == (int)TransactionStatusEnum.Success &&
+                new[]{
+                    (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment,
+                    (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund
+                }.Contains(pst.TransactionTypeId))
                 .Select(pst => new PodcastSubscriptionTransaction
                 {
                     Id = pst.Id,
