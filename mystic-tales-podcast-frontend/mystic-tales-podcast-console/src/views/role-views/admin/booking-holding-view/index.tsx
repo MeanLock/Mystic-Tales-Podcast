@@ -20,9 +20,10 @@ import { Eye } from "phosphor-react"
 import { getTransactionList } from "@/core/services/transaction/transaction.service"
 import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
 import Loading from "@/views/components/common/loading"
-import { getBookingHoldingList } from "@/core/services/booking/booking.service"
-import { getSubscriptionHoldingList } from "@/core/services/subscription/subscription.service"
-
+import { getBookingTransactionList } from "@/core/services/booking/booking.service"
+import './styles.scss'
+import TransactionListModal from "./TransactionListModal"
+import { formatDate } from "@/core/utils/date.util"
 ModuleRegistry.registerModules([AllCommunityModule])
 
 
@@ -39,33 +40,61 @@ interface GridState {
 
 export const BookingHoldingViewContext = createContext<BookingHoldingViewContextProps | null>(null)
 
-const state_creator = (table: any[]) => {
-
+const state_creator = (table: any[], handleShowTransactions: (data: any) => void) => {
 
     const state = {
         columnDefs: [
             {
                 headerName: "No.",
-                flex: 0.4, 
+                flex: 0.4,
                 field: "Id"
             },
             { headerName: "Title", field: "Title", flex: 0.9 },
-            { headerName: "Customer", field: "Account.Email", flex: 0.9 },
+            { headerName: "Customer", field: "Account.FullName", flex: 0.9 },
             {
                 headerName: "PodcastBuddy",
-                field: "PodcastBuddy.Email",
+                field: "PodcastBuddy.FullName",
                 flex: 0.8,
             },
 
             {
                 headerName: "Total Price",
                 field: "Price",
-                flex: 1
+                flex: 1,
+                valueGetter: (params: any) => {
+                    return params.data.Price ? params.data.Price.toLocaleString() : '---';
+                }
             },
-             {
-                headerName: "Holding Amount",
-                field: "HoldingAmount",
-                flex: 1
+            {
+                headerName: "Amount",
+                field: "Amount",
+                flex: 1,
+valueGetter: (params: any) => {
+                    return params.data.Amount ? params.data.Amount.toLocaleString() : '---';
+                }
+            },
+            {
+                headerName: "Created At",
+                field: "CreatedAt",
+                cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+                valueGetter: (params: any) => formatDate(params.data.CreatedAt),
+                comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                    const dateA = new Date(nodeA.data.CreatedAt).getTime();
+                    const dateB = new Date(nodeB.data.CreatedAt).getTime();
+                    return dateA - dateB;
+                },
+            },
+
+            {
+                headerName: "Recently Updated",
+                field: "UpdatedAt",
+                cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+                valueGetter: (params: any) => formatDate(params.data.UpdatedAt),
+                comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                    const dateA = new Date(nodeA.data.UpdatedAt).getTime();
+                    const dateB = new Date(nodeB.data.UpdatedAt).getTime();
+                    return dateA - dateB;
+                },
             },
             {
                 headerName: "Status",
@@ -81,35 +110,13 @@ const state_creator = (table: any[]) => {
                     let bg = 'transparent';
 
                     switch (status) {
-                        case 'Quotation Request':
-                        case 'Quotation Dealing':
-                        case 'Quotation Cancelled':
-                            color = '#ffb300'; bg = 'rgba(255, 179, 0, 0.07)';
-                            break;
-
-                        case 'Pending Edit Required':
-                            color = '#ffa726'; // cam nhạt
-                            bg = 'rgba(255, 167, 38, 0.15)';
-                            break;
-
-                        case 'Producing':
-                        case 'Track Previewing':
-                        case 'Producing Requested':
+                        case 'Holding':
                             color = '#61a7f2ff';
                             bg = 'rgba(41, 182, 246, 0.15)'; // xanh trời
                             break;
 
-                        case 'Completed':
+                        case 'Profit':
                             color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)';
-                            break;
-
-                        case 'Customer Cancel Request':
-                        case 'Podcast Buddy Cancel Request':
-                        case 'Quotation Rejected':
-                        case 'Cancelled Automatically':
-                        case 'Cancelled Manually':
-                            color = '#ef5350';
-                            bg = 'rgba(251, 222, 227, 0.2)'; // đỏ
                             break;
 
                         default:
@@ -132,36 +139,77 @@ const state_creator = (table: any[]) => {
                                 border: `2px solid ${color}`,
                             }}
                         >
-                            {status === 'Podcast Buddy Cancel Request' ? 'Buddy Cancel Request' : status}
+                            {status}
                         </span>
                     );
                 },
             },
+            {
+                headerName: '',
+                cellClass: 'd-flex justify-content-center align-items-center',
+                flex: 0.8,
+                cellRenderer: (params: any) => {
+                    return (
+                        <button
+                            onClick={() => handleShowTransactions(params.data)}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '4px 8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <Eye size={27} color='var(--secondary-green)' />
+                        </button>
+                    );
+                }
+            }
         ],
         rowData: table,
     }
     return state
+
 }
 
 
 
 const BookingHoldingView: FC<BookingHoldingViewProps> = () => {
-    const [state, setState] = useState<GridState | null>(null)
+    const [state, setState] = useState<GridState>({
+        columnDefs: [],
+        rowData: []
+    })
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [selectedTransaction, setSelectedTransaction] = useState<any | null>(null);
+    const [showTransactionModal, setShowTransactionModal] = useState(false);
+
+    const handleShowTransactions = (data: any) => {
+        setSelectedTransaction(data);
+        setShowTransactionModal(true);
+    };
+
+    const handleCloseTransactionModal = () => {
+        setShowTransactionModal(false);
+        setSelectedTransaction(null);
+    };
 
 
     const handleDataChange = async () => {
         setIsLoading(true);
         try {
-            const res = await getBookingHoldingList(adminAxiosInstance);
+            const res = await getBookingTransactionList(adminAxiosInstance);
             console.log("Fetched transaction list:", res);
-            if (res.success) {
-                setState(state_creator(res.data.BookingList || []));
+            if (res.success && res.data && res.data.BookingList) {
+                setState(state_creator(res.data.BookingList || [], handleShowTransactions));
             } else {
                 console.error('API Error:', res.message);
+                setState(state_creator([], handleShowTransactions));
             }
         } catch (error) {
             console.error('Lỗi khi fetch booking holding list:', error);
+            setState(state_creator([], handleShowTransactions));
         } finally {
             setIsLoading(false);
         }
@@ -190,7 +238,7 @@ const BookingHoldingView: FC<BookingHoldingViewProps> = () => {
             }}
         >
             <CRow>
-                <h3 className="transaction__title mb-5">Booking Holding</h3>
+                <h3 className="transaction__title text-[#282828] mb-5">Booking</h3>
                 <CCol xs={12}>
                     {isLoading ? (
                         <div className="flex justify-center items-center h-100" >
@@ -199,8 +247,8 @@ const BookingHoldingView: FC<BookingHoldingViewProps> = () => {
                     ) : (
                         <div id="withdrawal-table" className="">
                             <AgGridReact
-                                columnDefs={state.columnDefs || []}
-                                rowData={state.rowData}
+                                columnDefs={state?.columnDefs || []}
+                                rowData={state?.rowData || []}
                                 defaultColDef={defaultColDef}
                                 rowHeight={70}
                                 headerHeight={40}
@@ -213,7 +261,13 @@ const BookingHoldingView: FC<BookingHoldingViewProps> = () => {
                     )}
                 </CCol>
             </CRow>
-
+            {showTransactionModal && selectedTransaction && (
+                <TransactionListModal
+                    transactions={selectedTransaction.BookingTransactionList || []}
+                    customerName={selectedTransaction.Title || 'Unknown'}
+                    onClose={handleCloseTransactionModal}
+                />
+            )}
         </BookingHoldingViewContext.Provider>
     )
 }

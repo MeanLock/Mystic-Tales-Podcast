@@ -205,7 +205,10 @@ const state_creator = (table: SystemConfigList[]) => {
 }
 
 const SystemConfigView: FC<SystemConfigViewProps> = () => {
-  const [state, setState] = useState<GridState | null>(null)
+   const [state, setState] = useState<GridState>({
+          columnDefs: [],
+          rowData: []
+      })
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [activateConfig, setActivateConfig] = useState<SystemConfig | null>(null)
 

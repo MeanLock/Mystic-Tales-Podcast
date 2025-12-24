@@ -23,6 +23,7 @@ import Loading from "@/views/components/common/loading"
 import { formatDate } from "@/core/utils/date.util"
 import Modal_Button from "@/views/components/common/modal/ModalButton"
 import TransactionModal from "./TransactionModal"
+import { v } from "node_modules/graphql-ws/dist/common-DY-PBNYy"
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -61,6 +62,9 @@ const state_creator = (table: any[]) => {
         headerName: "Amount",
         field: "Amount",
         flex: 0.8,
+        valueGetter: (params: any) => {
+          return params.data.Amount ? params.data.Amount.toLocaleString()  : '---';
+        }
       },
 
       {
@@ -132,7 +136,10 @@ const state_creator = (table: any[]) => {
 
 
 const TransactionView: FC<TransactionViewProps> = () => {
-  const [state, setState] = useState<GridState | null>(null)
+   const [state, setState] = useState<GridState>({
+          columnDefs: [],
+          rowData: []
+      })
   const [withdrawalData, setWithdrawalData] = useState<any[]>([]);
    const [isLoading, setIsLoading] = useState<boolean>(true);
 

@@ -129,7 +129,7 @@ const StaffForm: React.FC<StaffUpdateProps> = ({ account, onClose }) => {
               <Image mainImageFileKey={account.MainImageFileKey} className="account-info__avatar" />
             )}
             <label htmlFor="avatar-upload" className="account-info__avatar-upload-label">
-              <PencilSimple size={22} weight="bold" />
+              {/* <PencilSimple size={22} weight="bold" />
               <input
                 id="avatar-upload"
                 type="file"
@@ -137,7 +137,7 @@ const StaffForm: React.FC<StaffUpdateProps> = ({ account, onClose }) => {
                 onChange={handleImageChange}
                 className="account-info__avatar-input"
                 style={{ display: "none" }}
-              />
+              /> */}
             </label>
           </div>
           <div className="account-info__identity">

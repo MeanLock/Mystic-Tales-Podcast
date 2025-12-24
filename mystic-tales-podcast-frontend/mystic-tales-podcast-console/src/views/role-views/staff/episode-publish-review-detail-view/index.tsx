@@ -5,7 +5,7 @@ import { useCallback, useContext, useEffect, useState } from "react"
 import { CBadge } from "@coreui/react"
 import { toast } from "react-toastify"
 import { formatDate } from "../../../../core/utils/date.util"
-import { CheckCircle, XCircle, Warning, User, Calendar, FileText } from "phosphor-react"
+import { CheckCircle, XCircle, Warning, User, Calendar, FileText, Eye } from "phosphor-react"
 import { getEpisodePublishDetail, createEditRequire, acceptEpisodePublish } from "@/core/services/ReviewSession/review-session.service"
 import { staffAxiosInstance } from "@/core/api/rest-api/config/instances/v2/staff-axios-instance"
 import { PublishReview } from "@/core/types/publish-review"
@@ -52,6 +52,8 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
     const [accepting, setAccepting] = useState(false)
     const [audioUrl, setAudioUrl] = useState<string | null>(null)
     const [audioSources, setAudioSources] = useState<Record<string, { url: string }>>({});
+    const [transcriptContent, setTranscriptContent] = useState<string | null>(null)
+
     const navigate = useNavigate();
     const { startPolling } = useSagaPolling({
         timeoutSeconds: 20,
@@ -341,7 +343,13 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                         />
                         <div className="flex flex-col w-full">
                             <div className="content-card__body">
-                                <span className="content-card__type">Episode</span>
+                                <div className="flex items-center justify-between">
+                                    <span className="content-card__type">Episode</span>
+                                    <Eye size={20} className="ml-2 cursor-pointer text-[#282828]" onClick={(e) => {
+                                        e.stopPropagation();
+                                        setTranscriptContent(PublishDetail.PodcastEpisode.AudioTranscript || 'No transcript available');
+                                    }} />
+                                </div>
                                 <h3 className="content-card__title mb-0">{PublishDetail.PodcastEpisode.Name}</h3>
                                 <p className="content-card__description">Explicit Content: {PublishDetail.PodcastEpisode.ExplicitContent ? 'Yes' : 'No'}</p>
 
@@ -488,7 +496,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                     {(PublishDetail?.PublishDuplicateDetectedPodcastEpisodes || []).length > 0 ? (
                         <div className="publish-review-detail__duplicate-list">
                             {(PublishDetail?.PublishDuplicateDetectedPodcastEpisodes || []).map((episode: any, index: number) => (
-                                <div key={episode?.Id || index} className="publish-review-detail__duplicate-item">
+                                <div key={episode?.Id || index} className="publish-review-detail__duplicate-item cursor-pointer" onClick={() => navigate(`/episode/${episode.Id}`)}>
                                     <div className="publish-review-detail__duplicate-header">
                                         <CBadge color="warning" className="me-2">#{index + 1}</CBadge>
                                         <span className="publish-review-detail__duplicate-name">{episode?.Name || 'Unknown Episode'}</span>
@@ -500,9 +508,12 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                                 {episode?.ReleaseDate ? formatDate(episode.ReleaseDate) : 'N/A'}
                                             </span>
                                         </div>
-                                        <div className="publish-review-detail__duplicate-info">
-                                            <span className="publish-review-detail__duplicate-label">Listen Count:</span>
-                                            <span className="publish-review-detail__duplicate-value">{episode?.ListenCount || 0}</span>
+                                        <div className="publish-review-detail__duplicate-info  ">
+                                            <span className="publish-review-detail__duplicate-label">Transcript:</span>
+                                            <Eye size={20} className="ml-2 cursor-pointer text-[#282828]" onClick={(e) => {
+                                                e.stopPropagation();
+                                                setTranscriptContent(episode?.AudioTranscript || 'No transcript available');
+                                            }} />
                                         </div>
                                         <div className="publish-review-detail__duplicate-info">
                                             {/* <audio
@@ -525,7 +536,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                             />
                                         </div>
                                     </div>
-                                    {episode?.Description && (
+                                    {/* {episode?.Description && (
                                         <div className="publish-review-detail__duplicate-description"
                                             dangerouslySetInnerHTML={{
                                                 __html: renderDescriptionHTML(episode?.Description || ""),
@@ -533,7 +544,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                         >
 
                                         </div>
-                                    )}
+                                    )} */}
                                 </div>
                             ))}
                         </div>
@@ -568,6 +579,29 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
             </div>
 
             {/* Summary Panel */}
+     {transcriptContent && (
+                <div className="transcript-modal-overlay" onClick={() => setTranscriptContent(null)}>
+                    <div className="transcript-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="transcript-modal__header">
+                            <h4 className="transcript-modal__title">
+                                <FileText size={20} className="me-2" />
+                                Audio Transcript
+                            </h4>
+                            <button
+                                className="transcript-modal__close-btn"
+                                onClick={() => setTranscriptContent(null)}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="transcript-modal__body">
+                            <div className="transcript-modal__content">
+                                {transcriptContent}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
 
             {/* Edit Requirements Modal */}

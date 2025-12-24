@@ -23,11 +23,11 @@ export const getTotalSubscription = async (instance: AxiosInstance, reportPeriod
 
     return response;
 }
-export const getSubscriptionHoldingList = async (instance: AxiosInstance ) => {
+export const getSubscriptionTransactionList = async (instance: AxiosInstance ) => {
     const response = await callAxiosRestApi({
         instance: instance,
         method: "get",
-        url: `${BASE_URL}/holding`,
+        url: `${BASE_URL}/money-flow`,
     }, "");
 
     return response;

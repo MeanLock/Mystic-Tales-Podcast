@@ -230,7 +230,7 @@ const BookingDetailView: FC<BookingDetailViewProps> = () => {
     }
 
     const getStatusColor = (status: string) => {
-        switch (status) {
+         switch (status) {
             case 'Producing':
             case 'Track Previewing':
             case 'Producing Requested':
@@ -240,11 +240,11 @@ const BookingDetailView: FC<BookingDetailViewProps> = () => {
             case 'Quotation Request':
             case 'Quotation Dealing':
                 return { color: '#ffb300', bg: 'rgba(255, 179, 0, 0.15)' };
+            case 'Quotation Cancelled':
+            case 'Cancelled Manually':
+            case 'Cancelled Automatically':
             case 'Customer Cancel Request':
             case 'Podcast Buddy Cancel Request':
-            case 'Quotation Rejected':
-            case 'Cancelled Automatically':
-            case 'Cancelled Manually':
             case 'Quotation Rejected':
                 return { color: '#f2545b', bg: 'rgba(242, 84, 91, 0.15)' };
             default:
@@ -331,7 +331,7 @@ const BookingDetailView: FC<BookingDetailViewProps> = () => {
                             <div className="booking-detail__plain-grid">
                                 <div className="booking-detail__plain-item">
                                     <span className="booking-detail__plain-label">Price</span>
-                                    <span className="booking-detail__plain-value booking-detail__plain-value--price">{Booking.Price ? `${Booking.Price} Coins` : '---'} </span>
+                                    <span className="booking-detail__plain-value booking-detail__plain-value--price">{Booking.Price ? `${Booking.Price.toLocaleString()} Coins` : '---'} </span>
                                 </div>
                                 <div className="booking-detail__plain-item">
                                     <span className="booking-detail__plain-label">Deadline</span>

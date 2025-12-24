@@ -41,7 +41,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ transaction, onClos
     const isCompleted = transaction.CompletedAt !== null;
     const statusInfo = {
         text: transaction.IsRejected === null ? 'Pending' : transaction.IsRejected ? 'Rejected' : 'Success',
-        color: transaction.IsRejected === null ? '#ffa500' : transaction.IsRejected ? '#ef4444' : '#aee339'
+        color: transaction.IsRejected === null ? '#ffb300' : transaction.IsRejected ? '#ef5350' : 'var(--secondary-green)',
+        bg: transaction.IsRejected === null ? 'rgba(255, 179, 0, 0.07)' : transaction.IsRejected ? 'rgba(251, 222, 227, 0.2)' : 'rgba(173, 227, 57, 0.06)',
     };
     const handleClosePopup = () => {
         setShowPopup(false)
@@ -118,7 +119,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ transaction, onClos
                 <h3 className="transaction-modal__title">Transaction Details</h3>
                 <div
                     className="transaction-modal__status"
-                    style={{ backgroundColor: `${statusInfo.color}20`, borderColor: statusInfo.color }}
+                    style={{ backgroundColor: `${statusInfo.bg}`, borderColor: statusInfo.color }}
                 >
                     <span style={{ color: statusInfo.color }}>{statusInfo.text}</span>
                 </div>

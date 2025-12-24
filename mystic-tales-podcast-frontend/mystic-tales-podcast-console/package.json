@@ -1,14 +1,14 @@
 {
-  "name": "survey-talk-console",
+  "name": "mystic-tales-podcast-console",
   "version": "5.4.0",
-  "description": "Survey Talk Console",
+  "description": "Mystic Tales Podcast Console",
   "homepage": ".",
   "bugs": {
-    "url": "https://github.com/CauBeBunCuoi/Survey-Talk/issues"
+    "url": "https://github.com/CauBeBunCuoi/Mystic-Tales-Podcast/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/CauBeBunCuoi/Survey-Talk.git"
+    "url": "https://github.com/CauBeBunCuoi/Mystic-Tales-Podcast.git"
   },
   "license": "",
   "scripts": {

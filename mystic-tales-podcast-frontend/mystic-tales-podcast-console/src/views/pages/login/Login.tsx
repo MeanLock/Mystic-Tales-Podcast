@@ -23,6 +23,7 @@ const Login = () => {
   const [disabled, setDisabled] = useState(false)
   const deviceInfo = getCapacitorDevice();
 
+
   const { startPolling } = useSagaPolling({
     timeoutSeconds: 10, // Chờ tối đa 120 giây (2 phút)
     intervalSeconds: 0.5, // Gọi lại mỗi 0.5 giây
@@ -36,19 +37,31 @@ const Login = () => {
         navigate("/dashboard")
       } else if (user.role_id == 2) {
         navigate("/staff/publish-review-sessions")
+      }else {
+        toast.error("You do not have permission to access the system.")
+        dispatch(clearAuthToken())
+        return
       }
       toast.success("Login successfully!")
     },
     onFailure: (err) => toast.error(err || "Saga failed!"),
     onTimeout: () => toast.error("System not responding, please try again."),
   })
-  const handleLogout = () => {
-    dispatch(clearAuthToken())
-  }
-
   useEffect(() => {
-    handleLogout()
-  }, [])
+    if (authSlice && authSlice.token != null && JwtUtil.isTokenNotExpired(authSlice.token)) {
+      const decode = JwtUtil.decodeToken(authSlice.token);
+      if (decode && decode?.role_id === "3") {
+        navigate("/dashboard");
+        return;
+      } else if (decode && decode?.role_id === "2") {
+        navigate("/staff/publish-review-sessions");
+        return;
+      }
+    }
+    // Chỉ xóa token nếu không có token hợp lệ
+    dispatch(clearAuthToken());
+  }, [authSlice.token, navigate, dispatch]);
+
 
   useEffect(() => {
     if (authSlice && authSlice.token != null && JwtUtil.isTokenNotExpired(authSlice.token)) {
@@ -147,8 +160,8 @@ const Login = () => {
         <div className="login-form">
           <div className="login-form__header">
             <div className="flex flex-column align-items-center">
-              <img src={logo} alt="Survey Talk" className="login-form__logo" />
-              <h3>Mystics Tale <span>Podcast</span></h3>
+              <img src={logo} alt="Mystic Tales Podcast Console" className="login-form__logo" />
+              <h3>Mystic Tales <span>Podcast</span></h3>
             </div>
             <p className="login-form__subtitle">Sign in to manage platform</p>
           </div>

@@ -20,14 +20,11 @@ import { Eye } from "phosphor-react"
 import { getTransactionList } from "@/core/services/transaction/transaction.service"
 import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
 import Loading from "@/views/components/common/loading"
-import { getBookingHoldingList } from "@/core/services/booking/booking.service"
-import { getSubscriptionHoldingList } from "@/core/services/subscription/subscription.service"
-import Modal_Button from "@/views/components/common/modal/ModalButton"
 import SubscriptionHoldingModal from "./SubscriptionHoldingModal"
 import { formatDate } from "@/core/utils/date.util"
+import { getSubscriptionTransactionList } from "@/core/services/subscription/subscription.service"
 
 ModuleRegistry.registerModules([AllCommunityModule])
-
 
 type SubscriptionHoldingViewProps = {}
 
@@ -42,7 +39,7 @@ interface GridState {
 
 export const SubscriptionHoldingViewContext = createContext<SubscriptionHoldingViewContextProps | null>(null)
 
-const state_creator = (table: any[]) => {
+const state_creator = (table: any[], handleShowModal: (data: any) => void) => {
 
 
   const state = {
@@ -52,21 +49,26 @@ const state_creator = (table: any[]) => {
         flex: 0.4,
         field: "Id",
       },
-      { headerName: "Name", field: "Name", flex: 0.9 },
-      { headerName: "Show", field: "PodcastShowName", flex: 0.9 },
-      { headerName: "Channel", field: "PodcastChannelName", flex: 0.9 },
+      { headerName: "Name", field: "Name",  cellStyle: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
+      { headerName: "Show", field: "PodcastShowName",  cellStyle: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
+      { headerName: "Channel", field: "PodcastChannelName",  cellStyle: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
       { headerName: "Current Version", field: "CurrentVersion", flex: 0.9 },
-       { headerName: "Registration Count", field: "PodcastSubscriptionRegistrationList.length", flex: 0.9 },
-      {
-        headerName: "Created At",
-        field: "CreatedAt",
-        cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-        valueGetter: (params: any) => formatDate(params.data.CreatedAt),
-        comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
-          const dateA = new Date(nodeA.data.CreatedAt).getTime();
-          const dateB = new Date(nodeB.data.CreatedAt).getTime();
-          return dateA - dateB;
-        },
+      { headerName: "Registration Count", field: "PodcastSubscriptionRegistrationList.length", flex: 0.9 },
+      { 
+        headerName: "Total Holding", 
+        flex: 0.9,
+        valueGetter: (params: any) => {
+          const registrations = params.data.PodcastSubscriptionRegistrationList || [];
+          return registrations.reduce((sum: number, reg: any) => sum + (reg.HoldingAmount || 0), 0).toLocaleString();
+        }
+      },
+      { 
+        headerName: "Total Profit", 
+        flex: 0.9,
+        valueGetter: (params: any) => {
+          const registrations = params.data.PodcastSubscriptionRegistrationList || [];
+          return registrations.reduce((sum: number, reg: any) => sum + (reg.ProfitAmount || 0), 0).toLocaleString();
+        }
       },
       {
         headerName: "Recently Updated",
@@ -83,23 +85,23 @@ const state_creator = (table: any[]) => {
         headerName: "",
         cellClass: 'd-flex justify-content-center py-0',
         cellRenderer: (params: { data: any }) => {
-          const Modal_props = {
-            updateForm: <SubscriptionHoldingModal transaction={params.data.PodcastSubscriptionRegistrationList} onClose={() => { }} />,
-            button: <Eye size={27} color='var(--secondary-green)' />,
-            update_button_color: 'white'
-          }
           return (
-
-            <CButtonGroup style={{ width: '100%', height: "100%" }} role="group" aria-label="Basic mixed styles example">
-              <Modal_Button
-                disabled={false}
-                content={Modal_props.button}
-                color={Modal_props.update_button_color}
-                size="xl"
-              >
-                {Modal_props.updateForm}
-              </Modal_Button>
-            </CButtonGroup>
+            <button
+              onClick={() => handleShowModal(params.data)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px 8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                height: '100%'
+              }}
+            >
+              <Eye size={27} color='var(--secondary-green)' />
+            </button>
           )
 
         },
@@ -114,22 +116,39 @@ const state_creator = (table: any[]) => {
 
 
 const SubscriptionHoldingView: FC<SubscriptionHoldingViewProps> = () => {
-  const [state, setState] = useState<GridState | null>(null)
+  const [state, setState] = useState<GridState>({
+    columnDefs: [],
+    rowData: []
+  })
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [selectedSubscription, setSelectedSubscription] = useState<any>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const handleShowModal = (data: any) => {
+    setSelectedSubscription(data.PodcastSubscriptionRegistrationList);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedSubscription(null);
+  };
 
 
   const handleDataChange = async () => {
     setIsLoading(true);
     try {
-      const res = await getSubscriptionHoldingList(adminAxiosInstance);
+      const res = await getSubscriptionTransactionList(adminAxiosInstance);
       console.log("Fetched transaction list:", res);
-      if (res.success) {
-        setState(state_creator(res.data.PodcastSubscriptionList || []));
+      if (res.success && res.data && res.data.PodcastSubscriptionList) {
+        setState(state_creator(res.data.PodcastSubscriptionList || [], handleShowModal));
       } else {
         console.error('API Error:', res.message);
+        setState(state_creator([], handleShowModal));
       }
     } catch (error) {
       console.error('Lỗi khi fetch sub holding list:', error);
+      setState(state_creator([], handleShowModal));
     } finally {
       setIsLoading(false);
     }
@@ -158,7 +177,7 @@ const SubscriptionHoldingView: FC<SubscriptionHoldingViewProps> = () => {
       }}
     >
       <CRow>
-        <h3 className="transaction__title mb-5">Subscription Holding</h3>
+        <h3 className="transaction__title mb-5">Subscription</h3>
         <CCol xs={12}>
           {isLoading ? (
             <div className="flex justify-center items-center h-100" >
@@ -167,8 +186,8 @@ const SubscriptionHoldingView: FC<SubscriptionHoldingViewProps> = () => {
           ) : (
             <div id="withdrawal-table" className="">
               <AgGridReact
-                columnDefs={state.columnDefs || []}
-                rowData={state.rowData}
+                columnDefs={state?.columnDefs || []}
+                rowData={state?.rowData || []}
                 defaultColDef={defaultColDef}
                 rowHeight={70}
                 headerHeight={40}
@@ -182,6 +201,12 @@ const SubscriptionHoldingView: FC<SubscriptionHoldingViewProps> = () => {
         </CCol>
       </CRow>
 
+      {showModal && selectedSubscription && (
+        <SubscriptionHoldingModal
+          transaction={selectedSubscription}
+          onClose={handleCloseModal}
+        />
+      )}
     </SubscriptionHoldingViewContext.Provider>
   )
 }

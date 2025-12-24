@@ -11,42 +11,28 @@ const AppContent = () => {
   const authSlice = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const [ready, setReady] = useState(false);
+  const currentUser = LocalStorageUtil.getAuthUserFromPersistLocalStorage();
 
   return (
-<CContainer fluid className="app-content-container">
-        <Suspense fallback={<CSpinner color="primary" />}>
+ <CContainer fluid className="app-content-container">
+      <Suspense fallback={<CSpinner color="primary" />}>
         <Routes>
           {routes.map((route, idx) => {
+            const hasAccess = currentUser && route.role_id?.some(item => item === Number(currentUser.role_id));
+            
             return (
-              route.element && (LocalStorageUtil.getAuthUserFromPersistLocalStorage() && route.role_id?.some(item => item === Number(LocalStorageUtil.getAuthUserFromPersistLocalStorage().role_id))) && (
+              route.element && hasAccess && (
                 <Route
                   key={idx}
                   path={route.path}
-                  // exact={route.exact}
-                  // name={route.name}
-                  element={<route.element />}
-                />
-              )
-            )
-          })}
-          <Route path="/" element={<Navigate to="dashboard" replace />} /> 
-        </Routes>
-        {/* <Routes>
-          {routes.map((route, idx) => {
-            return (
-              route.element && (route.role_id?.some(item => item === 1)) && (
-                <Route
-                  key={idx}
-                  path={route.path}
-                  // exact={route.exact}
-                  // name={route.name}
                   element={<route.element />}
                 />
               )
             )
           })}
           <Route path="/" element={<Navigate to="dashboard" replace />} />
-        </Routes> */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
       </Suspense>
     </CContainer>
   )
