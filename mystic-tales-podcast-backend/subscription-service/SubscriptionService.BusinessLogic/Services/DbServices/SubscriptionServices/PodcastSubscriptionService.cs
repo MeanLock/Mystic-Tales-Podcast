@@ -5481,7 +5481,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
 
                 return result.Results?["podcastSubscriptionTransaction"] is JArray podcastSubscriptionTransactionArray && podcastSubscriptionTransactionArray.Count >= 0
-                    ? podcastSubscriptionTransactionArray.ToObject<List<PodcastSubscriptionTransactionDTO>>()
+                    ? podcastSubscriptionTransactionArray.ToObject<List<PodcastSubscriptionTransactionListItemDTO>>()
                     : null;
             }
             catch (Exception ex)
