@@ -4807,23 +4807,32 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             }
             return totalIncome;
         }
-        public async Task<List<PodcastSubscriptionHoldingListItemResponseDTO>> GetHoldingPodcastSubscriptionListAsync()
+        public async Task<List<PodcastSubscriptionMoneyFlowListItemResponseDTO>> GetMoneyFlowPodcastSubscriptionListAsync()
         {
             try
             {
-                var registrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll(
+                // var registrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll(
+                //     includeFunc: function => function
+                //     .Include(psr => psr.PodcastSubscription)
+                //     .Include(psr => psr.SubscriptionCycleType))
+                //     .Where(psr => psr.CancelledAt == null && !psr.IsIncomeTaken)
+                //     .ToListAsync();
+                var holdingList = new List<PodcastSubscriptionMoneyFlowListItemResponseDTO>();
+                // var subscriptionIds = registrations.Select(r => r.PodcastSubscriptionId).Distinct().ToList();
+                var subscriptions = await _podcastSubscriptionGenericRepository.FindAll(
                     includeFunc: function => function
-                    .Include(psr => psr.PodcastSubscription)
-                    .Include(psr => psr.SubscriptionCycleType))
-                    .Where(psr => psr.CancelledAt == null && !psr.IsIncomeTaken)
+                    .Include(ps => ps.PodcastSubscriptionRegistrations)
+                    .ThenInclude(psr => psr.SubscriptionCycleType)
+                )
                     .ToListAsync();
-                var holdingList = new List<PodcastSubscriptionHoldingListItemResponseDTO>();
-                var subscriptionIds = registrations.Select(r => r.PodcastSubscriptionId).Distinct().ToList();
-                foreach (var subscriptionId in subscriptionIds)
+                foreach (var subscription in subscriptions)
                 {
-                    var subscription = await _podcastSubscriptionGenericRepository.FindByIdAsync(subscriptionId);
-                    if(subscription == null || !subscription.IsActive || subscription.DeletedAt != null)
+                    if(subscription.PodcastSubscriptionRegistrations == null || subscription.PodcastSubscriptionRegistrations.Count() == 0)
+                    {
                         continue;
+                    }
+                    var registrations = subscription.PodcastSubscriptionRegistrations
+                        .ToList();
                     string? podcastChannelName = null;
                     string? podcastShowName = null;
                     if (subscription.PodcastShowId != null)
@@ -4836,7 +4845,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         var channel = await GetPodcastChannel(subscription.PodcastChannelId.Value);
                         podcastChannelName = channel?.Name;
                     }
-                    var holdingListItem = new PodcastSubscriptionHoldingListItemResponseDTO
+                    var holdingListItem = new PodcastSubscriptionMoneyFlowListItemResponseDTO
                     {
                         Id = subscription.Id,
                         Name = subscription.Name,
@@ -4848,18 +4857,29 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         DeletedAt = subscription.DeletedAt,
                         CreatedAt = subscription.CreatedAt,
                         UpdatedAt = subscription.UpdatedAt,
-                        PodcastSubscriptionRegistrationList = new List<PodcastSubscriptionRegistrationHoldingListItemResponseDTO>()
+                        PodcastSubscriptionRegistrationList = new List<PodcastSubscriptionRegistrationMoneyFlowListItemResponseDTO>()
                     };
 
-                    foreach (var registration in registrations.Where(r => r.PodcastSubscriptionId == subscriptionId))
+                    foreach (var registration in registrations.Where(r => r.PodcastSubscriptionId == subscription.Id))
                     {
-                        var transaction = await GetHoldingPodcastSubscriptionTransactionByRegistrationId(registration.Id);
-                        if (transaction == null)
+                        var transactions = await GetMoneyFlowPodcastSubscriptionTransactionByRegistrationId(registration.Id);
+                        if (transactions == null || transactions.Count() == 0)
                             continue;
-                        var holdingAmount = transaction.OrderByDescending(transaction => transaction.CreatedAt).First().Amount;
+                        decimal holdingAmount = 0;
+                        decimal profitAmount = 0;
+                        var current = transactions.OrderByDescending(transaction => transaction.CreatedAt).First();
+                        if(!registration.IsIncomeTaken)
+                        {
+                            holdingAmount = current.Amount;
+                        }
+                        Console.WriteLine(transactions.Count + " transactions found for registration ID: " + registration.Id);
+                        profitAmount = transactions.Where(t => new[]
+                        {
+                            (int)TransactionTypeEnum.SystemSubscriptionIncome
+                        }.Contains(t.TransactionType.Id)).Sum(t => t.Amount);
                         var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
 
-                        var registrationHoldingItem = new PodcastSubscriptionRegistrationHoldingListItemResponseDTO
+                        var registrationHoldingItem = new PodcastSubscriptionRegistrationMoneyFlowListItemResponseDTO
                         {
                             Id = registration.Id,
                             Account = new AccountSnippetResponseDTO
@@ -4882,7 +4902,9 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             CancelledAt = registration.CancelledAt,
                             CreatedAt = registration.CreatedAt,
                             UpdatedAt = registration.UpdatedAt,
-                            HoldingAmount = holdingAmount
+                            HoldingAmount = holdingAmount,
+                            ProfitAmount = profitAmount,
+                            PodcastSubscriptionTransactionList = transactions
                         };
 
                         holdingListItem.PodcastSubscriptionRegistrationList.Add(registrationHoldingItem);
@@ -4895,8 +4917,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while GetHoldingPodcastSubscriptionListAsync");
-                throw new HttpRequestException($"Error while retrieving Holding Podcast Subscription List. Error: {ex.Message}");
+                _logger.LogError(ex, "Error occurred while GetMoneyFlowPodcastSubscriptionListAsync");
+                throw new HttpRequestException($"Error while retrieving Money Flow Podcast Subscription List. Error: {ex.Message}");
             }
         }
         public async Task<PodcastChannelDTO?> GetPodcastChannelWithAccountId(int accountId, Guid podcastChannelId)
@@ -5432,7 +5454,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 throw new HttpRequestException($"Error while querying Podcast Subscription Transactions for RegistrationId: {registrationId}. Error: {ex.Message}");
             }
         }
-        public async Task<List<PodcastSubscriptionTransactionDTO>?> GetHoldingPodcastSubscriptionTransactionByRegistrationId(Guid registrationId)
+        public async Task<List<PodcastSubscriptionTransactionListItemDTO>?> GetMoneyFlowPodcastSubscriptionTransactionByRegistrationId(Guid registrationId)
         {
             try
             {
@@ -5450,9 +5472,9 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 where = new
                                 {
                                     PodcastSubscriptionRegistrationId = registrationId,
-                                    TransactionTypeId =(int)TransactionTypeEnum.CustomerSubscriptionCyclePayment,
                                     TransactionStatusId = (int)TransactionStatusEnum.Success
-                                }
+                                },
+                                include = "TransactionType, TransactionStatus"
                             })
                         }
                     }
@@ -5460,7 +5482,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
 
                 return result.Results?["podcastSubscriptionTransaction"] is JArray podcastSubscriptionTransactionArray && podcastSubscriptionTransactionArray.Count >= 0
-                    ? podcastSubscriptionTransactionArray.ToObject<List<PodcastSubscriptionTransactionDTO>>()
+                    ? podcastSubscriptionTransactionArray.ToObject<List<PodcastSubscriptionTransactionListItemDTO>>()
                     : null;
             }
             catch (Exception ex)

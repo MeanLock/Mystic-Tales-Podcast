@@ -523,11 +523,11 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
         }
-        [HttpGet("holding")]
+        [HttpGet("money-flow")]
         [Authorize(Policy = "Admin.BasicAccess")]
-        public async Task<IActionResult> GetHoldingPodcastSubscription()
+        public async Task<IActionResult> GetMoneyFlowPodcastSubscription()
         {
-            var podcastSubscription = await _podcastSubscriptionService.GetHoldingPodcastSubscriptionListAsync();
+            var podcastSubscription = await _podcastSubscriptionService.GetMoneyFlowPodcastSubscriptionListAsync();
             return Ok(new
             {
                 PodcastSubscriptionList = podcastSubscription

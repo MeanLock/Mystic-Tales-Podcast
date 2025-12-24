@@ -1,0 +1,378 @@
+@model ModerationService.BusinessLogic.Models.Mail.DMCANoticeValidToAccusedMailViewModel
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DMCA Takedown Notice - Mystic Tales Podcast</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e8e8e8;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #2c2c54 0%, #40407a 100%);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+            border: 1px solid #4a4a6a;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+            .header::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="30" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="30" cy="70" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="70" cy="80" r="2.5" fill="rgba(255,255,255,0.1)"/></svg>');
+            }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: 14px;
+            margin-top: 5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .greeting {
+            font-size: 24px;
+            color: #ffa726;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .user-name {
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+
+        .message {
+            color: #d0d0d0;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .alert-box {
+            background: linear-gradient(145deg, #e74c3c 10%, #c0392b 100%);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            border: 1px solid #c0392b;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .alert-title {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .alert-message {
+            color: #fff;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .action-required-box {
+            background: linear-gradient(145deg, #f39c12 10%, #e67e22 100%);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            border: 1px solid #e67e22;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+        }
+
+        .action-title {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .action-text {
+            color: #fff;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .attachment-section {
+            background: linear-gradient(145deg, #3c3c6e 0%, #4a4a7a 100%);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            border: 1px solid #5a5a8a;
+        }
+
+        .attachment-title {
+            color: #ffa726;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .attachment-list {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+            .attachment-list ul {
+                list-style-type: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            .attachment-list li {
+                margin-bottom: 10px;
+                padding: 10px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 6px;
+                border-left: 3px solid #ffa726;
+            }
+
+            .attachment-list a {
+                color: #87ceeb;
+                text-decoration: none;
+                font-weight: 500;
+                word-break: break-all;
+                transition: color 0.3s ease;
+            }
+
+                .attachment-list a:hover {
+                    color: #fff;
+                    text-decoration: underline;
+                }
+
+        .no-attachments {
+            text-align: center;
+            color: #b0b0b0;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        .info-box {
+            background: rgba(52, 152, 219, 0.15);
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        .info-title {
+            color: #3498db;
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .info-text {
+            color: #d6eaf8;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .timeline-box {
+            background: rgba(155, 89, 182, 0.15);
+            border: 1px solid #9b59b6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        .timeline-title {
+            color: #9b59b6;
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .timeline-text {
+            color: #e8daef;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .footer {
+            background: linear-gradient(145deg, #1a1a2e 0%, #2c2c54 100%);
+            padding: 25px 30px;
+            text-align: center;
+            border-top: 1px solid #4a4a6a;
+        }
+
+        .signature {
+            color: #b0b0b0;
+            font-style: italic;
+        }
+
+        .team-name {
+            color: #ffa726;
+            font-weight: 600;
+        }
+
+        @@media (max-width: 600px) {
+            .email-container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+
+            .content {
+                padding: 25px 20px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .logo {
+                font-size: 24px;
+            }
+
+            .alert-box, .action-required-box, .attachment-section, .info-box, .timeline-box {
+                padding: 20px 15px;
+            }
+
+            .alert-title, .action-title {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">Mystic Tales Podcast</div>
+            <div class="subtitle">Discover the world of mysterious audio</div>
+        </div>
+
+        <div class="content">
+            <div class="greeting">Dear <span class="user-name">@Model.PodcasterFullName</span>,</div>
+
+            <div class="alert-box">
+                <div class="alert-title">⚠️ DMCA Takedown Notice Filed</div>
+                <div class="alert-message">
+                    We have received a valid Digital Millennium Copyright Act (DMCA) takedown notice regarding content associated with your account. This is a serious legal matter that requires immediate attention.
+                </div>
+            </div>
+
+            <p class="message">
+                In accordance with the DMCA and our Terms of Service, we are required to notify you that a copyright holder has claimed that content you have uploaded or shared infringes upon their copyrighted material.
+            </p>
+
+            <div class="action-required-box">
+                <div class="action-title">⏰ Action Required</div>
+                <div class="action-text">
+                    <strong>Your content has been temporarily removed</strong> pending resolution of this matter. You have the following options:
+                </div>
+                <div class="action-text">
+                    • <strong>Accept the claim:</strong> No further action required, content will remain removed<br />
+                    • <strong>File a counter-notice:</strong> If you believe the claim is invalid, you may submit a counter-notice<br />
+                    • <strong>Seek legal counsel:</strong> Contact an attorney for guidance on your rights and options
+                </div>
+            </div>
+
+            @if (Model.AttachmentFileUrls != null && Model.AttachmentFileUrls.Any())
+            {
+                <div class="attachment-section">
+                    <div class="attachment-title">Supporting Documentation</div>
+                    <div class="attachment-list">
+                        <p style="color: #d0d0d0; margin-bottom: 15px; text-align: center;">
+                            The following documents were provided as evidence with the DMCA notice:
+                        </p>
+                        <ul>
+                            @foreach (var fileUrl in Model.AttachmentFileUrls)
+                            {
+                                <li>
+                                    <a href="@fileUrl" target="_blank">@fileUrl</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="attachment-section">
+                    <div class="attachment-title">Supporting Documentation</div>
+                    <div class="no-attachments">
+                        No additional supporting documents were provided with this DMCA notice.
+                    </div>
+                </div>
+            }
+
+            <div class="timeline-box">
+                <div class="timeline-title">⏳ Important Timeline</div>
+                <div class="timeline-text">
+                    <strong>Counter-Notice Period:</strong> You have <strong>10-14 business days</strong> from the date of this notice to file a counter-notice if you believe the takedown was made in error.<br /><br />
+                    <strong>Restoration Timeline:</strong> If a valid counter-notice is filed, content may be restored within 10-14 business days unless the copyright holder files a lawsuit.
+                </div>
+            </div>
+
+            <div class="info-box">
+                <div class="info-title">📋 What This Means</div>
+                <div class="info-text">
+                    • The identified content has been removed from public access<br />
+                    • This notice is provided in compliance with the Digital Millennium Copyright Act<br />
+                    • Repeat copyright infringement may result in account termination<br />
+                    • This is not an accusation of intentional wrongdoing, but a required legal process<br />
+                    • You may contact our support team if you have questions about this process
+                </div>
+            </div>
+
+            <p class="message">
+                If you believe this takedown notice was filed in error or if you have any questions about the DMCA process, please contact our legal support team immediately. We are committed to protecting both copyright holders' rights and our users' legitimate content.
+            </p>
+        </div>
+
+        <div class="footer">
+            <p class="signature">
+                Sincerely,<br />
+                <span class="team-name">Mystic Tales Podcast Legal Team</span>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

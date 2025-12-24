@@ -3238,7 +3238,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
 
                 // Save back to cache (no expiration)
-                await _redisSharedCacheService.KeySetAsync(cacheKey, cache, expiry: null);
+                await _redisSharedCacheService.KeySetAsync(cacheKey, cache, expiry: null, isNoExpiryForce: true);
 
                 Console.WriteLine($"[KeywordSearch] Recorded keyword '{keyword}' (count: {existingItem?.SearchCount ?? 1})");
 

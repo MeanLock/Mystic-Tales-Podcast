@@ -502,8 +502,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     var createdRequirementDocumentList = new List<BookingRequirement>();
 
-                    Console.WriteLine("________________________________________________________");
-                    Console.WriteLine(parameter.BookingRequirementInfoList.Count());
+                    // Console.WriteLine("________________________________________________________");
+                    // Console.WriteLine(parameter.BookingRequirementInfoList.Count());
+
+                    if(parameter.BookingRequirementInfoList == null || parameter.BookingRequirementInfoList.Count() == 0)
+                    {
+                        throw new HttpRequestException("Booking must have at least one requirement");
+                    }
 
                     // Process each track
                     foreach (var requirementDocumentInfo in parameter.BookingRequirementInfoList)
@@ -3258,7 +3263,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 throw new HttpRequestException("Error occurred while querying booking transaction, error: " + ex.Message);
             }
         }
-        private async Task<BookingTransactionDTO?> GetBookingHoldingTransactionByBookingId(int bookingId)
+        private async Task<List<BookingTransactionListItemDTO>?> GetBookingMoneyFlowTransactionByBookingId(int bookingId)
         {
             try
             {
@@ -3276,18 +3281,17 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 where = new
                                 {
                                     BookingId = bookingId,
-                                    TransactionTypeId = (int)TransactionTypeEnum.BookingDeposit,
                                     TransactionStatusId = (int)TransactionStatusEnum.Success
-                                }
-
+                                },
+                                include = "TransactionType, TransactionStatus"
                             })
                         }
                     }
                 };
                 var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
 
-                return result.Results?["bookingTransaction"] is JArray bookingArray && bookingArray.Count > 0
-                    ? bookingArray.First.ToObject<BookingTransactionDTO>()
+                return result.Results?["bookingTransaction"] is JArray bookingArray && bookingArray.Count >= 0
+                    ? bookingArray.ToObject<List<BookingTransactionListItemDTO>>()
                     : null;
             }
             catch (Exception ex)
@@ -4316,7 +4320,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
             }
         }
-        public async Task<List<BookingHoldingListItemResponseDTO>> GetAllHoldingBookingsAsync()
+        public async Task<List<BookingMoneyFlowListItemResponseDTO>> GetAllMoneyFlowBookingsAsync()
         {
             try
             {
@@ -4329,29 +4333,44 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         (int)BookingStatusEnum.QuotationRequest,
                         (int)BookingStatusEnum.QuotationDealing,
                         (int)BookingStatusEnum.QuotationCancelled,
-                        (int)BookingStatusEnum.QuotationRejected,
-                        (int)BookingStatusEnum.Completed,
-                        (int)BookingStatusEnum.CancelledManually,
-                        (int)BookingStatusEnum.CancelledAutomatically
+                        (int)BookingStatusEnum.QuotationRejected
                     }.Contains(b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).FirstOrDefault().BookingStatusId))
                     .ToListAsync();
                 if(bookings.IsNullOrEmpty())
                 {
-                    return new List<BookingHoldingListItemResponseDTO>();
+                    return new List<BookingMoneyFlowListItemResponseDTO>();
                 }
-                var result = new List<BookingHoldingListItemResponseDTO>();
+                var result = new List<BookingMoneyFlowListItemResponseDTO>();
 
                 foreach (var booking in bookings)
                 {
-                    var holdingAmount = await GetBookingHoldingTransactionByBookingId(booking.Id);
+                    var currentStatus = booking.BookingStatusTrackings
+                        .OrderByDescending(bst => bst.CreatedAt)
+                        .FirstOrDefault().BookingStatusId;
+                    var moneyFlowStatus = 0;
+                    if(currentStatus != (int)BookingStatusEnum.Completed &&
+                        currentStatus != (int)BookingStatusEnum.CancelledAutomatically &&
+                        currentStatus != (int)BookingStatusEnum.CancelledAutomatically)
+                    {
+                        moneyFlowStatus = (int)MoneyFlowStatusEnum.Holding;
+                    }
+                    else
+                    {
+                        moneyFlowStatus = (int)MoneyFlowStatusEnum.Profit;
+                    }
+                    var transactions = await GetBookingMoneyFlowTransactionByBookingId(booking.Id);
                     var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
+                    if(transactions.IsNullOrEmpty() || account == null || podcaster == null)
+                    {
+                        continue;
+                    }
                     AccountStatusCache? assignedStaff = null;
                     if (booking.AssignedStaffId != null)
                     {
                         assignedStaff = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
                     }
-                    result.Add(new BookingHoldingListItemResponseDTO
+                    result.Add(new BookingMoneyFlowListItemResponseDTO
                     {
                         Id = booking.Id,
                         Title = booking.Title,
@@ -4385,16 +4404,21 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         BookingAutoCancelledReason = booking.BookingAutoCancelReason,
                         CreatedAt = booking.CreatedAt,
                         UpdatedAt = booking.UpdatedAt,
-                        CurrentStatus = new BookingStatusResponseDTO
+                        CurrentStatus = new MoneyFlowStatusDTO
                         {
-                            Id = booking.BookingStatusTrackings
-                                .OrderByDescending(bst => bst.CreatedAt)
-                                .FirstOrDefault().BookingStatusId,
-                            Name = booking.BookingStatusTrackings
-                                .OrderByDescending(bst => bst.CreatedAt)
-                                .FirstOrDefault().BookingStatus.Name
+                            Id = moneyFlowStatus,
+                            Name = ((MoneyFlowStatusEnum)moneyFlowStatus).ToString()
                         },
-                        HoldingAmount = holdingAmount != null ? holdingAmount.Amount : 0m
+                        Amount = moneyFlowStatus == (int)MoneyFlowStatusEnum.Holding
+                            ? transactions.Where(t => new[]
+                            {
+                                (int)TransactionTypeEnum.BookingDeposit,
+                            }.Contains(t.TransactionType.Id)).Sum(t => t.Amount)
+                            : transactions.Where(t => new[]
+                            {
+                                (int)TransactionTypeEnum.SystemBookingIncome,
+                            }.Contains(t.TransactionType.Id)).Sum(t => t.Amount),
+                        BookingTransactionList = transactions
                     });
                 }
 

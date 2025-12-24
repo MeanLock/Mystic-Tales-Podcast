@@ -989,11 +989,11 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         //        BookingPodcastTrack = result
         //    });
         //}
-        [HttpGet("holding")]
+        [HttpGet("money-flow")]
         [Authorize(Policy = "Admin.BasicAccess")]
-        public async Task<IActionResult> GetAllHoldingBookings()
+        public async Task<IActionResult> GetAllMoneyFlowBookings()
         {
-            var result = await _bookingService.GetAllHoldingBookingsAsync();
+            var result = await _bookingService.GetAllMoneyFlowBookingsAsync();
 
             //if (result == null || !result.Any())
             //{
