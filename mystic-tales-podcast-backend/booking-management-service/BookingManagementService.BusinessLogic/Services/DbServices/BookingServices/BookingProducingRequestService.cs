@@ -122,9 +122,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
 
                 // Fix: Use ToListAsync first, then fetch requirement names in a separate async loop
-                var editRequirements = await _bookingProducingRequestPodcastTrackToEditGenericRepository.FindAll()
-                    .Where(bp => bp.BookingProducingRequestId.Equals(bookingProducingRequest.Id))
+                var editRequirements = await _bookingProducingRequestPodcastTrackToEditGenericRepository.FindAll(
+                    includeFunc: include => include
                     .Include(bp => bp.BookingPodcastTrack)
+                    .ThenInclude(b => b.BookingRequirement))
+                    .Where(bp => bp.BookingProducingRequestId.Equals(bookingProducingRequest.Id))
+                    .OrderBy(bp => bp.BookingPodcastTrack.BookingRequirement.Order)
                     .ToListAsync();
 
                 var editRequirementList = new List<BookingEditRequirementListItemResponseDTO>();
