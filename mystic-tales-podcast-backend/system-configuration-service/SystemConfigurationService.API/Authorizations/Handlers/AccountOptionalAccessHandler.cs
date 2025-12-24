@@ -135,7 +135,7 @@ namespace SystemConfigurationService.API.Authorizations.Handlers
                 else
                 {
                     Console.WriteLine($"Caching account status to redis for account id: {userId}");
-                    await _redisSharedCacheService.KeySetAsync<AccountStatusCache>($"account:status:{account.Id}", account, null);
+                    await _redisSharedCacheService.KeySetAsync<AccountStatusCache>($"account:status:{account.Id}", account, TimeSpan.FromHours(1));
                 }
             }
 

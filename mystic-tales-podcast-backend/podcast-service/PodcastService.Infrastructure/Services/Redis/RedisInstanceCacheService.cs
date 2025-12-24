@@ -191,6 +191,22 @@ namespace PodcastService.Infrastructure.Services.Redis
             }
         }
 
+        public async Task<bool> KeySetAsync<T>(string key, T value, TimeSpan? expiry = null, bool? isNoExpiryForce = false)
+        {
+            try
+            {
+                var redisKey = GetRedisKey(key);
+                var serializedValue = ValueToString(value);
+                TimeSpan? expirySeconds = isNoExpiryForce == true ? null : GetExpirySeconds(expiry);
+                return await _redisDb.StringSetAsync(redisKey, serializedValue, expirySeconds);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error setting cache for key: {key}");
+                return false;
+            }
+        }
+
         // Set giá trị vào Redis cache KHÔNG có thời gian hết hạn (persistent key)
         public async Task<bool> KeySetWithoutExpiryAsync<T>(string key, T value)
         {
