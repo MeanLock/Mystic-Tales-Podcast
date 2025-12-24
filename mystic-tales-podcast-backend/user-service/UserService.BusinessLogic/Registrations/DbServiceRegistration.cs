@@ -1,10 +1,7 @@
-﻿using UserService.BusinessLogic.Services.DbServices.UserServices;
-using Microsoft.Extensions.DependencyInjection;
-using UserService.BusinessLogic.Services.DbServices.FilterServices;
-using UserService.BusinessLogic.Services.DbServices.SurveyServices;
-using UserService.BusinessLogic.Services.DbServices.PaymentServices;
-using UserService.BusinessLogic.Services.DbServices.ReportServices;
+﻿using Microsoft.Extensions.DependencyInjection;
+using UserService.BusinessLogic.Services.DbServices.CachingServices;
 using UserService.BusinessLogic.Services.DbServices.MiscServices;
+using UserService.BusinessLogic.Services.DbServices.UserServices;
 
 namespace UserService.BusinessLogic.Registrations
 {
@@ -12,35 +9,17 @@ namespace UserService.BusinessLogic.Registrations
     {
         public static IServiceCollection AddDbServices(this IServiceCollection services)
         {
-            // ConfigServices
-            services.AddScoped<SystemConfigService>();
-
-            // UserServices
+            // // UserServices
             services.AddScoped<AuthService>();
             services.AddScoped<AccountService>();
 
-            // PaymentServices
-            services.AddScoped<AccountPaymentService>();
-
-            // SurveyServices
-            services.AddScoped<SurveyCoreService>();
-            services.AddScoped<SurveySessionService>();
-            services.AddScoped<SurveyResponseService>();
-            services.AddScoped<SurveyTransactionService>();
-
-            // FilterServices
-            services.AddScoped<FilterTagService>();
-
-            // ReportServices
-            services.AddScoped<SurveyStatisticsService>();
-            services.AddScoped<TransactionStatisticsService>();
-            services.AddScoped<UserStatisticsService>();
-
             // MiscServices
-            services.AddScoped<PlatformFeedbackService>();
+            services.AddScoped<MailOperationService>();
+            services.AddScoped<QueryMetricCachingService>();
 
-
-
+            // CachingServices
+            services.AddScoped<AccountCachingService>();
+            services.AddScoped<CustomerListenSessionProcedureCachingService>();
 
             return services;
         }

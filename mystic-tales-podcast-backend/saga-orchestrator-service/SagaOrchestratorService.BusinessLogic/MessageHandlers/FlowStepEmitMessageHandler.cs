@@ -1,10 +1,11 @@
-using System.Text.Json;
 using SagaOrchestratorService.BusinessLogic.Services.MessagingServices.interfaces;
-using SagaOrchestratorService.BusinessLogic.Services.SagaServices.interfaces;
 using SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces;
-using SagaOrchestratorService.DataAccess.Entities;
 using SagaOrchestratorService.Infrastructure.Models.Kafka;
 using Microsoft.Extensions.Logging;
+using SagaOrchestratorService.DataAccess.Enums.Saga;
+using SagaOrchestratorService.BusinessLogic.Services.DbServices;
+using SagaOrchestratorService.BusinessLogic.Services.DbServices.SagaServices;
+using SagaOrchestratorService.Infrastructure.Services.Kafka;
 
 namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
 {
@@ -12,17 +13,20 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
     {
         private readonly IMessagingService _messaging;
         private readonly ISagaFlowConfig _flowConfig;
-        private readonly ISagaService _sagaService;
+        private readonly SagaInstanceService _sagaInstanceService;
+        private readonly KafkaProducerService _kafkaProducerService;
 
         public FlowStepEmitMessageHandler(
             IMessagingService messaging,
             ISagaFlowConfig flowConfig,
-            ISagaService sagaService,
+            SagaInstanceService sagaInstanceService,
+            KafkaProducerService kafkaProducerService,
             ILogger<FlowStepEmitMessageHandler> logger) : base(logger)
         {
             _messaging = messaging;
             _flowConfig = flowConfig;
-            _sagaService = sagaService;
+            _sagaInstanceService = sagaInstanceService;
+            _kafkaProducerService = kafkaProducerService;
         }
 
         // Invoked via registry wrapper (same signature as Facility handlers)
@@ -30,10 +34,22 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
         {
             try
             {
-                var (emit, sagaId, flowName, data) = ExtractEmit(messageJson);
+                var message = DeserializeMessage<SagaEventMessage>(messageJson);
+                if (message == null)
+                {
+                    _logger.LogWarning("FlowStepEmitMessageHandler: Failed to deserialize message");
+                    return;
+                }
+
+                var emit = message.MessageName;
+                var sagaId = message.SagaInstanceId;
+                var flowName = message.FlowName;
+                var requestData = message.RequestData;
+                var responseData = message.LastStepResponseData;
+
                 if (string.IsNullOrWhiteSpace(emit))
                 {
-                    _logger.LogWarning("FlowStepEmitMessageHandler: missing emit/MessageType in payload");
+                    _logger.LogWarning("FlowStepEmitMessageHandler: missing emit/MessageName in payload");
                     return;
                 }
 
@@ -43,14 +59,14 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     return;
                 }
 
-                var outcome = FindOutcomeByEmit(emit);
+                var outcome = await FindOutcomeByEmit(emit, sagaId);
                 if (outcome == null)
                 {
-                    _logger.LogWarning("Emit '{Emit}' not found in any flow", emit);
+                    _logger.LogWarning("Something went really wrong");
                     return;
                 }
 
-                var currentSagaId = sagaId ?? Guid.NewGuid();
+                var currentSagaId = sagaId;
 
                 // Determine if this is success or failure based on emit name
                 var isSuccess = emit.EndsWith(".success", StringComparison.OrdinalIgnoreCase);
@@ -59,76 +75,144 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 // Extract step name from emit (e.g., "create-order.success" -> "create-order")
                 var stepName = emit.Contains('.') ? emit.Substring(0, emit.LastIndexOf('.')) : emit;
 
+                // Extract error message from RequestData if present
+                var errorMessage = responseData["ErrorMessage"]?.ToString();
+
                 if (isSuccess)
                 {
-                    // Update step execution status to SUCCESS
-                    await _sagaService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, StepStatus.SUCCESS, data);
+                    // Update step execution status to SUCCESS with request and response data
+                    await _sagaInstanceService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, SagaStepStatusEnum.SUCCESS, SerializeToJson(requestData), SerializeToJson(responseData), null);
 
-                    // Update saga result data
-                    await _sagaService.UpdateSagaStatusAsync(currentSagaId, SagaStatus.RUNNING, data);
-
-                    // 1) Fan-out next steps
-                    foreach (var step in outcome.Value.NextSteps)
-                    {
-                        // Create step execution for next step
-                        await _sagaService.CreateStepExecutionAsync(currentSagaId, step.Name, step.Topic, data);
-
-                        // Update saga current step
-                        await _sagaService.UpdateSagaCurrentStepAsync(currentSagaId, step.Name);
-
-                        var cmd = new SagaCommandMessage
-                        {
-                            SagaId = currentSagaId,
-                            FlowName = string.IsNullOrWhiteSpace(flowName) ? "(unknown)" : flowName!,
-                            MessageName = step.Name,
-                            Data = data,
-                            MessageType = step.Name
-                        };
-
-                        await _messaging.SendSagaMessageAsync(cmd, step.Topic, key);
-                        _logger.LogInformation("Emit '{Emit}' -> step '{Step}' sent to '{Topic}' (SagaId: {SagaId})",
-                            emit, step.Name, step.Topic, currentSagaId);
-                    }
+                    // Keep saga status as RUNNING - do not update ResultData yet
+                    await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.RUNNING, null, null, null);
 
                     // Check if no more next steps - check for saga completion
                     if (outcome.Value.NextSteps.Count == 0)
                     {
-                        await _sagaService.UpdateSagaCurrentStepAsync(currentSagaId, null);
-                        await _sagaService.CheckAndUpdateSagaCompletionAsync(currentSagaId);
+                        await _sagaInstanceService.UpdateSagaCurrentStepAsync(currentSagaId, null);
+
+                        // Check if saga is complete and update ResultData only when completing
+                        var isCompleted = await _sagaInstanceService.CheckAndUpdateSagaCompletionAsync(currentSagaId);
+                        if (isCompleted)
+                        {
+                            var resultDataJson = SerializeToJson(responseData);
+                            // Update ResultData only when saga completes successfully
+                            await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.SUCCESS, resultDataJson, null, null);
+                            _logger.LogInformation("Saga completed successfully: {SagaId}, ResultData updated", currentSagaId);
+                        }
+                    }
+                    else
+                    {
+                        // Fan-out next steps
+                        foreach (var step in outcome.Value.NextSteps)
+                        {
+                            // Create step execution for next step
+                            await _sagaInstanceService.CreateStepExecutionAsync(currentSagaId, step.Name, step.Topic, SerializeToJson(requestData));
+
+                            // Update saga current step
+                            await _sagaInstanceService.UpdateSagaCurrentStepAsync(currentSagaId, step.Name);
+
+                            var SagaCommandMessage = _kafkaProducerService.PrepareSagaCommandMessage(step.Topic, requestData, responseData, currentSagaId, flowName, step.Name);
+                            var result = await _messaging.SendSagaMessageAsync(SagaCommandMessage);
+                            if (result)
+                                _logger.LogInformation("Emit '{Emit}' -> step '{Step}' sent to '{Topic}' (SagaId: {SagaId})",
+                                emit, step.Name, step.Topic, currentSagaId);
+                            else
+                            {
+                                _logger.LogWarning("Emit '{Emit}' -> failed to send step '{Step}' to '{Topic}' (SagaId: {SagaId})",
+                                emit, step.Name, step.Topic, currentSagaId);
+                            }
+                        }
                     }
 
-                    // 2) Start next flow (single path)
-                    if (!string.IsNullOrWhiteSpace(outcome.Value.NextFlow))
+
+
+                    // 2) Start next flows (multiple flows support)
+                    foreach (var nextFlow in outcome.Value.NextFlows)
                     {
-                        var nf = outcome.Value.NextFlow!;
-                        if (!_flowConfig.Flows.TryGetValue(nf, out var flowDef) || string.IsNullOrWhiteSpace(flowDef.Topic))
+                        if (string.IsNullOrWhiteSpace(nextFlow.Name))
+                            continue;
+
+                        if (!_flowConfig.Flows.TryGetValue(nextFlow.Name, out var flowDef) || string.IsNullOrWhiteSpace(flowDef.Topic))
                         {
-                            _logger.LogWarning("Emit '{Emit}' -> unknown next flow '{Flow}'", emit, nf);
+                            _logger.LogWarning("Emit '{Emit}' -> unknown next flow '{Flow}'", emit, nextFlow.Name);
                         }
                         else
                         {
-                            var start = new StartSagaTriggerMessage
+                            // Use the topic from nextFlow if specified, otherwise fallback to flowDef.Topic
+                            var targetTopic = !string.IsNullOrWhiteSpace(nextFlow.Topic) ? nextFlow.Topic : flowDef.Topic;
+                            
+                            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(targetTopic, requestData, null, nextFlow.Name);
+                            var result = await _messaging.SendSagaMessageAsync(startSagaTriggerMessage);
+                            if(result)
+                                _logger.LogInformation("Emit '{Emit}' -> start flow '{Flow}' to '{Topic}'",
+                                    emit, nextFlow.Name, targetTopic);
+                            else
                             {
-                                MessageName = nf,
-                                Data = data,
-                                MessageType = nf
-                            };
-
-                            await _messaging.SendSagaMessageAsync(start, flowDef.Topic, key);
-                            _logger.LogInformation("Emit '{Emit}' -> start flow '{Flow}' to '{Topic}'",
-                                emit, nf, flowDef.Topic);
+                                _logger.LogWarning("Emit '{Emit}' -> failed to start flow '{Flow}' to '{Topic}'", emit, nextFlow.Name, targetTopic);
+                            }
                         }
                     }
                 }
                 else if (isFailure)
                 {
-                    // Update step execution status to FAILED
-                    await _sagaService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, StepStatus.FAILED, data, $"Step failed with emit: {emit}");
+                    // Update step execution status to FAILED with request and response data and error message
+                    var stepErrorMessage = errorMessage ?? $"Step failed with emit: {emit}";
+                    await _sagaInstanceService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, SagaStepStatusEnum.FAILED, SerializeToJson(requestData), SerializeToJson(responseData), stepErrorMessage);
 
-                    // Update saga status to FAILED
-                    await _sagaService.UpdateSagaStatusAsync(currentSagaId, SagaStatus.FAILED, data, stepName, $"Saga failed at step: {stepName}");
+                    // Update saga status to FAILED with error message AND ResultData
+                    var sagaErrorMessage = errorMessage ?? $"Saga failed at step: {stepName}";
+                    var resultDataJson = SerializeToJson(responseData);
+                    await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.FAILED, resultDataJson, stepName, sagaErrorMessage);
 
-                    _logger.LogWarning("Saga failed: {SagaId}, Step: {StepName}, Emit: {Emit}", currentSagaId, stepName, emit);
+                    foreach (var step in outcome.Value.NextSteps)
+                    {
+                        // Create step execution for next step
+                        await _sagaInstanceService.CreateStepExecutionAsync(currentSagaId, step.Name, step.Topic, SerializeToJson(requestData));
+
+                        // Update saga current step
+                        await _sagaInstanceService.UpdateSagaCurrentStepAsync(currentSagaId, step.Name);
+
+                        var SagaCommandMessage = _kafkaProducerService.PrepareSagaCommandMessage(step.Topic, requestData, responseData, currentSagaId, flowName, step.Name);
+                        var result = await _messaging.SendSagaMessageAsync(SagaCommandMessage);
+                        if (result)
+                            _logger.LogInformation("Emit '{Emit}' -> step '{Step}' sent to '{Topic}' (SagaId: {SagaId})",
+                            emit, step.Name, step.Topic, currentSagaId);
+                        else
+                        {
+                            _logger.LogWarning("Emit '{Emit}' -> failed to send step '{Step}' to '{Topic}' (SagaId: {SagaId})",
+                            emit, step.Name, step.Topic, currentSagaId);
+                        }
+                    }
+
+                    foreach (var nextFlow in outcome.Value.NextFlows)
+                    {
+                        if (string.IsNullOrWhiteSpace(nextFlow.Name))
+                            continue;
+
+                        if (!_flowConfig.Flows.TryGetValue(nextFlow.Name, out var flowDef) || string.IsNullOrWhiteSpace(flowDef.Topic))
+                        {
+                            _logger.LogWarning("Emit '{Emit}' -> unknown next flow '{Flow}'", emit, nextFlow.Name);
+                        }
+                        else
+                        {
+                            // Use the topic from nextFlow if specified, otherwise fallback to flowDef.Topic
+                            var targetTopic = !string.IsNullOrWhiteSpace(nextFlow.Topic) ? nextFlow.Topic : flowDef.Topic;
+
+                            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(targetTopic, requestData, null, nextFlow.Name);
+                            var result = await _messaging.SendSagaMessageAsync(startSagaTriggerMessage);
+                            if (result)
+                                _logger.LogInformation("Emit '{Emit}' -> start flow '{Flow}' to '{Topic}'",
+                                    emit, nextFlow.Name, targetTopic);
+                            else
+                            {
+                                _logger.LogWarning("Emit '{Emit}' -> failed to start flow '{Flow}' to '{Topic}'", emit, nextFlow.Name, targetTopic);
+                            }
+                        }
+                    }
+
+                    _logger.LogWarning("Saga failed: {SagaId}, Step: {StepName}, Emit: {Emit}, Error: {ErrorMessage}, ResultData updated",
+                        currentSagaId, stepName, emit, sagaErrorMessage);
                 }
                 else
                 {
@@ -142,7 +226,45 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
             }
         }
 
-        private (List<(string Name, string Topic)> NextSteps, string? NextFlow)? FindOutcomeByEmit(string emit)
+        private async Task<(List<(string Name, string Topic)> NextSteps, List<(string Name, string Topic)> NextFlows)?> FindOutcomeByEmit(string emit, Guid sagaId)
+        {
+            // If no flowName provided, fall back to searching all flows (backward compatibility)
+            var sagaInstance = await _sagaInstanceService.GetSagaInstanceAsync(sagaId);
+
+            var flowName = sagaInstance?.FlowName;
+
+            if (string.IsNullOrWhiteSpace(flowName))
+            {
+                return FindOutcomeByEmitInAllFlows(emit);
+            }
+
+            // Search only in the specified flow
+            if (!_flowConfig.Flows.TryGetValue(flowName, out var flow))
+            {
+                _logger.LogWarning("Flow '{FlowName}' not found in configuration", flowName);
+                return null;
+            }
+
+            foreach (var step in flow.Steps)
+            {
+                if (step.OnSuccess != null && string.Equals(step.OnSuccess.Emit, emit, StringComparison.OrdinalIgnoreCase))
+                {
+                    var steps = (step.OnSuccess.NextSteps ?? new()).Select(s => (s.Name, s.Topic)).ToList();
+                    var flows = (step.OnSuccess.NextFlows ?? new()).Select(f => (f.Name, f.Topic)).ToList();
+                    return (steps, flows);
+                }
+                if (step.OnFailure != null && string.Equals(step.OnFailure.Emit, emit, StringComparison.OrdinalIgnoreCase))
+                {
+                    var steps = (step.OnFailure.NextSteps ?? new()).Select(s => (s.Name, s.Topic)).ToList();
+                    var flows = (step.OnFailure.NextFlows ?? new()).Select(f => (f.Name, f.Topic)).ToList();
+                    return (steps, flows);
+                }
+            }
+            _logger.LogWarning("Emit '{Emit}' not found in flow '{FlowName}'", emit, flowName);
+            return null;
+        }
+
+        private (List<(string Name, string Topic)> NextSteps, List<(string Name, string Topic)> NextFlows)? FindOutcomeByEmitInAllFlows(string emit)
         {
             foreach (var (_, flow) in _flowConfig.Flows)
             {
@@ -151,66 +273,18 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     if (step.OnSuccess != null && string.Equals(step.OnSuccess.Emit, emit, StringComparison.OrdinalIgnoreCase))
                     {
                         var steps = (step.OnSuccess.NextSteps ?? new()).Select(s => (s.Name, s.Topic)).ToList();
-                        return (steps, step.OnSuccess.NextFlow);
+                        var flows = (step.OnSuccess.NextFlows ?? new()).Select(f => (f.Name, f.Topic)).ToList();
+                        return (steps, flows);
                     }
                     if (step.OnFailure != null && string.Equals(step.OnFailure.Emit, emit, StringComparison.OrdinalIgnoreCase))
                     {
                         var steps = (step.OnFailure.NextSteps ?? new()).Select(s => (s.Name, s.Topic)).ToList();
-                        return (steps, step.OnFailure.NextFlow);
+                        var flows = (step.OnFailure.NextFlows ?? new()).Select(f => (f.Name, f.Topic)).ToList();
+                        return (steps, flows);
                     }
                 }
             }
             return null;
         }
-
-        private static (string emit, Guid? sagaId, string? flowName, Dictionary<string, object> data) ExtractEmit(string json)
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(json);
-                var root = doc.RootElement;
-
-                var emit = root.TryGetProperty("MessageName", out var mt) ? mt.GetString() ?? "" : "";
-
-                Guid? sagaId = null;
-                if (root.TryGetProperty("SagaId", out var sid) && sid.ValueKind == JsonValueKind.String && Guid.TryParse(sid.GetString(), out var g))
-                    sagaId = g;
-
-                string? flowName = null;
-                if (root.TryGetProperty("FlowName", out var fn) && fn.ValueKind == JsonValueKind.String)
-                    flowName = fn.GetString();
-
-                var data = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-                if (root.TryGetProperty("Data", out var dataEl) && dataEl.ValueKind == JsonValueKind.Object)
-                {
-                    foreach (var p in dataEl.EnumerateObject())
-                        data[p.Name] = ConvertElement(p.Value);
-                }
-                else if (root.ValueKind == JsonValueKind.Object)
-                {
-                    foreach (var p in root.EnumerateObject())
-                        if (p.Name is not ("MessageName" or "FlowName" or "SagaId"))
-                            data[p.Name] = ConvertElement(p.Value);
-                }
-
-                return (emit, sagaId, flowName, data);
-            }
-            catch
-            {
-                return ("", null, null, new Dictionary<string, object>());
-            }
-        }
-
-        private static object? ConvertElement(JsonElement el) => el.ValueKind switch
-        {
-            JsonValueKind.Object => el.EnumerateObject().ToDictionary(p => p.Name, p => ConvertElement(p.Value)!),
-            JsonValueKind.Array => el.EnumerateArray().Select(ConvertElement).ToList(),
-            JsonValueKind.String => el.GetString(),
-            JsonValueKind.Number => el.TryGetInt64(out var l) ? l : el.TryGetDouble(out var d) ? d : (object?)el.GetRawText(),
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.Null => null,
-            _ => el.GetRawText()
-        };
     }
 }

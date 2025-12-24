@@ -6,7 +6,8 @@ namespace ApiGatewayService.Infrastructure.Configurations.Redis
     public class RedisDefaultConfigModel
     {
         public string ConnectionString { get; set; } = "localhost:6379";
-        public string InstanceName { get; set; } = "ApiGatewayService";
+        public string InstanceKeyName { get; set; } = string.Empty;
+        public string SharedKeyName { get; set; } = string.Empty;
         public int DefaultDatabase { get; set; } = 0;
         public int ConnectTimeout { get; set; } = 5000;
         public int SyncTimeout { get; set; } = 5000;
@@ -19,7 +20,8 @@ namespace ApiGatewayService.Infrastructure.Configurations.Redis
     public class RedisDefaultConfig : IRedisDefaultConfig
     {
         public string ConnectionString { get; set; } = "localhost:6379";
-        public string InstanceName { get; set; } = "ApiGatewayService";
+        public string InstanceKeyName { get; set; } = string.Empty;
+        public string SharedKeyName { get; set; } = string.Empty;
         public int DefaultDatabase { get; set; } = 0;
         public int ConnectTimeout { get; set; } = 5000;
         public int SyncTimeout { get; set; } = 5000;
@@ -35,7 +37,8 @@ namespace ApiGatewayService.Infrastructure.Configurations.Redis
             if (redisConfig != null)
             {
                 ConnectionString = redisConfig.ConnectionString;
-                InstanceName = redisConfig.InstanceName;
+                InstanceKeyName = redisConfig.InstanceKeyName;
+                SharedKeyName = redisConfig.SharedKeyName;
                 DefaultDatabase = redisConfig.DefaultDatabase;
                 ConnectTimeout = redisConfig.ConnectTimeout;
                 SyncTimeout = redisConfig.SyncTimeout;

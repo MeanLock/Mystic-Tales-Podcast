@@ -65,6 +65,7 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
         public bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType)
         {
             var rule = GetValidationRule(fieldName);
+
             if (rule == null)
                 return false;
 

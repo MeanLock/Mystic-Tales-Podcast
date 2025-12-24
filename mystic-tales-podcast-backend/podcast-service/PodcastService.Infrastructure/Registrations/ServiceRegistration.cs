@@ -20,6 +20,10 @@ using PodcastService.Infrastructure.Configurations.Payos;
 using Net.payOS;
 using PodcastService.Infrastructure.Services.Kafka;
 using PodcastService.Infrastructure.Services.Audio.AcoustID;
+using PodcastService.Infrastructure.Services.Audio.Hls;
+using PodcastService.Infrastructure.Services.Audio.Tuning;
+using PodcastService.Infrastructure.Services.Audio.Transcription;
+using PodcastService.Infrastructure.Services.Consul.DistributedLock;
 
 namespace PodcastService.Infrastructure.Registrations
 {
@@ -127,7 +131,8 @@ namespace PodcastService.Infrastructure.Registrations
             IConfiguration configuration)
         {
             // Register Redis service
-            services.AddScoped<RedisCacheService>();
+            services.AddScoped<RedisInstanceCacheService>();
+            services.AddScoped<RedisSharedCacheService>();
 
             // Configure Redis connection
             services.AddSingleton<IConnectionMultiplexer>(sp =>
@@ -176,6 +181,10 @@ namespace PodcastService.Infrastructure.Registrations
                 });
             });
 
+            // Register Consul Distributed Lock Service
+            services.AddSingleton<ConsulDistributedLockService>();
+            services.AddSingleton<ConsulSessionManager>();
+
             return services;
         }
 
@@ -208,6 +217,17 @@ namespace PodcastService.Infrastructure.Registrations
             services.AddScoped<AcoustIDAudioFingerprintGenerator>();
             services.AddScoped<AcoustIDAudioFingerprintComparator>();
 
+            // HLS Service
+            services.AddScoped<FFMegLocalHlsService>();
+            services.AddScoped<FFMpegCoreHlsService>();
+
+            // Audio Tuning Services
+            services.AddScoped<EqualizerTuningService>();
+            services.AddScoped<AITuningService>();
+            services.AddScoped<AdvanceTuningService>();
+
+            // Transcription Services
+            services.AddScoped<AudioTranscriptionApiService>();
 
             return services;
         }

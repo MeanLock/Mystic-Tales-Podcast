@@ -1,0 +1,11 @@
+.vs/
+SagaOrchestratorService.API/bin/
+SagaOrchestratorService.API/obj/
+SagaOrchestratorService.BusinessLogic/bin/
+SagaOrchestratorService.BusinessLogic/obj/
+SagaOrchestratorService.Infrastructure/bin/
+SagaOrchestratorService.Infrastructure/obj/
+SagaOrchestratorService.DataAccess/bin/
+SagaOrchestratorService.DataAccess/obj/
+SagaOrchestratorService.Common/bin/
+SagaOrchestratorService.Common/obj/

@@ -13,6 +13,11 @@ using PodcastService.Common.Configurations.Consul.interfaces;
 using PodcastService.Common.Configurations.Consul;
 using PodcastService.Infrastructure.Configurations.Kafka.interfaces;
 using PodcastService.Infrastructure.Configurations.Kafka;
+using PodcastService.Infrastructure.Configurations.Audio.Hls.interfaces;
+using PodcastService.Infrastructure.Configurations.Audio.Hls;
+using PodcastService.Infrastructure.Configurations.Audio.Tuning;
+using PodcastService.Infrastructure.Configurations.Audio.AcoustID.interfaces;
+using PodcastService.Infrastructure.Configurations.Audio.AcoustID;
 
 namespace PodcastService.Infrastructure.Registrations
 {
@@ -54,7 +59,13 @@ namespace PodcastService.Infrastructure.Registrations
             // Consul
             services.AddSingleton<IConsulServiceConfig, ConsulServiceConfig>();
             services.AddSingleton<IConsulHealthCheckConfig, ConsulHealthCheckConfig>();
+            services.AddSingleton<IConsulDistributedLockConfig, ConsulDistributedLockConfig>();
 
+            // Audio
+            services.AddSingleton<IHlsConfig, HlsConfig>();
+            services.AddSingleton<IMoodConfig, MoodConfig>();
+            services.AddSingleton<IEqualizerConfig, EqualizerConfig>();
+            services.AddSingleton<IAcoustIDFingerprintComparisonConfig, AcoustIDFingerprintComparisonConfig>(); 
             
             return services;
         }

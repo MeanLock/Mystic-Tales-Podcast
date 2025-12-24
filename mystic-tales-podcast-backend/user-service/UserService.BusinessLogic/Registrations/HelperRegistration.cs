@@ -19,6 +19,7 @@ namespace UserService.BusinessLogic.Registrations
             services.AddSingleton<LocalBinaryFileHelper>();
             services.AddSingleton<LocalBase64FileHelper>();
             services.AddSingleton<FilePathHelper>();
+            services.AddScoped<PdfFormFillingHelper>();
 
             // Date Helpers
             services.AddSingleton<DateHelper>();

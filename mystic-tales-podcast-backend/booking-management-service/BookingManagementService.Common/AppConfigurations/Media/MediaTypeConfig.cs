@@ -178,6 +178,7 @@ namespace BookingManagementService.Common.AppConfigurations.Media
                 // Audio
                 { "audio/mpeg", ".mp3" },
                 { "audio/wav", ".wav" },
+                { "audio/wave", ".wav" },
                 { "audio/ogg", ".ogg" },
                 { "audio/mp4", ".m4a" },
                 { "audio/aac", ".aac" },

@@ -1,0 +1,140 @@
+// .episode-audio__sequencer-container {
+//   margin-top: 2rem;
+//   padding: 1.5rem;
+//   background: rgba(23, 23, 23, 0.85);
+//   backdrop-filter: blur(16px);
+//   -webkit-backdrop-filter: blur(16px);
+//   border-radius: 16px;
+//   border: 1px solid rgba(174, 227, 57, 0.15);
+//   box-shadow: 
+//     0 8px 32px 0 rgba(0, 0, 0, 0.37),
+//     inset 0 1px 0 0 rgba(174, 227, 57, 0.1);
+  
+//   .episode-audio__sequencer-header {
+//     margin-bottom: 1.5rem;
+    
+//     h3 {
+//       color: #AEE339;
+//       font-size: 1.25rem;
+//       font-weight: 600;
+//       margin-bottom: 0.5rem;
+//       text-shadow: 0 0 20px rgba(174, 227, 57, 0.3);
+//     }
+    
+//     p {
+//       color: rgba(255, 255, 255, 0.7);
+//       font-size: 0.875rem;
+//       line-height: 1.4;
+//     }
+//   }
+  
+//   .episode-audio__sequencer-section {
+//     margin-bottom: 1rem;
+    
+//     .episode-audio__available-backgrounds {
+//       padding: 1rem;
+//       background: rgba(23, 23, 23, 0.6);
+//       backdrop-filter: blur(8px);
+//       border-radius: 12px;
+//       border: 1px solid rgba(174, 227, 57, 0.1);
+      
+//       h4 {
+//         color: #AEE339;
+//         font-size: 0.875rem;
+//         font-weight: 500;
+//         margin-bottom: 0.75rem;
+//       }
+//     }
+//   }
+// }
+
+// // Drag handle styles
+// .clip-drag-handle {
+//   cursor: grab;
+//   //background: rgba(174, 227, 57, 0.05);
+//   transition: background 0.2s ease;
+  
+//   &:hover {
+//     //background: rgba(174, 227, 57, 0.1);
+//   }
+  
+//   &:active {
+//     cursor: grabbing;
+//     //background: rgba(174, 227, 57, 0.15);
+//   }
+// }
+
+// // Sequencer specific overrides - Glassmorphism theme
+// .episode-audio__sequencer-container {
+//   .text-slate-100 {
+//     color: rgba(255, 255, 255, 0.95) !important;
+//   }
+  
+//   .text-slate-400 {
+//     color: rgba(255, 255, 255, 0.6) !important;
+//   }
+  
+//   .bg-slate-900 {
+//     background: rgba(23, 23, 23, 0.9) !important;
+//     backdrop-filter: blur(12px);
+//   }
+  
+//   .bg-slate-800 {
+//     background: rgba(23, 23, 23, 0.7) !important;
+//     backdrop-filter: blur(8px);
+//     border: 1px solid rgba(174, 227, 57, 0.1);
+//   }
+  
+//   .bg-slate-700 {
+//     background: rgba(40, 40, 40, 0.6) !important;
+//     border: 1px solid rgba(174, 227, 57, 0.08);
+//     transition: all 0.2s ease;
+    
+//     &:hover {
+//       background: rgba(174, 227, 57, 0.15) !important;
+//       border-color: rgba(174, 227, 57, 0.3);
+//       box-shadow: 0 0 15px rgba(174, 227, 57, 0.2);
+//     }
+//   }
+  
+//   .bg-slate-600 {
+//     background: rgba(50, 50, 50, 0.5) !important;
+//     border: 1px solid rgba(174, 227, 57, 0.12);
+//   }
+  
+//   .border-slate-800 {
+//     border-color: rgba(23, 23, 23, 0.6) !important;
+//   }
+  
+//   .border-slate-700 {
+//     border-color: rgba(174, 227, 57, 0.15) !important;
+//   }
+  
+//   .bg-emerald-600 {
+//     background: linear-gradient(135deg, #AEE339 0%, #8BC934 100%) !important;
+//     box-shadow: 0 4px 15px rgba(174, 227, 57, 0.3);
+    
+//     &:hover {
+//       box-shadow: 0 6px 20px rgba(174, 227, 57, 0.4);
+//       transform: translateY(-1px);
+//     }
+//   }
+  
+//   .bg-amber-600, .bg-rose-600 {
+//     backdrop-filter: blur(8px);
+//     border: 1px solid rgba(255, 255, 255, 0.1);
+//   }
+  
+//   // Clip container glassmorphism
+//   .rounded-xl {
+//     background: rgba(23, 23, 23, 0.8) !important;
+//     backdrop-filter: blur(10px);
+//     border: 1px solid rgba(174, 227, 57, 0.2) !important;
+//     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    
+//     &:hover {
+//       border-color: rgba(174, 227, 57, 0.4) !important;
+//       box-shadow: 0 6px 24px rgba(174, 227, 57, 0.15);
+//     }
+//   }
+// }

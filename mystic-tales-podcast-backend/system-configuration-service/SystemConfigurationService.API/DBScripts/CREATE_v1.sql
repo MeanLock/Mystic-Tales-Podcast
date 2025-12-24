@@ -27,7 +27,13 @@ CREATE TABLE PodcastSubscriptionConfig (
 -- PodcastSuggestionConfig table
 CREATE TABLE PodcastSuggestionConfig (
     configProfileId INT PRIMARY KEY,
-    behaviorLookbackDayCount INT NOT NULL,
+    minShortRangeUserBehaviorLookbackDayCount INT NOT NULL,
+    minMediumRangeUserBehaviorLookbackDayCount INT NOT NULL,
+    minLongRangeUserBehaviorLookbackDayCount INT NOT NULL,
+    minShortRangeContentBehaviorLookbackDayCount INT NOT NULL,
+    minMediumRangeContentBehaviorLookbackDayCount INT NOT NULL,
+    minLongRangeContentBehaviorLookbackDayCount INT NOT NULL,
+    minExtraLongRangeContentBehaviorLookbackDayCount INT NOT NULL,
     minChannelQuery INT NOT NULL,
     minShowQuery INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -45,7 +51,7 @@ CREATE TABLE BookingConfig (
     producingRequestResponseAllowedDays INT NOT NULL,
     chatRoomExpiredHours INT NOT NULL,
     chatRoomFileMessageExpiredHours INT NOT NULL,
-    freeInitalBookingStorageSize FLOAT NOT NULL,
+    freeInitialBookingStorageSize FLOAT NOT NULL,
     singleStorageUnitPurchasePrice DECIMAL(18,2) NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),

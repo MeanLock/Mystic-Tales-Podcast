@@ -1,7 +1,7 @@
-using System.Text;
-using System.Text.Json;
 using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
+using System.Text;
+using System.Text.Json;
 using SystemConfigurationService.Infrastructure.Configurations.Kafka.interfaces;
 
 namespace SystemConfigurationService.Infrastructure.Services.Kafka
@@ -16,8 +16,8 @@ namespace SystemConfigurationService.Infrastructure.Services.Kafka
         private readonly IKafkaClusterConfig _kafkaClusterConfig;
         private readonly IKafkaConsumerConfig _kafkaConsumerConfig;
         private readonly ILogger<KafkaConsumerService> _logger;
-        private readonly Dictionary<string, Func<string, string, Task>> _messageTypeHandlers;
-        private readonly Dictionary<string, List<string>> _topicMessageTypes;
+        private readonly Dictionary<string, Func<string, string, Task>> _messageNameHandlers;
+        private readonly Dictionary<string, List<string>> _topicMessageNames;
         private bool _isInitialized = false;
 
         public KafkaConsumerService(
@@ -28,8 +28,8 @@ namespace SystemConfigurationService.Infrastructure.Services.Kafka
             _kafkaClusterConfig = kafkaClusterConfig;
             _kafkaConsumerConfig = kafkaConsumerConfig;
             _logger = logger;
-            _messageTypeHandlers = new Dictionary<string, Func<string, string, Task>>();
-            _topicMessageTypes = new Dictionary<string, List<string>>();
+            _messageNameHandlers = new Dictionary<string, Func<string, string, Task>>();
+            _topicMessageNames = new Dictionary<string, List<string>>();
 
             _logger.LogInformation("KafkaConsumerService initialized as singleton utility service");
         }
@@ -89,25 +89,25 @@ namespace SystemConfigurationService.Infrastructure.Services.Kafka
             }
         }
 
-        /// <summary>
-        /// Register a message type handler
-        /// </summary>
-        public void RegisterMessageTypeHandler(string messageType, string topic, Func<string, string, Task> handler)
+
+        public void RegisterMessageNameHandler(string messageName, string topic, Func<string, string, Task> handler)
         {
-            _messageTypeHandlers[messageType] = handler;
+            // Tạo composite key: "topic:messageName"
+            var compositeKey = $"{topic}:{messageName}";
+            _messageNameHandlers[compositeKey] = handler;
 
-            if (!_topicMessageTypes.ContainsKey(topic))
+            if (!_topicMessageNames.ContainsKey(topic))
             {
-                _topicMessageTypes[topic] = new List<string>();
+                _topicMessageNames[topic] = new List<string>();
             }
 
-            if (!_topicMessageTypes[topic].Contains(messageType))
+            if (!_topicMessageNames[topic].Contains(messageName))
             {
-                _topicMessageTypes[topic].Add(messageType);
+                _topicMessageNames[topic].Add(messageName);
             }
 
-            _logger.LogInformation("Registered handler for MessageType: {MessageType} on Topic: {Topic}",
-                messageType, topic);
+            _logger.LogInformation("Registered handler for MessageName: {MessageName} on Topic: {Topic}",
+                messageName, topic);
         }
 
         /// <summary>
@@ -115,9 +115,9 @@ namespace SystemConfigurationService.Infrastructure.Services.Kafka
         /// </summary>
         public void SubscribeToTopics()
         {
-            if (_consumer != null && _topicMessageTypes.Any())
+            if (_consumer != null && _topicMessageNames.Any())
             {
-                var allTopics = _topicMessageTypes.Keys.ToList();
+                var allTopics = _topicMessageNames.Keys.ToList();
                 _consumer.Subscribe(allTopics);
                 _logger.LogInformation("Subscribed to topics: {Topics}", string.Join(", ", allTopics));
             }
@@ -149,35 +149,43 @@ namespace SystemConfigurationService.Infrastructure.Services.Kafka
             }
         }
 
-        /// <summary>
-        /// Process a consumed message
-        /// </summary>
+
         public async Task ProcessMessageAsync(ConsumeResult<string, string> result)
         {
             try
             {
-                var messageType = ExtractMessageTypeFromHeader(result.Message.Headers)
-                                 ?? ExtractMessageTypeFromBody(result.Message.Value);
+                var messageName = ExtractMessageNameFromHeader(result.Message.Headers)
+                                 ?? ExtractMessageNameFromBody(result.Message.Value);
 
-                if (!string.IsNullOrEmpty(messageType) && _messageTypeHandlers.ContainsKey(messageType))
+                if (!string.IsNullOrEmpty(messageName))
                 {
-                    _logger.LogInformation("Processing message - Topic: {Topic}, Partition: {Partition}, Offset: {Offset}, MessageType: {MessageType}",
-                        result.Topic, result.Partition.Value, result.Offset.Value, messageType);
+                    // Thử composite key trước
+                    var compositeKey = $"{result.Topic}:{messageName}";
 
-                    await _messageTypeHandlers[messageType](result.Message.Key, result.Message.Value);
+                    if (_messageNameHandlers.ContainsKey(compositeKey))
+                    {
+                        _logger.LogInformation("Processing message - Topic: {Topic}, MessageName: {MessageName}",
+                            result.Topic, messageName);
 
-                    _logger.LogInformation("Message processed successfully - MessageType: {MessageType}", messageType);
-                }
-                else
-                {
-                    _logger.LogWarning("No handler found for MessageType: {MessageType} from Topic: {Topic}",
-                        messageType ?? "Unknown", result.Topic);
+                        await _messageNameHandlers[compositeKey](result.Message.Key, result.Message.Value);
+                    }
+                    // Fallback về messageName đơn thuần (backward compatibility)
+                    else if (_messageNameHandlers.ContainsKey(messageName))
+                    {
+                        _logger.LogWarning("Using fallback handler for MessageName: {MessageName}", messageName);
+                        await _messageNameHandlers[messageName](result.Message.Key, result.Message.Value);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No handler found for MessageName: {MessageName} from Topic: {Topic}",
+                            messageName, result.Topic);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing message from Topic: {Topic}, Partition: {Partition}, Offset: {Offset}",
-                    result.Topic, result.Partition.Value, result.Offset.Value);
+                _logger.LogError(ex, "Error processing message from Topic: {Topic}",
+                    result.Topic);
                 throw;
             }
         }
@@ -200,41 +208,41 @@ namespace SystemConfigurationService.Infrastructure.Services.Kafka
         /// <summary>
         /// Get registered handlers for external access
         /// </summary>
-        public IReadOnlyDictionary<string, Func<string, string, Task>> GetMessageTypeHandlers()
+        public IReadOnlyDictionary<string, Func<string, string, Task>> GetMessageNameHandlers()
         {
-            return _messageTypeHandlers.AsReadOnly();
+            return _messageNameHandlers.AsReadOnly();
         }
 
         /// <summary>
-        /// Get topic-message type mappings for external access
+        /// Get topic-message name mappings for external access
         /// </summary>
-        public IReadOnlyDictionary<string, List<string>> GetTopicMessageTypes()
+        public IReadOnlyDictionary<string, List<string>> GetTopicMessageNames()
         {
-            return _topicMessageTypes.ToDictionary(x => x.Key, x => x.Value.ToList()).AsReadOnly();
+            return _topicMessageNames.ToDictionary(x => x.Key, x => x.Value.ToList()).AsReadOnly();
         }
 
-        private string? ExtractMessageTypeFromHeader(Headers headers)
+        private string? ExtractMessageNameFromHeader(Headers headers)
         {
-            if (headers != null && headers.TryGetLastBytes("MessageType", out var messageTypeBytes))
+            if (headers != null && headers.TryGetLastBytes("MessageName", out var messageNameBytes))
             {
-                return Encoding.UTF8.GetString(messageTypeBytes);
+                return Encoding.UTF8.GetString(messageNameBytes);
             }
             return null;
         }
 
-        private string? ExtractMessageTypeFromBody(string messageBody)
+        private string? ExtractMessageNameFromBody(string messageBody)
         {
             try
             {
                 using var document = JsonDocument.Parse(messageBody);
-                if (document.RootElement.TryGetProperty("MessageType", out var messageTypeElement))
+                if (document.RootElement.TryGetProperty("MessageName", out var messageNameElement))
                 {
-                    return messageTypeElement.GetString();
+                    return messageNameElement.GetString();
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to extract message type from body");
+                _logger.LogWarning(ex, "Failed to extract message name from body");
             }
             return null;
         }

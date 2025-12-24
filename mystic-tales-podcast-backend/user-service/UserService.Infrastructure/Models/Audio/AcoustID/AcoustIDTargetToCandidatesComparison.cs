@@ -1,17 +1,3 @@
-// class EmbeddingVectorFilterTagDTO(BaseModel):
-//     FilterTagId: int
-//     EmbeddingVector: Optional[List[float]] = None
-
-// class CandidateEmbeddingVectorFilterTagsDTO(BaseModel):
-//     CandidateId: int
-//     EmbeddingVectorFilterTags: List[EmbeddingVectorFilterTagDTO] 
-//     CandidateTagFilterAccuracyRate: Optional[float] = None
-
-// class FilterTagSimilarityComparisonRequestDTO(BaseModel):
-//     TargetEmbeddingVectorFilterTags: List[EmbeddingVectorFilterTagDTO]
-//     CandidateEmbeddingVectorFilterTags: List[CandidateEmbeddingVectorFilterTagsDTO]
-
-
 namespace UserService.Infrastructure.Models.Audio.AcoustID
 {
     public class AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparison

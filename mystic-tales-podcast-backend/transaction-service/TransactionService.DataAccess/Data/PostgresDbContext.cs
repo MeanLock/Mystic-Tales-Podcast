@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using TransactionService.DataAccess.Entities.postgres;
+using TransactionService.DataAccess.Entities.Postgres;
 
 namespace TransactionService.DataAccess.Data;
 

@@ -5,5 +5,6 @@ namespace SubscriptionService.Common.AppConfigurations.BusinessSetting.interface
     public interface IAccountConfig
     {
         int VerifyCodeLength { get; set; }
+        int AccountStatusCacheExpirySeconds { get; set; }
     }
 }

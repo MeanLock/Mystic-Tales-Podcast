@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using UserService.BusinessLogic.Helpers.DateHelpers;
 using UserService.BusinessLogic.Helpers.FileHelpers;
 using UserService.Common.AppConfigurations.FilePath.interfaces;

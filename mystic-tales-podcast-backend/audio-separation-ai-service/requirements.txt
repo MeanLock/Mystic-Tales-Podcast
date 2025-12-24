@@ -1,0 +1,28 @@
+# Core API framework
+fastapi
+uvicorn[standard]
+
+# Audio processing - main library
+audio-separator[mdx]
+
+# File handling
+python-multipart
+aiofiles
+
+# Additional dependencies for audio processing
+torch
+torchaudio
+librosa
+soundfile
+numpy
+
+# For model handling
+# onnxruntime
+onnxruntime-gpu
+
+# FFmpeg auto-detection and management (similar to FFMpegCore)
+imageio-ffmpeg
+ffmpeg-python
+
+# Python standard library extensions
+pathlib2

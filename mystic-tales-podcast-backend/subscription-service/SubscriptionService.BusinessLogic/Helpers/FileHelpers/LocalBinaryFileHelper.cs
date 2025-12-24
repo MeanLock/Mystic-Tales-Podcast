@@ -241,6 +241,67 @@ namespace SubscriptionService.BusinessLogic.Helpers.FileHelpers
             }
         }
 
+        public async Task CopyFolderToFolderAsync(string sourceFolderPath, string destinationFolderPath)
+        {
+            try
+            {
+                // Build full source path
+                string fullSourceFolderPath = Path.Combine(_wwwRootPath, sourceFolderPath.Replace('/', '\\'));
+
+                // Check if source folder exists
+                if (!Directory.Exists(fullSourceFolderPath))
+                {
+                    Console.WriteLine($"\n\n\n Source folder not found: {fullSourceFolderPath} \n\n\n");
+                    return;
+                }
+
+                // Build full destination path
+                string fullDestinationFolderPath = Path.Combine(_wwwRootPath, destinationFolderPath.Replace('/', '\\'));
+
+                // Create destination folder if it doesn't exist
+                if (!Directory.Exists(fullDestinationFolderPath))
+                {
+                    Directory.CreateDirectory(fullDestinationFolderPath);
+                }
+
+                // Get all files in source folder (recursively)
+                string[] sourceFiles = Directory.GetFiles(fullSourceFolderPath, "*", SearchOption.AllDirectories);
+
+                // Copy each file to destination
+                foreach (var sourceFile in sourceFiles)
+                {
+                    try
+                    {
+                        // Calculate relative path from source folder
+                        string relativePath = Path.GetRelativePath(fullSourceFolderPath, sourceFile);
+
+                        // Build destination file path
+                        string destinationFile = Path.Combine(fullDestinationFolderPath, relativePath);
+
+                        // Create destination directory if needed
+                        string? destinationDirectory = Path.GetDirectoryName(destinationFile);
+                        if (!string.IsNullOrEmpty(destinationDirectory) && !Directory.Exists(destinationDirectory))
+                        {
+                            Directory.CreateDirectory(destinationDirectory);
+                        }
+
+                        // Copy file (overwrite if exists)
+                        File.Copy(sourceFile, destinationFile, true);
+                    }
+                    catch (Exception fileEx)
+                    {
+                        Console.WriteLine($"\n\n\n Error copying file {sourceFile}: {fileEx.ToString()} \n\n\n");
+                        // Continue with next file instead of throwing
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n\n\n CopyFolder: " + ex.ToString() + "\n\n\n");
+                throw new Exception($"Error copying folder: {ex.Message}");
+            }
+        }
+
         public Task CreateFolderAsync(string folderPath)
         {
             try

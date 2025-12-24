@@ -20,6 +20,8 @@ using BookingManagementService.Infrastructure.Configurations.Payos;
 using Net.payOS;
 using BookingManagementService.Infrastructure.Services.Kafka;
 using BookingManagementService.Infrastructure.Services.Audio.AcoustID;
+using BookingManagementService.Infrastructure.Services.Audio.Hls;
+using BookingManagementService.Infrastructure.Services.Consul.DistributedLock;
 
 namespace BookingManagementService.Infrastructure.Registrations
 {
@@ -127,7 +129,8 @@ namespace BookingManagementService.Infrastructure.Registrations
             IConfiguration configuration)
         {
             // Register Redis service
-            services.AddScoped<RedisCacheService>();
+            services.AddScoped<RedisInstanceCacheService>();
+            services.AddScoped<RedisSharedCacheService>();
 
             // Configure Redis connection
             services.AddSingleton<IConnectionMultiplexer>(sp =>
@@ -175,6 +178,10 @@ namespace BookingManagementService.Infrastructure.Registrations
                     config.Address = new Uri(consulServiceHost);
                 });
             });
+            
+            // Register Consul Distributed Lock Service
+            services.AddSingleton<ConsulDistributedLockService>();
+            services.AddSingleton<ConsulSessionManager>();
 
             return services;
         }
@@ -208,6 +215,9 @@ namespace BookingManagementService.Infrastructure.Registrations
             services.AddScoped<AcoustIDAudioFingerprintGenerator>();
             services.AddScoped<AcoustIDAudioFingerprintComparator>();
 
+            // HLS Service
+            services.AddScoped<FFMegLocalHlsService>();
+            services.AddScoped<FFMpegCoreHlsService>();
 
             return services;
         }

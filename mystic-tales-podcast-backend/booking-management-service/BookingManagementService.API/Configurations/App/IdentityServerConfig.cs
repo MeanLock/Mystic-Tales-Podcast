@@ -1,5 +1,4 @@
-﻿using BookingManagementService.DataAccess.Seeders;
-using BookingManagementService.DataAccess.Seeders.IdentityServer;
+﻿using BookingManagementService.DataAccess.Seeders.IdentityServer;
 
 namespace BookingManagementService.API.Configurations.App
 {

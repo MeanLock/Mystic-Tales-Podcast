@@ -1,10 +1,6 @@
-﻿using TransactionService.BusinessLogic.Services.DbServices.TransactionServices;
-using Microsoft.Extensions.DependencyInjection;
-using TransactionService.BusinessLogic.Services.DbServices.FilterServices;
-using TransactionService.BusinessLogic.Services.DbServices.SurveyServices;
-using TransactionService.BusinessLogic.Services.DbServices.PaymentServices;
-using TransactionService.BusinessLogic.Services.DbServices.ReportServices;
+﻿using Microsoft.Extensions.DependencyInjection;
 using TransactionService.BusinessLogic.Services.DbServices.MiscServices;
+using TransactionService.BusinessLogic.Services.DbServices.TransactionServices;
 
 namespace TransactionService.BusinessLogic.Registrations
 {
@@ -12,35 +8,17 @@ namespace TransactionService.BusinessLogic.Registrations
     {
         public static IServiceCollection AddDbServices(this IServiceCollection services)
         {
-            // ConfigServices
-            services.AddScoped<SystemConfigService>();
+            // MiscServices
+            services.AddScoped<MailOperationService>();
+
+            // CachingServices
+            services.AddScoped<AccountCachingService>();
 
             // TransactionServices
-            services.AddScoped<AuthService>();
-            services.AddScoped<AccountService>();
-
-            // PaymentServices
-            services.AddScoped<AccountPaymentService>();
-
-            // SurveyServices
-            services.AddScoped<SurveyCoreService>();
-            services.AddScoped<SurveySessionService>();
-            services.AddScoped<SurveyResponseService>();
-            services.AddScoped<SurveyTransactionService>();
-
-            // FilterServices
-            services.AddScoped<FilterTagService>();
-
-            // ReportServices
-            services.AddScoped<SurveyStatisticsService>();
-            services.AddScoped<TransactionStatisticsService>();
-            services.AddScoped<UserStatisticsService>();
-
-            // MiscServices
-            services.AddScoped<PlatformFeedbackService>();
-
-
-
+            services.AddScoped<AccountBalanceTransactionService>();
+            services.AddScoped<BookingTransactionService>();
+            services.AddScoped<PodcastSubscriptionService>();
+            services.AddScoped<MemberSubscriptionService>();
 
             return services;
         }

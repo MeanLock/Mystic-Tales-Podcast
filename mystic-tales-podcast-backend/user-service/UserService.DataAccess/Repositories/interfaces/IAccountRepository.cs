@@ -1,19 +1,16 @@
-﻿using UserService.DataAccess.Data;
-using UserService.DataAccess.Entities;
+﻿using System.Linq.Expressions;
+using UserService.DataAccess.Entities.SqlServer;
 
 namespace UserService.DataAccess.Repositories.interfaces
 {
     public interface IAccountRepository
     {
-        Task<IEnumerable<Account>> FindByRoleIdAsync(int roleId);
-        Task<IEnumerable<Account>> FindByRoleIdsAsync(List<int> roleIds);
+        Task<Account> FindByEmailAsync(string email, Func<IQueryable<Account>, IQueryable<Account>>? includeFunc = null);
 
-        Task<Account> FindByEmailAsync(string email);
+        Task<IEnumerable<Account>> FindByRoleIdAsync(int roleId, Expression<Func<Account, bool>>? predicate = null, Func<IQueryable<Account>, IQueryable<Account>>? includeFunc = null);
 
-        Task<Account> FindByIdAsync(int id);
-        Task<IEnumerable<Account>> FindByAccountProfileAsync(AccountProfile accountProfile, bool? IsDeletedContain = false);
-        bool CompareAccountProfile(AccountProfile accountProfile, AccountProfile targetAccountProfile);
-        Task<bool> DeactivateAsync(int id, bool deactivate);
-        Task<int> CountAccountRegistrationByPeriodAsync(DateOnly startDate, DateOnly endDate);
+        Task<IEnumerable<Account>> FindByRoleIdsAsync(List<int> roleIds, Expression<Func<Account, bool>>? predicate = null, Func<IQueryable<Account>, IQueryable<Account>>? includeFunc = null);
+        // Task<bool> DeactivateAsync(int id, bool deactivate);
+        // Task<int> CountAccountRegistrationByPeriodAsync(DateOnly startDate, DateOnly endDate);
     }
 }

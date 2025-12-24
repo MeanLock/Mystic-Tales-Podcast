@@ -1,13 +1,7 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.AspNetCore.Authorization;
 using UserService.API.Authorizations.Handlers;
 using UserService.API.Authorizations.Requirements;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using SystemIO = System.IO;
 
 
 namespace UserService.API.Configurations.Builder
@@ -20,14 +14,18 @@ namespace UserService.API.Configurations.Builder
             builder.AddCustomAuthorizationHandlers();
             builder.AddRolePolicy();
             builder.AddEmailPolicy();
-            builder.AddLoginRequiredPolicy();
+            builder.AddStaticPolicy();
 
             builder.AddDefaultAuthorization();
         }
         public static void AddCustomAuthorizationHandlers(this WebApplicationBuilder builder)
         {
-            builder.Services.AddScoped<IAuthorizationHandler, AccountExistsHandler>();
-
+            // builder.Services.AddScoped<IAuthorizationHandler, AccountExistsHandler>();
+            builder.Services.AddScoped<IAuthorizationHandler, AccountBasicAccessHandler>();
+            builder.Services.AddScoped<IAuthorizationHandler, AccountNoViolationAccessHandler>();
+            builder.Services.AddScoped<IAuthorizationHandler, AccountPodcasterAccessHandler>();
+            builder.Services.AddScoped<IAuthorizationHandler, AccountNonPodcasterAccessHandler>();
+            builder.Services.AddScoped<IAuthorizationHandler, AccountOptionalAccessHandler>();
         }
 
         public static void AddDefaultAuthorization(this WebApplicationBuilder builder)
@@ -38,14 +36,18 @@ namespace UserService.API.Configurations.Builder
             });
         }
 
-        public static void AddLoginRequiredPolicy(this WebApplicationBuilder builder)
+        public static void AddStaticPolicy(this WebApplicationBuilder builder)
         {
             builder.Services.AddAuthorization(options =>
             {
-                options.AddPolicy("LoginRequired", policy =>
+                options.AddPolicy("OptionalAccess", policy =>
+                {
+                    policy.Requirements.Add(new AccountOptionalAccessRequirement());
+                });
+                options.AddPolicy("BasicAccess", policy =>
                 {
                     policy.RequireAuthenticatedUser();
-                    policy.Requirements.Add(new AccountExistsRequirement());
+                    policy.Requirements.Add(new AccountBasicAccessRequirement());
                 });
             });
         }
@@ -54,35 +56,63 @@ namespace UserService.API.Configurations.Builder
         {
             builder.Services.AddAuthorization(options =>
             {
-                // options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-                // options.AddPolicy("ManagerOnly", policy => policy.RequireRole("Manager"));
-                // options.AddPolicy("UserOnly", policy => policy.RequireRole("Customer"));
-                options.AddPolicy("AdminRequiredOnly", policy =>
+                options.AddPolicy("Admin.BasicAccess", policy =>
                 {
                     policy.RequireRole("Admin");
-                    policy.Requirements.Add(new AccountExistsRequirement());
+                    policy.Requirements.Add(new AccountBasicAccessRequirement());
                 });
-                options.AddPolicy("AdminOrManagerRequired", policy =>
+                options.AddPolicy("Staff.BasicAccess", policy =>
                 {
-                    policy.RequireRole("Admin", "Manager");
-                    policy.Requirements.Add(new AccountExistsRequirement());
+                    policy.RequireRole("Staff");
+                    policy.Requirements.Add(new AccountBasicAccessRequirement());
                 });
-                options.AddPolicy("ManagerRequiredOnly", policy =>
-                {
-                    policy.RequireRole("Manager");
-                    policy.Requirements.Add(new AccountExistsRequirement());
-                });
-                options.AddPolicy("CustomerRequiredOnly", policy =>
+                options.AddPolicy("Customer.BasicAccess", policy =>
                 {
                     policy.RequireRole("Customer");
-                    policy.Requirements.Add(new AccountExistsRequirement());
+                    policy.Requirements.Add(new AccountBasicAccessRequirement());
                 });
-                options.AddPolicy("UserTransactionReportAccess", policy =>
+                options.AddPolicy("AdminOrStaff.BasicAccess", policy =>
                 {
-                    policy.RequireRole("Customer","Manager");
-                    policy.Requirements.Add(new AccountExistsRequirement());
+                    policy.RequireRole("Admin", "Staff");
+                    policy.Requirements.Add(new AccountBasicAccessRequirement());
                 });
-
+                options.AddPolicy("AdminOrCustomer.BasicAccess", policy =>
+                {
+                    policy.RequireRole("Admin", "Customer");
+                    policy.Requirements.Add(new AccountBasicAccessRequirement());
+                });
+                options.AddPolicy("AdminOrStaffOrCustomer.BasicAccess", policy =>
+                {
+                    policy.RequireRole("Admin", "Staff", "Customer");
+                    policy.Requirements.Add(new AccountBasicAccessRequirement());
+                });
+                options.AddPolicy("Customer.NoViolationAccess", policy =>
+                {
+                    policy.RequireRole("Customer");
+                    policy.Requirements.Add(new AccountNoViolationAccessRequirement());
+                });
+                options.AddPolicy("Customer.PodcasterAccess", policy =>
+                {
+                    policy.RequireRole("Customer");
+                    policy.Requirements.Add(new AccountPodcasterAccessRequirement());
+                });
+                options.AddPolicy("Customer.NonPodcasterAccess", policy =>
+                {
+                    policy.RequireRole("Customer");
+                    policy.Requirements.Add(new AccountNonPodcasterAccessRequirement());
+                });
+                options.AddPolicy("Customer.NoViolationAccess.NonPodcasterAccess", policy =>
+                {
+                    policy.RequireRole("Customer");
+                    policy.Requirements.Add(new AccountNoViolationAccessRequirement());
+                    policy.Requirements.Add(new AccountNonPodcasterAccessRequirement());
+                });
+                options.AddPolicy("Customer.NoViolationAccess.PodcasterAccess", policy =>
+                {
+                    policy.RequireRole("Customer");
+                    policy.Requirements.Add(new AccountNoViolationAccessRequirement());
+                    policy.Requirements.Add(new AccountPodcasterAccessRequirement());
+                });
 
             });
 

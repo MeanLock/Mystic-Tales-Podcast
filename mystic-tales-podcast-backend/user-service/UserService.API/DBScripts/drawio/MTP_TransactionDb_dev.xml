@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0" version="29.2.4">
+  <diagram id="MbEjH1huSBzFkDJzeNuB" name="MTP_TransactionDb_dev">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- TransactionType Table -->
+        <mxCell id="transactiontype-table" value="TransactionType" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#d5e8d4;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="transactiontype-id" value="id ( PK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="transactiontype-table">
+          <mxGeometry y="30" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="transactiontype-name" value="name: NVARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transactiontype-table">
+          <mxGeometry y="60" width="220" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- TransactionStatus Table -->
+        <mxCell id="transactionstatus-table" value="TransactionStatus" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#d5e8d4;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="300" y="40" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="transactionstatus-id" value="id ( PK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="transactionstatus-table">
+          <mxGeometry y="30" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="transactionstatus-name" value="name: NVARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="transactionstatus-table">
+          <mxGeometry y="60" width="220" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- AccountBalanceTransaction Table -->
+        <mxCell id="accountbalancetransaction-table" value="AccountBalanceTransaction" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#d5e8d4;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="40" y="170" width="320" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancetransaction-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="accountbalancetransaction-table">
+          <mxGeometry y="30" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancetransaction-accountId" value="accountId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="accountbalancetransaction-table">
+          <mxGeometry y="60" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancetransaction-orderCode" value="orderCode: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="accountbalancetransaction-table">
+          <mxGeometry y="90" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancetransaction-amount" value="amount: DECIMAL(18,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="accountbalancetransaction-table">
+          <mxGeometry y="120" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancetransaction-transactionTypeId" value="transactionTypeId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="accountbalancetransaction-table">
+          <mxGeometry y="150" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancetransaction-transactionStatusId" value="transactionStatusId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="accountbalancetransaction-table">
+          <mxGeometry y="180" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancetransaction-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="accountbalancetransaction-table">
+          <mxGeometry y="210" width="320" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- AccountBalanceWithdrawalRequest Table -->
+        <mxCell id="accountbalancewithdrawalrequest-table" value="AccountBalanceWithdrawalRequest" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#d5e8d4;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="400" y="170" width="360" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancewithdrawalrequest-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="accountbalancewithdrawalrequest-table">
+          <mxGeometry y="30" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancewithdrawalrequest-accountId" value="accountId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="accountbalancewithdrawalrequest-table">
+          <mxGeometry y="60" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancewithdrawalrequest-amount" value="amount: DECIMAL(18,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="accountbalancewithdrawalrequest-table">
+          <mxGeometry y="90" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancewithdrawalrequest-transferReceiptImageFileKey" value="transferReceiptImageFileKey: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="accountbalancewithdrawalrequest-table">
+          <mxGeometry y="120" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancewithdrawalrequest-rejectReason" value="rejectReason: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="accountbalancewithdrawalrequest-table">
+          <mxGeometry y="150" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancewithdrawalrequest-isRejected" value="isRejected: BIT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="accountbalancewithdrawalrequest-table">
+          <mxGeometry y="180" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancewithdrawalrequest-completedAt" value="completedAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="accountbalancewithdrawalrequest-table">
+          <mxGeometry y="210" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="accountbalancewithdrawalrequest-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="accountbalancewithdrawalrequest-table">
+          <mxGeometry y="240" width="360" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- PodcastSubscriptionTransaction Table -->
+        <mxCell id="podcastsubscriptiontransaction-table" value="PodcastSubscriptionTransaction" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#d5e8d4;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="40" y="480" width="380" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastsubscriptiontransaction-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="podcastsubscriptiontransaction-table">
+          <mxGeometry y="30" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastsubscriptiontransaction-podcastSubscriptionRegistrationId" value="podcastSubscriptionRegistrationId: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastsubscriptiontransaction-table">
+          <mxGeometry y="60" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastsubscriptiontransaction-amount" value="amount: DECIMAL(18,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastsubscriptiontransaction-table">
+          <mxGeometry y="90" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastsubscriptiontransaction-profit" value="profit: DECIMAL(18,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastsubscriptiontransaction-table">
+          <mxGeometry y="120" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastsubscriptiontransaction-transactionTypeId" value="transactionTypeId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="podcastsubscriptiontransaction-table">
+          <mxGeometry y="150" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastsubscriptiontransaction-transactionStatusId" value="transactionStatusId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="podcastsubscriptiontransaction-table">
+          <mxGeometry y="180" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastsubscriptiontransaction-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastsubscriptiontransaction-table">
+          <mxGeometry y="210" width="380" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- MemberSubscriptionTransaction Table -->
+        <mxCell id="membersubscriptiontransaction-table" value="MemberSubscriptionTransaction" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#d5e8d4;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="460" y="480" width="380" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="membersubscriptiontransaction-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="membersubscriptiontransaction-table">
+          <mxGeometry y="30" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="membersubscriptiontransaction-memberSubscriptionRegistrationId" value="memberSubscriptionRegistrationId: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="membersubscriptiontransaction-table">
+          <mxGeometry y="60" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="membersubscriptiontransaction-amount" value="amount: DECIMAL(18,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="membersubscriptiontransaction-table">
+          <mxGeometry y="90" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="membersubscriptiontransaction-transactionTypeId" value="transactionTypeId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="membersubscriptiontransaction-table">
+          <mxGeometry y="120" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="membersubscriptiontransaction-transactionStatusId" value="transactionStatusId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="membersubscriptiontransaction-table">
+          <mxGeometry y="150" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="membersubscriptiontransaction-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="membersubscriptiontransaction-table">
+          <mxGeometry y="180" width="380" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- BookingTransaction Table -->
+        <mxCell id="bookingtransaction-table" value="BookingTransaction" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#d5e8d4;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="40" y="760" width="320" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingtransaction-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="bookingtransaction-table">
+          <mxGeometry y="30" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingtransaction-bookingId" value="bookingId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="bookingtransaction-table">
+          <mxGeometry y="60" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingtransaction-amount" value="amount: DECIMAL(18,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="bookingtransaction-table">
+          <mxGeometry y="90" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingtransaction-profit" value="profit: DECIMAL(18,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="bookingtransaction-table">
+          <mxGeometry y="120" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingtransaction-transactionTypeId" value="transactionTypeId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="bookingtransaction-table">
+          <mxGeometry y="150" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingtransaction-transactionStatusId" value="transactionStatusId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="bookingtransaction-table">
+          <mxGeometry y="180" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingtransaction-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="bookingtransaction-table">
+          <mxGeometry y="210" width="320" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- BookingStorageTransaction Table -->
+        <mxCell id="bookingstoragetransaction-table" value="BookingStorageTransaction" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#d5e8d4;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="400" y="760" width="320" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingstoragetransaction-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="bookingstoragetransaction-table">
+          <mxGeometry y="30" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingstoragetransaction-accountId" value="accountId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="bookingstoragetransaction-table">
+          <mxGeometry y="60" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingstoragetransaction-amount" value="amount: DECIMAL(18,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="bookingstoragetransaction-table">
+          <mxGeometry y="90" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingstoragetransaction-transactionTypeId" value="transactionTypeId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="bookingstoragetransaction-table">
+          <mxGeometry y="120" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingstoragetransaction-transactionStatusId" value="transactionStatusId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="bookingstoragetransaction-table">
+          <mxGeometry y="150" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingstoragetransaction-storageSize" value="storageSize: FLOAT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="bookingstoragetransaction-table">
+          <mxGeometry y="180" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingstoragetransaction-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="bookingstoragetransaction-table">
+          <mxGeometry y="210" width="320" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: AccountBalanceTransaction -> TransactionType (N:1) -->
+        <mxCell id="rel-accountbalancetransaction-type" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="accountbalancetransaction-transactionTypeId" target="transactiontype-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: AccountBalanceTransaction -> TransactionStatus (N:1) -->
+        <mxCell id="rel-accountbalancetransaction-status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="accountbalancetransaction-transactionStatusId" target="transactionstatus-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: PodcastSubscriptionTransaction -> TransactionType (N:1) -->
+        <mxCell id="rel-podcastsubscriptiontransaction-type" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="podcastsubscriptiontransaction-transactionTypeId" target="transactiontype-name">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: PodcastSubscriptionTransaction -> TransactionStatus (N:1) -->
+        <mxCell id="rel-podcastsubscriptiontransaction-status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="podcastsubscriptiontransaction-transactionStatusId" target="transactionstatus-name">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: MemberSubscriptionTransaction -> TransactionType (N:1) -->
+        <mxCell id="rel-membersubscriptiontransaction-type" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="membersubscriptiontransaction-transactionTypeId" target="transactiontype-name">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: MemberSubscriptionTransaction -> TransactionStatus (N:1) -->
+        <mxCell id="rel-membersubscriptiontransaction-status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="membersubscriptiontransaction-transactionStatusId" target="transactionstatus-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: BookingTransaction -> TransactionType (N:1) -->
+        <mxCell id="rel-bookingtransaction-type" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="bookingtransaction-transactionTypeId" target="transactiontype-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: BookingTransaction -> TransactionStatus (N:1) -->
+        <mxCell id="rel-bookingtransaction-status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="bookingtransaction-transactionStatusId" target="transactionstatus-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: BookingStorageTransaction -> TransactionType (N:1) -->
+        <mxCell id="rel-bookingstoragetransaction-type" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="bookingstoragetransaction-transactionTypeId" target="transactiontype-name">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: BookingStorageTransaction -> TransactionStatus (N:1) -->
+        <mxCell id="rel-bookingstoragetransaction-status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="bookingstoragetransaction-transactionStatusId" target="transactionstatus-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

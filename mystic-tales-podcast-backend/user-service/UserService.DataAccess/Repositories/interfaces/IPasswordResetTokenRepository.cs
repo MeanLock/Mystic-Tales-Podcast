@@ -1,5 +1,6 @@
-﻿using UserService.DataAccess.Data;
-using UserService.DataAccess.Entities;
+﻿
+
+using UserService.DataAccess.Entities.SqlServer;
 
 namespace UserService.DataAccess.Repositories.interfaces
 {

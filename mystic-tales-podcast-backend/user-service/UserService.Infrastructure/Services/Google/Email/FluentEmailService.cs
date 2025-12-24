@@ -51,7 +51,8 @@ namespace UserService.Infrastructure.Services.Google.Email
             catch (Exception ex)
             {
                 Console.WriteLine($"Error sending email: {ex.Message}");
-                throw new Exception("Gửi mail thất bại", ex);
+                // throw new Exception("Gửi mail thất bại," ex);
+                throw new Exception("Mail sending failed, error: " + ex.Message);
             }
 
         }

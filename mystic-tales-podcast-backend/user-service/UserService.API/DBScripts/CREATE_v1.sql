@@ -36,14 +36,6 @@ CREATE TABLE Account (
     FOREIGN KEY (roleId) REFERENCES Role(id)
 );
 
--- AccountPodcastListenHistory table
-CREATE TABLE AccountPodcastListenHistory (
-    accountId INT NOT NULL,
-    podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
-    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    PRIMARY KEY (accountId, podcastEpisodeId),
-    FOREIGN KEY (accountId) REFERENCES Account(id)
-);
 
 -- PasswordResetToken table
 CREATE TABLE PasswordResetToken (
@@ -63,11 +55,16 @@ CREATE TABLE PodcasterProfile (
     description NVARCHAR(MAX) NOT NULL DEFAULT '',
     averageRating FLOAT NOT NULL DEFAULT 0,
     ratingCount INT NOT NULL DEFAULT 0,
+    totalFollow INT NOT NULL DEFAULT 0,
+    listenCount INT NOT NULL DEFAULT 0,
     commitmentDocumentFileKey NVARCHAR(MAX) NOT NULL,
-    buddyAudioFileKey NVARCHAR(MAX) NOT NULL,
+    buddyAudioFileKey NVARCHAR(MAX) NULL,
     ownedBookingStorageSize FLOAT NOT NULL,
     usedBookingStorageSize FLOAT NOT NULL,
-    isVerified BIT NULL DEFAULT 0,
+    isVerified BIT NULL DEFAULT NULL,
+    pricePerBookingWord DECIMAL(18,2) NULL DEFAULT NULL,
+    verifiedAt DATETIME NULL DEFAULT NULL,
+    isBuddy BIT NOT NULL DEFAULT 0,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (accountId) REFERENCES Account(id)
@@ -112,7 +109,7 @@ CREATE TABLE AccountSavedPodcastEpisode (
 
 -- PodcastBuddyReview table
 CREATE TABLE PodcastBuddyReview (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     title NVARCHAR(250) NULL,
     content NVARCHAR(MAX) NULL,
     rating FLOAT NOT NULL,
@@ -125,18 +122,19 @@ CREATE TABLE PodcastBuddyReview (
     FOREIGN KEY (podcastBuddyId) REFERENCES Account(id)
 );
 
--- AccountNotification table
+-- AccountNotification table ***
 CREATE TABLE AccountNotification (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     accountId INT NOT NULL,
     content NVARCHAR(MAX) NOT NULL,
     notificationTypeId INT NOT NULL,
     isSeen BIT NOT NULL DEFAULT 0,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    FOREIGN KEY (accountId) REFERENCES Account(id)
+    FOREIGN KEY (accountId) REFERENCES Account(id),
+    FOREIGN KEY (notificationTypeId) REFERENCES NotificationType(id)
 );
 
--- NotificationType table
+-- NotificationType table ***
 CREATE TABLE NotificationType (
     id INT PRIMARY KEY,
     name NVARCHAR(250) NOT NULL
@@ -171,7 +169,13 @@ CREATE TABLE PodcastSubscriptionConfig (
 -- PodcastSuggestionConfig table
 CREATE TABLE PodcastSuggestionConfig (
     configProfileId INT PRIMARY KEY,
-    behaviorLookbackDayCount INT NOT NULL,
+    minShortRangeUserBehaviorLookbackDayCount INT NOT NULL,
+    minMediumRangeUserBehaviorLookbackDayCount INT NOT NULL,
+    minLongRangeUserBehaviorLookbackDayCount INT NOT NULL,
+    minShortRangeContentBehaviorLookbackDayCount INT NOT NULL,
+    minMediumRangeContentBehaviorLookbackDayCount INT NOT NULL,
+    minLongRangeContentBehaviorLookbackDayCount INT NOT NULL,
+    minExtraLongRangeContentBehaviorLookbackDayCount INT NOT NULL,
     minChannelQuery INT NOT NULL,
     minShowQuery INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -189,7 +193,7 @@ CREATE TABLE BookingConfig (
     producingRequestResponseAllowedDays INT NOT NULL,
     chatRoomExpiredHours INT NOT NULL,
     chatRoomFileMessageExpiredHours INT NOT NULL,
-    freeInitalBookingStorageSize FLOAT NOT NULL,
+    freeInitialBookingStorageSize FLOAT NOT NULL,
     singleStorageUnitPurchasePrice DECIMAL(18,2) NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -261,41 +265,61 @@ CREATE TABLE Booking (
     accountId INT NOT NULL,
     podcastBuddyId INT NOT NULL,
     price DECIMAL(18,2) NULL,
+    deadlineDays INT NULL,
     deadline DATE NULL,
     demoAudioFileKey NVARCHAR(MAX) NULL,
     bookingManualCancelledReason NVARCHAR(MAX) NULL,
     bookingAutoCancelReason NVARCHAR(MAX) NULL,
+    assignedStaffId INT NULL,
+    customerBookingCancelDepositRefundRate FLOAT NULL DEFAULT NULL,
+    podcastBuddyBookingCancelDepositRefundRate FLOAT NULL DEFAULT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME))
 );
 
--- BookingRequirementAttachFile table
-CREATE TABLE BookingRequirementAttachFile (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    bookingId INT NOT NULL,
-    attachFileKey NVARCHAR(MAX) NOT NULL,
-    description NVARCHAR(MAX) NOT NULL DEFAULT '',
-    FOREIGN KEY (bookingId) REFERENCES Booking(id)
+-- PodcastBookingToneCategory table
+CREATE TABLE PodcastBookingToneCategory (
+    id INT PRIMARY KEY,
+    name NVARCHAR(100) NOT NULL
 );
 
--- BookingNegotiation table
-CREATE TABLE BookingNegotiation (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    bookingId INT NOT NULL,
-    note NVARCHAR(MAX) NOT NULL DEFAULT '',
-    deadline DATE NULL,
-    price DECIMAL(18,2) NULL,
-    demoAudioRequired BIT NOT NULL DEFAULT 0,
-    demoAudioFileKey NVARCHAR(MAX) NULL,
-    isCompleted BIT NOT NULL DEFAULT 0,
-    isFromCustomer BIT NOT NULL DEFAULT 1,
+-- PodcastBookingTone table
+CREATE TABLE PodcastBookingTone (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    name NVARCHAR(100) NOT NULL,
+    description NVARCHAR(500) NULL DEFAULT NULL,
+    podcastBookingToneCategoryId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    FOREIGN KEY (bookingId) REFERENCES Booking(id)
+    deletedAt DATETIME NULL DEFAULT NULL,
+    FOREIGN KEY (podcastBookingToneCategoryId) REFERENCES PodcastBookingToneCategory(id)
+);
+
+-- PodcastBuddyBookingTone table
+CREATE TABLE PodcastBuddyBookingTone (
+    podcasterId INT NOT NULL,
+    podcastBookingToneId UNIQUEIDENTIFIER NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    PRIMARY KEY (podcasterId, podcastBookingToneId),
+    FOREIGN KEY (podcastBookingToneId) REFERENCES PodcastBookingTone(id)
+);
+
+-- BookingRequirement table
+CREATE TABLE BookingRequirement (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    bookingId INT NOT NULL,
+    name NVARCHAR(MAX) NOT NULL DEFAULT '',
+    description NVARCHAR(MAX) NOT NULL DEFAULT '',
+    requirementDocumentFileKey NVARCHAR(MAX) NOT NULL,
+    [order] INT NOT NULL,
+    wordCount INT NOT NULL,
+    podcastBookingToneId UNIQUEIDENTIFIER NOT NULL,
+    FOREIGN KEY (bookingId) REFERENCES Booking(id),
+    FOREIGN KEY (podcastBookingToneId) REFERENCES PodcastBookingTone(id)
 );
 
 -- BookingStatusTracking table
 CREATE TABLE BookingStatusTracking (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     bookingId INT NOT NULL,
     bookingStatusId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -305,49 +329,66 @@ CREATE TABLE BookingStatusTracking (
 
 -- BookingProducingRequest table
 CREATE TABLE BookingProducingRequest (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     bookingId INT NOT NULL,
     note NVARCHAR(MAX) NOT NULL DEFAULT '',
-    deadline DATE NOT NULL,
+    deadlineDays INT NULL,
+    deadline DATE NULL,
     isAccepted BIT NULL,
     finishedAt DATETIME NULL DEFAULT NULL,
+    rejectReason NVARCHAR(MAX) NULL DEFAULT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (bookingId) REFERENCES Booking(id)
 );
 
 -- BookingPodcastTrack table
 CREATE TABLE BookingPodcastTrack (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     bookingId INT NOT NULL,
     bookingProducingRequestId UNIQUEIDENTIFIER NOT NULL,
     audioFileKey NVARCHAR(MAX) NOT NULL,
     audioFileSize FLOAT NOT NULL,
     audioLength INT NOT NULL,
+    audioEncryptionKeyId UNIQUEIDENTIFIER NULL DEFAULT NULL,
+    audioEncryptionKeyFileKey NVARCHAR(MAX) NULL DEFAULT NULL,
     remainingPreviewListenSlot INT NOT NULL,
+    bookingRequirementId UNIQUEIDENTIFIER NOT NULL,
     FOREIGN KEY (bookingId) REFERENCES Booking(id),
-    FOREIGN KEY (bookingProducingRequestId) REFERENCES BookingProducingRequest(id)
+    FOREIGN KEY (bookingProducingRequestId) REFERENCES BookingProducingRequest(id),
+    FOREIGN KEY (bookingRequirementId) REFERENCES BookingRequirement(id)
+);
+
+CREATE TABLE BookingPodcastTrackListenSession (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT NOT NULL,
+    bookingPodcastTrackId UNIQUEIDENTIFIER NOT NULL,
+    lastListenDurationSeconds INT NOT NULL DEFAULT 0,
+    isCompleted BIT NOT NULL DEFAULT 0,
+    expiredAt DATETIME NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    FOREIGN KEY (bookingPodcastTrackId) REFERENCES BookingPodcastTrack(id)
 );
 
 -- BookingProducingRequestPodcastTrackToEdit table
 CREATE TABLE BookingProducingRequestPodcastTrackToEdit (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     bookingProducingRequestId UNIQUEIDENTIFIER NOT NULL,
     bookingPodcastTrackId UNIQUEIDENTIFIER NOT NULL,
     FOREIGN KEY (bookingProducingRequestId) REFERENCES BookingProducingRequest(id),
     FOREIGN KEY (bookingPodcastTrackId) REFERENCES BookingPodcastTrack(id)
 );
 
--- BookingChatRoom table
+-- BookingChatRoom table ***
 CREATE TABLE BookingChatRoom (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     bookingId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (bookingId) REFERENCES Booking(id)
 );
 
--- BookingChatMessages table
+-- BookingChatMessages table ***
 CREATE TABLE BookingChatMessages (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     text NVARCHAR(MAX) NULL,
     audioFileKey NVARCHAR(MAX) NULL,
     chatRoomId UNIQUEIDENTIFIER NOT NULL,
@@ -356,7 +397,7 @@ CREATE TABLE BookingChatMessages (
     FOREIGN KEY (chatRoomId) REFERENCES BookingChatRoom(id)
 );
 
--- BookingChatMember table
+-- BookingChatMember table ***
 CREATE TABLE BookingChatMember (
     chatRoomId UNIQUEIDENTIFIER NOT NULL,
     accountId INT NOT NULL,
@@ -371,7 +412,8 @@ CREATE TABLE BookingChatMember (
 -- PodcastCategory table
 CREATE TABLE PodcastCategory (
     id INT PRIMARY KEY,
-    name NVARCHAR(50) NOT NULL
+    name NVARCHAR(50) NOT NULL,
+    mainImageFileKey NVARCHAR(MAX) NULL
 );
 
 -- PodcastSubCategory table
@@ -406,10 +448,22 @@ CREATE TABLE PodcastEpisodeSubscriptionType (
     name NVARCHAR(50) NOT NULL
 );
 
--- PodcastShowsSubscriptionType table
-CREATE TABLE PodcastShowsSubscriptionType (
+-- PodcastShowSubscriptionType table
+CREATE TABLE PodcastShowSubscriptionType (
     id INT PRIMARY KEY,
     name NVARCHAR(50) NOT NULL
+);
+
+-- PodcastBackgroundSoundTrack table
+CREATE TABLE PodcastBackgroundSoundTrack
+(
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    name NVARCHAR(50) NOT NULL,
+    description NVARCHAR(MAX) NULL,
+    mainImageFileKey NVARCHAR(MAX) NULL,
+    audioFileKey NVARCHAR(MAX) NULL,
+    createdAt DATETIME NOT NULL DEFAULT GETDATE(),
+    updatedAt DATETIME NOT NULL DEFAULT GETDATE()
 );
 
 -- PodcastIllegalContentType table
@@ -432,7 +486,7 @@ CREATE TABLE PodcastEpisodePublishReviewSessionStatus (
 
 -- PodcastChannel table
 CREATE TABLE PodcastChannel (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     name NVARCHAR(250) NOT NULL,
     description NVARCHAR(MAX) NOT NULL DEFAULT '',
     backgroundImageFileKey NVARCHAR(MAX) NULL,
@@ -451,7 +505,7 @@ CREATE TABLE PodcastChannel (
 
 -- PodcastShow table
 CREATE TABLE PodcastShow (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     name NVARCHAR(250) NOT NULL,
     description NVARCHAR(MAX) NOT NULL DEFAULT '',
     language NVARCHAR(50) NOT NULL,
@@ -468,7 +522,7 @@ CREATE TABLE PodcastShow (
     podcasterId INT NOT NULL,
     podcastCategoryId INT NULL,
     podcastSubCategoryId INT NULL,
-    podcastShowsSubscriptionTypeId INT NOT NULL DEFAULT 1,
+    podcastShowSubscriptionTypeId INT NOT NULL DEFAULT 1,
     podcastChannelId UNIQUEIDENTIFIER NULL,
     takenDownReason NVARCHAR(MAX) NULL,
     deletedAt DATETIME NULL DEFAULT NULL,
@@ -476,26 +530,30 @@ CREATE TABLE PodcastShow (
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (podcastCategoryId) REFERENCES PodcastCategory(id),
     FOREIGN KEY (podcastSubCategoryId) REFERENCES PodcastSubCategory(id),
-    FOREIGN KEY (podcastShowsSubscriptionTypeId) REFERENCES PodcastShowsSubscriptionType(id),
+    FOREIGN KEY (podcastShowSubscriptionTypeId) REFERENCES PodcastShowSubscriptionType(id),
     FOREIGN KEY (podcastChannelId) REFERENCES PodcastChannel(id)
 );
 
 -- PodcastEpisode table
 CREATE TABLE PodcastEpisode (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    title NVARCHAR(250) NOT NULL,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    name NVARCHAR(250) NOT NULL,
     description NVARCHAR(MAX) NOT NULL DEFAULT '',
     explicitContent BIT NOT NULL DEFAULT 0,
     releaseDate DATE NULL,
     isReleased BIT NULL,
     mainImageFileKey NVARCHAR(MAX) NULL,
-    audioFileKey NVARCHAR(MAX) NOT NULL,
-    audioFileSize FLOAT NOT NULL,
-    audioLength INT NOT NULL,
+    audioFileKey NVARCHAR(MAX) NULL DEFAULT NULL,
+    audioFileSize FLOAT NULL DEFAULT NULL,
+    audioLength INT NULL DEFAULT NULL,
     audioFingerPrint VARBINARY(MAX) NULL DEFAULT NULL,
+    audioTranscript NVARCHAR(MAX) NULL DEFAULT NULL,
+    audioEncryptionKeyId UNIQUEIDENTIFIER NULL DEFAULT NULL,
+    audioEncryptionKeyFileKey NVARCHAR(MAX) NULL DEFAULT NULL,
     podcastEpisodeSubscriptionTypeId INT NOT NULL DEFAULT 1,
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
     seasonNumber INT NOT NULL DEFAULT 0,
+    episodeOrder INT NOT NULL DEFAULT 1,
     totalSave INT NOT NULL DEFAULT 0,
     listenCount INT NOT NULL DEFAULT 0,
     isAudioPublishable BIT NULL,
@@ -507,9 +565,42 @@ CREATE TABLE PodcastEpisode (
     FOREIGN KEY (podcastShowId) REFERENCES PodcastShow(id)
 );
 
+-- PodcastEpisodeListenSession table
+CREATE TABLE PodcastEpisodeListenSession (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT NOT NULL,
+    podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
+    lastListenDurationSeconds INT NOT NULL DEFAULT 0,
+    isCompleted BIT NOT NULL DEFAULT 0,
+    isContentRemoved BIT NOT NULL DEFAULT 0,
+    podcastCategoryId INT NULL,
+    podcastSubCategoryId INT NULL,
+    expiredAt DATETIME NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    FOREIGN KEY (podcastEpisodeId) REFERENCES PodcastEpisode(id)
+    FOREIGN KEY (podcastCategoryId) REFERENCES PodcastCategory(id),
+    FOREIGN KEY (podcastSubCategoryId) REFERENCES PodcastSubCategory(id)
+);
+
+-- PodcastEpisodeListenSessionHlsEnckeyRequestToken table
+CREATE TABLE PodcastEpisodeListenSessionHlsEnckeyRequestToken (
+    podcastEpisodeListenSessionId UNIQUEIDENTIFIER NOT NULL,
+    token NVARCHAR(500) NOT NULL, -- Changed from NVARCHAR(MAX) to allow use as primary key
+    isUsed BIT NOT NULL DEFAULT 0,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    -- Composite primary key
+    CONSTRAINT PK_PodcastEpisodeListenSessionHlsEnckeyRequestToken 
+        PRIMARY KEY (podcastEpisodeListenSessionId, token),
+    -- Foreign key to PodcastEpisodeListenSession
+    CONSTRAINT FK_PodcastEpisodeListenSessionHlsEnckeyRequestToken_Session
+        FOREIGN KEY (podcastEpisodeListenSessionId) 
+        REFERENCES PodcastEpisodeListenSession(id)
+        ON DELETE CASCADE -- Automatically delete tokens when session is deleted
+);
+
 -- PodcastEpisodeLicense table
 CREATE TABLE PodcastEpisodeLicense (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
     licenseDocumentFileKey NVARCHAR(MAX) NOT NULL,
     podcastEpisodeLicenseTypeId INT NOT NULL,
@@ -529,6 +620,15 @@ CREATE TABLE PodcastEpisodeIllegalContentTypeMarking (
     FOREIGN KEY (podcastIllegalContentTypeId) REFERENCES PodcastIllegalContentType(id)
 );
 
+CREATE TABLE PodcastEpisodePublishDuplicateDetection (
+    podcastEpisodePublishReviewSessionId INT NOT NULL,
+    duplicatePodcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+	PRIMARY KEY (podcastEpisodePublishReviewSessionId, duplicatePodcastEpisodeId),
+    FOREIGN KEY (podcastEpisodePublishReviewSessionId) REFERENCES PodcastEpisodePublishReviewSession(id),
+    FOREIGN KEY (duplicatePodcastEpisodeId) REFERENCES PodcastEpisode(id),
+);
+
 -- PodcastEpisodePublishReviewSession table
 CREATE TABLE PodcastEpisodePublishReviewSession (
     id INT IDENTITY(1,1) PRIMARY KEY,
@@ -544,7 +644,7 @@ CREATE TABLE PodcastEpisodePublishReviewSession (
 
 -- PodcastEpisodePublishReviewSessionStatusTracking table
 CREATE TABLE PodcastEpisodePublishReviewSessionStatusTracking (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastEpisodePublishReviewSessionId INT NOT NULL,
     podcastEpisodePublishReviewSessionStatusId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -554,7 +654,7 @@ CREATE TABLE PodcastEpisodePublishReviewSessionStatusTracking (
 
 -- PodcastChannelStatusTracking table
 CREATE TABLE PodcastChannelStatusTracking (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastChannelId UNIQUEIDENTIFIER NOT NULL,
     podcastChannelStatusId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -564,7 +664,7 @@ CREATE TABLE PodcastChannelStatusTracking (
 
 -- PodcastShowStatusTracking table
 CREATE TABLE PodcastShowStatusTracking (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
     podcastShowStatusId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -574,7 +674,7 @@ CREATE TABLE PodcastShowStatusTracking (
 
 -- PodcastEpisodeStatusTracking table
 CREATE TABLE PodcastEpisodeStatusTracking (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
     podcastEpisodeStatusId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -584,7 +684,7 @@ CREATE TABLE PodcastEpisodeStatusTracking (
 
 -- PodcastShowReview table
 CREATE TABLE PodcastShowReview (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     title NVARCHAR(250) NULL,
     content NVARCHAR(MAX) NULL,
     rating FLOAT NOT NULL,
@@ -606,6 +706,7 @@ CREATE TABLE Hashtag (
 CREATE TABLE PodcastChannelHashtag (
     podcastChannelId UNIQUEIDENTIFIER NOT NULL,
     hashtagId INT NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     PRIMARY KEY (podcastChannelId, hashtagId),
     FOREIGN KEY (podcastChannelId) REFERENCES PodcastChannel(id),
     FOREIGN KEY (hashtagId) REFERENCES Hashtag(id)
@@ -615,6 +716,7 @@ CREATE TABLE PodcastChannelHashtag (
 CREATE TABLE PodcastShowHashtag (
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
     hashtagId INT NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     PRIMARY KEY (podcastShowId, hashtagId),
     FOREIGN KEY (podcastShowId) REFERENCES PodcastShow(id),
     FOREIGN KEY (hashtagId) REFERENCES Hashtag(id)
@@ -624,6 +726,7 @@ CREATE TABLE PodcastShowHashtag (
 CREATE TABLE PodcastEpisodeHashtag (
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
     hashtagId INT NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     PRIMARY KEY (podcastEpisodeId, hashtagId),
     FOREIGN KEY (podcastEpisodeId) REFERENCES PodcastEpisode(id),
     FOREIGN KEY (hashtagId) REFERENCES Hashtag(id)
@@ -645,7 +748,7 @@ CREATE TABLE PodcastSubscriptionBenefit (
     name NVARCHAR(250) NOT NULL
 );
 
--- MemberSubscriptionBenefit table
+-- MemberSubscriptionBenefit table ***
 CREATE TABLE MemberSubscriptionBenefit (
     id INT PRIMARY KEY,
     name NVARCHAR(250) NOT NULL
@@ -653,7 +756,7 @@ CREATE TABLE MemberSubscriptionBenefit (
 
 -- PodcastSubscription table
 CREATE TABLE PodcastSubscription (
-    id INT PRIMARY KEY,
+    id INT IDENTITY(1,1) PRIMARY KEY,
     name NVARCHAR(250) NOT NULL,
     description NVARCHAR(MAX) NOT NULL DEFAULT '',
     podcastChannelId UNIQUEIDENTIFIER NULL,
@@ -692,7 +795,8 @@ CREATE TABLE PodcastSubscriptionBenefitMapping (
 
 -- PodcastSubscriptionRegistration table
 CREATE TABLE PodcastSubscriptionRegistration (
-    accountId INT PRIMARY KEY,
+	id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT,
     podcastSubscriptionId INT NOT NULL,
     subscriptionCycleTypeId INT NOT NULL,
     currentVersion INT NOT NULL,
@@ -706,16 +810,8 @@ CREATE TABLE PodcastSubscriptionRegistration (
     FOREIGN KEY (subscriptionCycleTypeId) REFERENCES SubscriptionCycleType(id)
 );
 
--- PodcastSubscriptionRegistrationBenefit table
-CREATE TABLE PodcastSubscriptionRegistrationBenefit (
-    podcastSubscriptionRegistrationId INT NOT NULL,
-    podcastSubscriptionBenefitId INT NOT NULL,
-    PRIMARY KEY (podcastSubscriptionRegistrationId, podcastSubscriptionBenefitId),
-    FOREIGN KEY (podcastSubscriptionRegistrationId) REFERENCES PodcastSubscriptionRegistration(accountId),
-    FOREIGN KEY (podcastSubscriptionBenefitId) REFERENCES PodcastSubscriptionBenefit(id)
-);
 
--- MemberSubscription table
+-- MemberSubscription table ***
 CREATE TABLE MemberSubscription (
     id INT IDENTITY(1,1) PRIMARY KEY,
     name NVARCHAR(250) NOT NULL,
@@ -728,7 +824,7 @@ CREATE TABLE MemberSubscription (
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME))
 );
 
--- MemberSubscriptionCycleTypePrice table
+-- MemberSubscriptionCycleTypePrice table ***
 CREATE TABLE MemberSubscriptionCycleTypePrice (
     memberSubscriptionId INT NOT NULL,
     subscriptionCycleTypeId INT NOT NULL,
@@ -741,7 +837,7 @@ CREATE TABLE MemberSubscriptionCycleTypePrice (
     FOREIGN KEY (subscriptionCycleTypeId) REFERENCES SubscriptionCycleType(id)
 );
 
--- MemberSubscriptionBenefitMapping table
+-- MemberSubscriptionBenefitMapping table ***
 CREATE TABLE MemberSubscriptionBenefitMapping (
     memberSubscriptionId INT NOT NULL,
     memberSubscriptionBenefitId INT NOT NULL,
@@ -753,9 +849,10 @@ CREATE TABLE MemberSubscriptionBenefitMapping (
     FOREIGN KEY (memberSubscriptionBenefitId) REFERENCES MemberSubscriptionBenefit(id)
 );
 
--- MemberSubscriptionRegistration table
+-- MemberSubscriptionRegistration table ***
 CREATE TABLE MemberSubscriptionRegistration (
-    accountId INT PRIMARY KEY,
+	id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT,
     memberSubscriptionId INT NOT NULL,
     currentVersion INT NOT NULL,
     isAcceptNewestVersionSwitch BIT NULL,
@@ -796,7 +893,7 @@ CREATE TABLE DMCAAccusationStatus (
 
 -- PodcastBuddyReport table
 CREATE TABLE PodcastBuddyReport (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     content NVARCHAR(MAX) NULL,
     accountId INT NOT NULL,
     podcastBuddyId INT NOT NULL,
@@ -808,7 +905,7 @@ CREATE TABLE PodcastBuddyReport (
 
 -- PodcastShowReport table
 CREATE TABLE PodcastShowReport (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     content NVARCHAR(MAX) NULL,
     accountId INT NOT NULL,
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
@@ -820,7 +917,7 @@ CREATE TABLE PodcastShowReport (
 
 -- PodcastEpisodeReport table
 CREATE TABLE PodcastEpisodeReport (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     content NVARCHAR(MAX) NULL,
     accountId INT NOT NULL,
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
@@ -832,7 +929,7 @@ CREATE TABLE PodcastEpisodeReport (
 
 -- PodcastBuddyReportReviewSession table
 CREATE TABLE PodcastBuddyReportReviewSession (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastBuddyId INT NOT NULL,
     assignedStaff INT NOT NULL,
     resolvedViolationPoint INT NOT NULL DEFAULT 1,
@@ -843,7 +940,7 @@ CREATE TABLE PodcastBuddyReportReviewSession (
 
 -- PodcastShowReportReviewSession table
 CREATE TABLE PodcastShowReportReviewSession (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
     assignedStaff INT NOT NULL,
     isResolved BIT NULL,
@@ -853,7 +950,7 @@ CREATE TABLE PodcastShowReportReviewSession (
 
 -- PodcastEpisodeReportReviewSession table
 CREATE TABLE PodcastEpisodeReportReviewSession (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
     assignedStaff INT NOT NULL,
     isResolved BIT NULL,
@@ -867,26 +964,46 @@ CREATE TABLE DMCAAccusation (
     podcastShowId UNIQUEIDENTIFIER NULL,
     podcastEpisodeId UNIQUEIDENTIFIER NULL,
     assignedStaff INT NULL,
-    lastLawsuitCheckingAlertAt DATETIME NULL DEFAULT NULL,
+    accuserEmail NVARCHAR(254) NOT NULL,
+    accuserPhone NVARCHAR(20) NOT NULL,
+    accuserFullName NVARCHAR(500) NOT NULL,
+    dismissReason NVARCHAR(MAX) NULL,
+    resolvedAt DATETIME NULL DEFAULT NULL,
+    cancelledAt DATETIME NULL DEFAULT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME))
 );
 
+-- DMCAAccusationConclusionReportType table
+CREATE TABLE DMCAAccusationConclusionReportType (
+    id INT PRIMARY KEY,
+    name NVARCHAR(50) NOT NULL
+);
+
+-- DMCAAccusationConclusionReport table
+CREATE TABLE DMCAAccusationConclusionReport (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    dmcaAccusationId INT NOT NULL,
+    dmcaAccusationConclusionReportTypeId INT NOT NULL,
+    description NVARCHAR(MAX) NULL,
+    invalidReason NVARCHAR(MAX) NULL,
+    isRejected BIT NULL DEFAULT NULL,
+    completedAt DATETIME NULL DEFAULT NULL,
+    cancelledAt DATETIME NULL DEFAULT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    FOREIGN KEY (dmcaAccusationId) REFERENCES DMCAAccusation(id),
+    FOREIGN KEY (dmcaAccusationConclusionReportTypeId) REFERENCES DMCAAccusationConclusionReportType(id)
+);
+
 -- CounterNotice table
 CREATE TABLE CounterNotice (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    accountId INT NOT NULL,
-    accountEmail NVARCHAR(MAX) NOT NULL,
-    accountPhone NVARCHAR(MAX) NOT NULL,
-    statementPerjury NVARCHAR(MAX) NOT NULL,
-    signature NVARCHAR(MAX) NOT NULL,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     dmcaAccusationId INT NOT NULL,
-    jurisdiction NVARCHAR(MAX) NOT NULL,
     isValid BIT NULL,
     invalidReason NVARCHAR(MAX) NULL,
     validatedBy INT NULL DEFAULT NULL,
     validatedAt DATETIME NULL DEFAULT NULL,
-    filedDate DATE NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (dmcaAccusationId) REFERENCES DMCAAccusation(id)
@@ -894,20 +1011,12 @@ CREATE TABLE CounterNotice (
 
 -- DMCANotice table
 CREATE TABLE DMCANotice (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    podcastShowId UNIQUEIDENTIFIER NULL,
-    podcastEpisodeId UNIQUEIDENTIFIER NULL,
-    accountId INT NOT NULL,
-    accountEmail NVARCHAR(MAX) NOT NULL,
-    accountPhone NVARCHAR(MAX) NOT NULL,
-    goodFaithStatement NVARCHAR(MAX) NOT NULL,
-    workClaimed NVARCHAR(MAX) NOT NULL,
-    signature NVARCHAR(MAX) NOT NULL,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    dmcaAccusationId INT NOT NULL,
     isValid BIT NULL,
     invalidReason NVARCHAR(MAX) NULL,
     validatedBy INT NULL DEFAULT NULL,
     validatedAt DATETIME NULL DEFAULT NULL,
-    dmcaAccusationId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (dmcaAccusationId) REFERENCES DMCAAccusation(id)
@@ -915,23 +1024,12 @@ CREATE TABLE DMCANotice (
 
 -- LawsuitProof table
 CREATE TABLE LawsuitProof (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    accountId INT NOT NULL,
-    goodFaithStatement NVARCHAR(MAX) NOT NULL,
-    courtName NVARCHAR(MAX) NOT NULL,
-    caseNumber NVARCHAR(100) NOT NULL,
-    filingDate DATE NOT NULL,
-    signature NVARCHAR(MAX) NOT NULL,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     dmcaAccusationId INT NOT NULL,
     isValid BIT NULL,
     inValidReason NVARCHAR(MAX) NULL,
     validatedBy INT NULL DEFAULT NULL,
     validatedAt DATETIME NULL DEFAULT NULL,
-    judgmentDetails NVARCHAR(MAX) NULL,
-    dateResolved DATE NULL DEFAULT NULL,
-    outcome NVARCHAR(MAX) NULL DEFAULT NULL,
-    rulingDocumentFileUrl NVARCHAR(MAX) NULL DEFAULT NULL,
-    isDefendantWon BIT NULL DEFAULT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (dmcaAccusationId) REFERENCES DMCAAccusation(id)
@@ -939,7 +1037,7 @@ CREATE TABLE LawsuitProof (
 
 -- DMCAAccusationStatusTracking table
 CREATE TABLE DMCAAccusationStatusTracking (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     dmcaAccusationId INT NOT NULL,
     dmcaAccusationStatusId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -949,7 +1047,7 @@ CREATE TABLE DMCAAccusationStatusTracking (
 
 -- CounterNoticeAttachFile table
 CREATE TABLE CounterNoticeAttachFile (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     counterNoticeId UNIQUEIDENTIFIER NOT NULL,
     attachFileKey NVARCHAR(MAX) NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -958,7 +1056,7 @@ CREATE TABLE CounterNoticeAttachFile (
 
 -- DMCANoticeAttachFile table
 CREATE TABLE DMCANoticeAttachFile (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     dmcaNoticeId UNIQUEIDENTIFIER NOT NULL,
     attachFileKey NVARCHAR(MAX) NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -967,7 +1065,7 @@ CREATE TABLE DMCANoticeAttachFile (
 
 -- LawsuitProofAttachFile table
 CREATE TABLE LawsuitProofAttachFile (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     lawsuitProofId UNIQUEIDENTIFIER NOT NULL,
     attachFileKey NVARCHAR(MAX) NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -992,7 +1090,7 @@ CREATE TABLE TransactionStatus (
 
 -- AccountBalanceTransaction table
 CREATE TABLE AccountBalanceTransaction (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     accountId INT NOT NULL,
     orderCode NVARCHAR(MAX) NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
@@ -1004,10 +1102,24 @@ CREATE TABLE AccountBalanceTransaction (
     FOREIGN KEY (transactionStatusId) REFERENCES TransactionStatus(id)
 );
 
+-- AccountBalanceWithdrawalRequest table
+CREATE TABLE AccountBalanceWithdrawalRequest
+(
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT NOT NULL, -- Không có FK vì Account nằm trong UserService
+    amount DECIMAL(18,2) NOT NULL,
+    transferReceiptImageFileKey NVARCHAR(MAX) NULL,
+    rejectReason NVARCHAR(MAX) NULL,
+    isRejected BIT NULL, -- NULL: đang chờ, 1: rejected, 0: approved
+    completedAt DATETIME NULL,
+    createdAt DATETIME NOT NULL DEFAULT GETDATE(),
+    updatedAt DATETIME NOT NULL DEFAULT GETDATE()
+);
+
 -- PodcastSubscriptionTransaction table
 CREATE TABLE PodcastSubscriptionTransaction (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    podcastSubscriptionRegistrationId INT NOT NULL,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    podcastSubscriptionRegistrationId UNIQUEIDENTIFIER NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
     profit DECIMAL(18,2) NULL,
     transactionTypeId INT NOT NULL,
@@ -1018,10 +1130,10 @@ CREATE TABLE PodcastSubscriptionTransaction (
     FOREIGN KEY (transactionStatusId) REFERENCES TransactionStatus(id)
 );
 
--- MemberSubscriptionTransaction table
+-- MemberSubscriptionTransaction table ***
 CREATE TABLE MemberSubscriptionTransaction (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    memberSubscriptionRegistrationId INT NOT NULL,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    memberSubscriptionRegistrationId UNIQUEIDENTIFIER NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
     transactionTypeId INT NOT NULL,
     transactionStatusId INT NOT NULL,
@@ -1033,7 +1145,7 @@ CREATE TABLE MemberSubscriptionTransaction (
 
 -- BookingTransaction table
 CREATE TABLE BookingTransaction (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     bookingId INT NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
     profit DECIMAL(18,2) NULL,
@@ -1045,9 +1157,9 @@ CREATE TABLE BookingTransaction (
     FOREIGN KEY (transactionStatusId) REFERENCES TransactionStatus(id)
 );
 
--- BookingStorageTransaction table
+-- BookingStorageTransaction table ***
 CREATE TABLE BookingStorageTransaction (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     accountId INT NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
     transactionTypeId INT NOT NULL,
@@ -1065,7 +1177,7 @@ CREATE TABLE BookingStorageTransaction (
 
 -- SagaInstance table
 CREATE TABLE SagaInstance (
-    sagaId UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     flowName NVARCHAR(250) NOT NULL,
     currentStepName NVARCHAR(250) NULL,
     initialData NVARCHAR(MAX) NULL,
@@ -1080,8 +1192,8 @@ CREATE TABLE SagaInstance (
 
 -- SagaStepExecution table
 CREATE TABLE SagaStepExecution (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    sagaId UNIQUEIDENTIFIER NOT NULL,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    sagaInstanceId UNIQUEIDENTIFIER NOT NULL,
     stepName NVARCHAR(250) NOT NULL,
     topicName NVARCHAR(250) NOT NULL,
     stepStatus NVARCHAR(50) NOT NULL,
@@ -1089,5 +1201,5 @@ CREATE TABLE SagaStepExecution (
     responseData NVARCHAR(MAX) NULL,
     errorMessage NVARCHAR(MAX) NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    FOREIGN KEY (sagaId) REFERENCES SagaInstance(sagaId)
+    FOREIGN KEY (sagaInstanceId) REFERENCES SagaInstance(id)
 );

@@ -11,10 +11,9 @@ namespace SagaOrchestratorService.DataAccess.Registrations
         {
             services.AddDbContext<AppDbContext>(options =>
             {
-                var connectionString = configuration.GetConnectionString("DefaultConnection");
-
+                var connectionString = configuration.GetConnectionString("SQLSERVER_DefaultConnectionString");
+                Console.WriteLine($"Connection String: {connectionString}");
                 options.UseSqlServer(connectionString);  // 1. Sử dụng SQL Server
-                
                 options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);  // 2. Bật AsNoTracking cho toàn bộ truy vấn
                 options.UseLazyLoadingProxies(false);  // 3. Kích hoạt Lazy Loading
             });

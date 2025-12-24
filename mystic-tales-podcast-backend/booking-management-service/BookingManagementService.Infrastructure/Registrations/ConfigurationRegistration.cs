@@ -13,6 +13,8 @@ using BookingManagementService.Common.Configurations.Consul.interfaces;
 using BookingManagementService.Common.Configurations.Consul;
 using BookingManagementService.Infrastructure.Configurations.Kafka.interfaces;
 using BookingManagementService.Infrastructure.Configurations.Kafka;
+using BookingManagementService.Infrastructure.Configurations.Audio.Hls.interfaces;
+using BookingManagementService.Infrastructure.Configurations.Audio.Hls;
 
 namespace BookingManagementService.Infrastructure.Registrations
 {
@@ -54,6 +56,10 @@ namespace BookingManagementService.Infrastructure.Registrations
             // Consul
             services.AddSingleton<IConsulServiceConfig, ConsulServiceConfig>();
             services.AddSingleton<IConsulHealthCheckConfig, ConsulHealthCheckConfig>();
+            services.AddSingleton<IConsulDistributedLockConfig, ConsulDistributedLockConfig>();
+
+            // Audio
+            services.AddSingleton<IHlsConfig, HlsConfig>();
 
             
             return services;

@@ -1,6 +1,5 @@
-﻿using SagaOrchestratorService.BusinessLogic.Services.SagaServices;
-using SagaOrchestratorService.BusinessLogic.Services.SagaServices.interfaces;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using SagaOrchestratorService.BusinessLogic.Services.DbServices.SagaServices;
 
 namespace SagaOrchestratorService.BusinessLogic.Registrations
 {
@@ -8,7 +7,7 @@ namespace SagaOrchestratorService.BusinessLogic.Registrations
     {
         public static IServiceCollection AddDbServices(this IServiceCollection services)
         {
-            services.AddScoped<ISagaService, SagaService>();
+            services.AddScoped<SagaInstanceService>();
             return services;
         }
     }

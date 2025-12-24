@@ -41,7 +41,12 @@ namespace PodcastService.Common.Registrations
             services.AddSingleton<IEmbeddingVectorModelConfig, EmbeddingVectorModelConfig>();
             services.AddSingleton<IAccountConfig, AccountConfig>();
             services.AddSingleton<IFileValidationConfig, FileValidationConfig>();
-
+            services.AddSingleton<IMailPropertiesConfig, MailPropertiesConfig>();
+            services.AddSingleton<IPodcastPublishReviewSessionConfig, PodcastPublishReviewSessionConfig>();
+            services.AddSingleton<IPodcastListenSessionConfig, PodcastListenSessionConfig>();
+            services.AddSingleton<IBackgroundJobsConfig, BackgroundJobsConfig>();
+            services.AddSingleton<ICustomerListenSessionProcedureConfig, CustomerListenSessionProcedureConfig>();
+            
             // SystemService
             services.AddSingleton<ISystemServiceConfig,SystemServiceConfig>();
  

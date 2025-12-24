@@ -1,7 +1,8 @@
 
-using ApiGatewayService.Infrastructure;
-using ApiGatewayService.Common;
 using ApiGatewayService.API.Configurations.App;
+using ApiGatewayService.Common;
+using ApiGatewayService.Entry.Configurations.Builder;
+using ApiGatewayService.Infrastructure;
 
 namespace ApiGatewayService.Entry
 {
@@ -16,7 +17,10 @@ namespace ApiGatewayService.Entry
             builder.Services.AddInfrastructureLayer(builder.Configuration);
 
             builder.Services.AddControllers();
-            
+
+            // App Conf
+            builder.AddBuilderCorsConfig();
+
             // Add HttpClient for Gateway Controller
             builder.Services.AddHttpClient();
 

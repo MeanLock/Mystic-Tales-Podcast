@@ -1,0 +1,23 @@
+// app/dark.scss
+@mixin App-Theme_dark {
+  --primary-color: #2ecc71;
+  --background-color: #181818;
+  --text-color: #f5f5f5;
+  --button-bg: #2ecc71;
+  --app-font-primary : Cursive;
+
+  // Cấu hình cho các selector
+  button {
+
+  }
+  .RoomBrowser{
+    background-color: red;
+  }
+
+  ul {
+  }
+
+  li {
+
+  }
+}

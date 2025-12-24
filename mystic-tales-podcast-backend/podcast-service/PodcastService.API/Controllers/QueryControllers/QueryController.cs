@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using PodcastService.API.Filters.ExceptionFilters;
+using PodcastService.BusinessLogic.DTOs.Account;
 using PodcastService.BusinessLogic.Models.CrossService;
 using PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using PodcastService.DataAccess.Entities.SqlServer;
 
 namespace PodcastService.API.Controllers.QueryControllers
 {
@@ -73,6 +75,87 @@ namespace PodcastService.API.Controllers.QueryControllers
             return Ok(new
             {
                 accounts = result.Results["accounts"][0]["Role"],
+            });
+        }
+
+        [HttpGet("test-query")]
+        public async Task<IActionResult> TestQuery([FromQuery] int accountId)
+        {
+            // var batchRequest = new BatchQueryRequest
+            // {
+            //     Queries = new List<BatchQueryItem>
+            //         {
+            //             new BatchQueryItem
+            //             {
+            //                 Key = "podcastShow",
+            //                 QueryType = "findall",
+            //                 EntityType = "PodcastShow",
+            //                 Parameters = JObject.FromObject(new
+            //                 {
+            //                     where = new
+            //                     {
+            //                         PodcastChannelId = "21a6d285-fc9d-48ec-bdf4-7edfe90aabc1"
+            //                     },
+            //                     include = "PodcastShowStatusTrackings"
+            //                 })
+            //             }
+            //         }
+            // };
+            // var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            // var realResult = result.Results?["podcastShow"].ToObject<List<PodcastShow>>();
+            // return Ok(new
+            // {
+            //     result = realResult
+            // });
+
+            var batchRequest1 = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastShow",
+                            QueryType = "findall",
+                            EntityType = "PodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    PodcastChannelId = "21a6d285-fc9d-48ec-bdf4-7edfe90aabc1"
+                                },
+                                include = "PodcastShowStatusTrackings"
+                            })
+                        }
+                    }
+            };
+            // var batchRequest = new BatchQueryRequest
+            // {
+            //     Queries = new List<BatchQueryItem>
+            //         {
+            //             new BatchQueryItem
+            //             {
+            //                 Key = "podcastShow",
+            //                 QueryType = "findall",
+            //                 EntityType = "PodcastShow",
+            //                 Parameters = JObject.FromObject(new
+            //                 {
+            //                     where = new
+            //                     {
+            //                         PodcastChannelId = "21a6d285-fc9d-48ec-bdf4-7edfe90aabc1"
+            //                     },
+            //                     include = "PodcastShowStatusTrackings"
+            //                 })
+            //             }
+            //         }
+            // };
+            var result1 = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest1);
+
+            var realResult1 = result1.Results?["podcastShow"];
+            var abc1 = realResult1 != null ? realResult1.ToObject<List<PodcastShow>>() : null;
+            return Ok(new
+            {
+                result = realResult1
             });
         }
     }

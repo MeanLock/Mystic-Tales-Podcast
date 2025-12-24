@@ -1,0 +1,1245 @@
+# version: '3.8'
+
+services:
+
+  # Kafka 3-Broker Cluster (KRaft mode)
+  kafka-broker-1:
+    image: confluentinc/cp-kafka:latest
+    hostname: kafka-broker-1
+    container_name: kafka-broker-dev-001
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT_HOST://localhost:9092,PLAINTEXT://kafka-broker-1:19092'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka-broker-1:9093,2@kafka-broker-2:9093,3@kafka-broker-3:9093'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka-broker-1:9093,PLAINTEXT_HOST://0.0.0.0:9092,PLAINTEXT://0.0.0.0:19092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      CLUSTER_ID: 'kraft-cluster-1'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      
+      KAFKA_AUTO_LEADER_REBALANCE_ENABLE: 'true'           # Bật continuous auto rebalancing
+      KAFKA_LEADER_IMBALANCE_PER_BROKER_PERCENTAGE: 10     # Trigger khi imbalance > 10%
+      KAFKA_LEADER_IMBALANCE_CHECK_INTERVAL_SECONDS: 30    # Check mỗi 30 giây
+      
+      KAFKA_REPLICA_LAG_TIME_MAX_MS: 30000                 # Max lag time cho replicas
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 1048576               # Max bytes per fetch
+      KAFKA_NUM_REPLICA_FETCHERS: 4                        # Số replica fetcher threads
+    volumes:
+      - ./docker/kafka:/kafka:ro
+      - kafka1_data:/var/lib/kafka/data
+    networks:
+      - gateway-network
+
+  kafka-broker-2:
+    image: confluentinc/cp-kafka:latest
+    hostname: kafka-broker-2
+    container_name: kafka-broker-dev-002
+    ports:
+      - "9093:9092"
+    environment:
+      KAFKA_NODE_ID: 2
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT_HOST://localhost:9093,PLAINTEXT://kafka-broker-2:19092'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka-broker-1:9093,2@kafka-broker-2:9093,3@kafka-broker-3:9093'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka-broker-2:9093,PLAINTEXT_HOST://0.0.0.0:9092,PLAINTEXT://0.0.0.0:19092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      CLUSTER_ID: 'kraft-cluster-1'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      
+      KAFKA_AUTO_LEADER_REBALANCE_ENABLE: 'true'           # Bật continuous auto rebalancing
+      KAFKA_LEADER_IMBALANCE_PER_BROKER_PERCENTAGE: 10     # Trigger khi imbalance > 10%
+      KAFKA_LEADER_IMBALANCE_CHECK_INTERVAL_SECONDS: 30    # Check mỗi 30 giây
+      
+      KAFKA_REPLICA_LAG_TIME_MAX_MS: 30000                 # Max lag time cho replicas
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 1048576               # Max bytes per fetch
+      KAFKA_NUM_REPLICA_FETCHERS: 4                        # Số replica fetcher threads
+    volumes:
+      - kafka2_data:/var/lib/kafka/data
+    networks:
+      - gateway-network
+
+  kafka-broker-3:
+    image: confluentinc/cp-kafka:latest
+    hostname: kafka-broker-3
+    container_name: kafka-broker-dev-003
+    ports:
+      - "9094:9092"
+    environment:
+      KAFKA_NODE_ID: 3
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT_HOST://localhost:9094,PLAINTEXT://kafka-broker-3:19092'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka-broker-1:9093,2@kafka-broker-2:9093,3@kafka-broker-3:9093'
+      KAFKA_LISTENERS: 'CONTROLLER://kafka-broker-3:9093,PLAINTEXT_HOST://0.0.0.0:9092,PLAINTEXT://0.0.0.0:19092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      CLUSTER_ID: 'kraft-cluster-1'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      
+      KAFKA_AUTO_LEADER_REBALANCE_ENABLE: 'true'           # Bật continuous auto rebalancing
+      KAFKA_LEADER_IMBALANCE_PER_BROKER_PERCENTAGE: 10     # Trigger khi imbalance > 10%
+      KAFKA_LEADER_IMBALANCE_CHECK_INTERVAL_SECONDS: 30    # Check mỗi 30 giây
+      
+      KAFKA_REPLICA_LAG_TIME_MAX_MS: 30000                 # Max lag time cho replicas
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 1048576               # Max bytes per fetch
+      KAFKA_NUM_REPLICA_FETCHERS: 4                        # Số replica fetcher threads
+    volumes:
+      - kafka3_data:/var/lib/kafka/data
+    networks:
+      - gateway-network
+
+
+  kafka-init:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka-init-${CLUSTER_NAME:-kraft-cluster-1}
+    depends_on:
+      - kafka-broker-1
+      - kafka-broker-2
+      - kafka-broker-3
+    environment:
+      CLUSTER_NAME: "kraft-cluster-1"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka-broker-1:19092,kafka-broker-2:19092,kafka-broker-3:19092"
+      
+      ENABLE_PREFERRED_LEADER_ELECTION: "true"     # Bật one-time preferred leader election
+      KAFKA_AUTO_LEADER_REBALANCE_ENABLE: "true"   # Đồng bộ với broker-level continuous rebalancing
+      LEADER_IMBALANCE_THRESHOLD: 10               # Trigger khi imbalance > 10%
+      CHECK_INTERVAL_SECONDS: 30                   # Check interval for monitoring
+      
+      # Format: topic-name:partitions:replication-factor:min-isr:retention-hours
+      TOPICS_CONFIG: |
+        user-management-domain:6:3:2:189
+        booking-management-domain:6:3:2:189
+        chat-communication-domain:6:3:2:189
+        content-management-domain:6:3:2:189
+        content-moderation-domain:6:3:2:189
+        subscription-management-domain:6:3:2:189
+        payment-processing-domain:6:3:2:189
+        dmca-management-domain:6:3:2:189
+        public-review-management-domain:6:3:2:189
+        report-management-domain:6:3:2:189
+        system-configuration-domain:6:3:2:189
+        notification-domain:6:3:2:189
+    restart: no  # CRITICAL: Never restart this service automatically
+    entrypoint:
+      - sh
+      - -c
+      - |
+        set -e  # Exit on any error
+        
+        echo "� Starting kafka-init with enhanced auto-rebalancing..."
+        echo "📁 Cluster: $${CLUSTER_NAME}"
+        echo "� Preferred Leader Election: $${ENABLE_PREFERRED_LEADER_ELECTION}"
+        echo "⚖️  Auto Leader Rebalance: $${KAFKA_AUTO_LEADER_REBALANCE_ENABLE}"
+        echo "📊 Imbalance Threshold: $${LEADER_IMBALANCE_THRESHOLD}%"
+        echo ""
+        
+        # 🔍 DEBUG: Check volume mount và scripts
+        echo "🔍 DEBUG: Checking volume mount..."
+        echo "🔍 CLUSTER_NAME = '$${CLUSTER_NAME}'"
+        ls -la /kafka/ || echo "❌ /kafka directory not found!"
+        ls -la /kafka/$${CLUSTER_NAME}/ || echo "❌ Cluster directory not found!"
+        
+        # Check if enhanced script exists
+        ENHANCED_SCRIPT="/kafka/$${CLUSTER_NAME}/init-topics-cluster-enhanced.sh"
+        BASIC_SCRIPT="/kafka/$${CLUSTER_NAME}/init-topics-cluster.sh"
+        
+        echo "🔍 Enhanced script path: $$ENHANCED_SCRIPT"
+        echo "🔍 Basic script path: $$BASIC_SCRIPT"
+        
+        if [ -f "$$ENHANCED_SCRIPT" ]; then
+          echo "✨ Using enhanced auto-rebalancing script..."
+          echo "📄 Script path: $$ENHANCED_SCRIPT"
+          exec sh "$$ENHANCED_SCRIPT"
+        else
+          echo "⚠️  Enhanced script not found at: $$ENHANCED_SCRIPT"
+          echo "🔍 Checking basic script..."
+          if [ -f "$$BASIC_SCRIPT" ]; then
+            echo "📄 Using basic script: $$BASIC_SCRIPT"
+            exec sh "$$BASIC_SCRIPT"
+          else
+            echo "❌ No initialization scripts found!"
+            echo "❌ Enhanced: $$ENHANCED_SCRIPT"
+            echo "❌ Basic: $$BASIC_SCRIPT"
+            echo "🔍 Available files in /kafka/$${CLUSTER_NAME}/:"
+            ls -la "/kafka/$${CLUSTER_NAME}/" || echo "Directory not accessible!"
+            exit 1
+          fi
+        fi
+    volumes:
+      - ./docker/kafka:/kafka:ro
+    networks:
+      - gateway-network
+
+  kafka-monitor:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka-monitor
+    depends_on:
+      - kafka-broker-1
+      - kafka-broker-2
+      - kafka-broker-3
+      - kafka-init
+    environment:
+      CLUSTER_NAME: "kraft-cluster-1"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka-broker-1:19092,kafka-broker-2:19092,kafka-broker-3:19092"
+      MONITOR_INTERVAL: 10
+    entrypoint:
+      - sh
+      - -c
+      - |
+        echo "📊 Starting Kafka 3-broker cluster monitoring..."
+        echo "📁 Using cluster: $${CLUSTER_NAME}"
+        
+        # Wait for topics to be initialized
+        sleep 30
+        
+        echo "📂 Looking for monitor script in: /kafka/$${CLUSTER_NAME}/"
+        
+        # Check if cluster-specific directory exists
+        if [ ! -d "/kafka/$${CLUSTER_NAME}" ]; then
+          echo "❌ Cluster directory /kafka/$${CLUSTER_NAME} not found!"
+          exit 1
+        fi
+        
+        # Check if monitor script exists
+        if [ ! -f "/kafka/$${CLUSTER_NAME}/monitor-cluster.sh" ]; then
+          echo "❌ Monitor script /kafka/$${CLUSTER_NAME}/monitor-cluster.sh not found!"
+          exit 1
+        fi
+        
+        # Run the cluster-specific monitor script
+        echo "🔍 Starting monitoring for cluster: $${CLUSTER_NAME}"
+        sh "/kafka/$${CLUSTER_NAME}/monitor-cluster.sh"
+    volumes:
+      - ./docker/kafka:/kafka:ro
+      - kafka_monitor_logs:/tmp/kafka-monitor
+    networks:
+      - gateway-network
+    restart: unless-stopped
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui-dev-001
+    depends_on:
+      - kafka-broker-1
+      - kafka-broker-2
+      - kafka-broker-3
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: "3-broker-cluster"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka-broker-1:19092,kafka-broker-2:19092,kafka-broker-3:19092"
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: "PLAINTEXT"
+      DYNAMIC_CONFIG_ENABLED: "true"
+    networks:
+      - gateway-network
+
+  consul:
+    image: hashicorp/consul:latest
+    container_name: consul-dev-001
+    ports:
+      - "8500:8500"      # Consul HTTP API & UI
+      - "8600:8600/udp"  # Consul DNS
+    # volumes:
+    #   - consul_data:/consul/data
+    command: agent -dev -client=0.0.0.0
+    networks:
+      - default
+      - gateway-network
+
+  redis:
+    image: redis:latest
+    container_name: redis-dev-001
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - default
+      - gateway-network
+
+  # Nginx Reverse Proxy - Entry point
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: api-gateway-proxy-dev-001
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # - ./docker/nginx/nginx-nat.conf:/etc/nginx/nginx-nat.conf:ro
+      # - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - ./docker/nginx/nginx-nat_v4.dev.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api-gateway-service-1
+      - api-gateway-service-2 
+      - api-gateway-service-3
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sql-server-dev-001
+    hostname: sql-server
+    ports:
+      - "1434:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Banana100"
+      MSSQL_PID: "Developer"
+      MSSQL_COLLATION: "SQL_Latin1_General_CP1_CI_AS"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./docker/sqlserver/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Banana100", "-Q", "SELECT 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # API Gateway Instance 1
+  api-gateway-service-1:
+    build: 
+      context: ./api-gateway-service
+      dockerfile: Dockerfile
+    container_name: api-gateway-service-dev-001
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8041
+      - AppSettings__APP_PORT=8041
+      - AppSettings__APP_BASE_URL=http://api-gateway-service-1:8041
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=api-gateway-service-dev-001
+      - Infrastructure__Consul__Service__DestinationEnvironment=dev
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://api-gateway-service-dev-001:8041
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8041:8041"
+    depends_on:
+      - redis
+      - consul
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8041/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway Instance 2  
+  api-gateway-service-2:
+    build:
+      context: ./api-gateway-service
+      dockerfile: Dockerfile
+    container_name: api-gateway-service-dev-002
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8041
+      - AppSettings__APP_PORT=8041
+      - AppSettings__APP_BASE_URL=http://api-gateway-service-2:8041
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=api-gateway-service-dev-002
+      - Infrastructure__Consul__Service__DestinationEnvironment=dev
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://api-gateway-service-dev-002:8041
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8042:8041"
+    depends_on:
+      - redis
+      - consul
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8041/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway Instance 3
+  api-gateway-service-3:
+    build:
+      context: ./api-gateway-service
+      dockerfile: Dockerfile  
+    container_name: api-gateway-service-dev-003
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8041
+      - AppSettings__APP_PORT=8041
+      - AppSettings__APP_BASE_URL=http://api-gateway-service-3:8041
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=api-gateway-service-dev-003
+      - Infrastructure__Consul__Service__DestinationEnvironment=dev
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://api-gateway-service-dev-003:8041
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8043:8041"
+    depends_on:
+      - redis
+      - consul
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8041/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # User Service Instance 1 [user-service-dev-001, 8046:8046]
+  user-service-dev-001:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service-dev-001
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8046
+      - AppSettings__APP_PORT=8046
+      - AppSettings__APP_BASE_URL=http://user-service-dev-001:8046
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__RESET_PASSWORD__Url=http://mystic-tales-podcast.xyz/auth/forgot-password
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - AppSettings__RESET_PASSWORD__Url=http://localhost:5173/auth/forgot-password
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=user-service-dev-001
+      - Infrastructure__Consul__Service__ServiceName=user-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://user-service-dev-001:8046
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=user-service-dev-001
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=user-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_UserDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true; 
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8046:8046"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8046/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # User Service Instance 2 [user-service-dev-002, 8047:8046]
+  user-service-dev-002:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service-dev-002
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8046
+      - AppSettings__APP_PORT=8046
+      - AppSettings__APP_BASE_URL=http://user-service-dev-002:8046
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      # - AppSettings__RESET_PASSWORD__Url=http://mystic-tales-podcast.xyz/auth/forgot-password
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - AppSettings__RESET_PASSWORD__Url=http://localhost:5173/auth/forgot-password
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=user-service-dev-002
+      - Infrastructure__Consul__Service__ServiceName=user-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://user-service-dev-002:8046
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=user-service-dev-002
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=user-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_UserDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8047:8046"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8046/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # System Configuration Service  Instance 1 [system-configuration-service-dev-001, 8051:8051]
+  system-configuration-service-dev-001:
+    build:
+      context: ./system-configuration-service
+      dockerfile: Dockerfile
+    container_name: system-configuration-service-dev-001
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8051
+      - AppSettings__APP_PORT=8051
+      - AppSettings__APP_BASE_URL=http://system-configuration-service-dev-001:8051
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=system-configuration-service-dev-001
+      - Infrastructure__Consul__Service__ServiceName=system-configuration-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://system-configuration-service-dev-001:8051
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=system-configuration-service-dev-001
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=system-configuration-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_SystemConfigurationDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8051:8051"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8051/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # System Configuration Service  Instance 2 [system-configuration-service-dev-002, 8052:8051]
+  system-configuration-service-dev-002:
+    build:
+      context: ./system-configuration-service
+      dockerfile: Dockerfile
+    container_name: system-configuration-service-dev-002
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8051
+      - AppSettings__APP_PORT=8051
+      - AppSettings__APP_BASE_URL=http://system-configuration-service-dev-002:8051
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=system-configuration-service-dev-002
+      - Infrastructure__Consul__Service__ServiceName=system-configuration-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://system-configuration-service-dev-002:8051
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=system-configuration-service-dev-002
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=system-configuration-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_SystemConfigurationDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8052:8051"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8051/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Booking Management Service Instance 1 [booking-management-service-dev-001, 8056:8056]
+  booking-management-service-dev-001:
+    build:
+      context: ./booking-management-service
+      dockerfile: Dockerfile
+    container_name: booking-management-service-dev-001
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8056
+      - AppSettings__APP_PORT=8056
+      - AppSettings__APP_BASE_URL=http://booking-management-service-dev-001:8056
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=booking-management-service-dev-001
+      - Infrastructure__Consul__Service__ServiceName=booking-management-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://booking-management-service-dev-001:8056
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=booking-management-service-dev-001
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=booking-management-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_BookingManagementDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8056:8056"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8056/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Booking Management Service Instance 2 [booking-management-service-dev-002, 8057:8056]
+  booking-management-service-dev-002:
+    build:
+      context: ./booking-management-service
+      dockerfile: Dockerfile
+    container_name: booking-management-service-dev-002
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8056
+      - AppSettings__APP_PORT=8056
+      - AppSettings__APP_BASE_URL=http://booking-management-service-dev-002:8056
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=booking-management-service-dev-002
+      - Infrastructure__Consul__Service__ServiceName=booking-management-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://booking-management-service-dev-002:8056
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=booking-management-service-dev-002
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=booking-management-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_BookingManagementDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8057:8056"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8056/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Podcast Service Instance 1 [podcast-service-dev-001, 8061:8061]
+  podcast-service-dev-001:
+    build:
+      context: ./podcast-service
+      dockerfile: Dockerfile
+    container_name: podcast-service-dev-001
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8061
+      - AppSettings__APP_PORT=8061
+      - AppSettings__APP_BASE_URL=http://podcast-service-dev-001:8061
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      # - AppSettings__AUDIO_TRANSCRIPTION_API_URL=http://audio-transcription-ai-service-dev-001:8001/v7
+      - AppSettings__AUDIO_TRANSCRIPTION_API_URL=https://r3v6x19g-8001.asse.devtunnels.ms/v9
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=podcast-service-dev-001
+      - Infrastructure__Consul__Service__ServiceName=podcast-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://podcast-service-dev-001:8061
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=podcast-service-dev-001
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=podcast-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_PodcastDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8061:8061"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+      # - audio-transcription-ai-service-dev-001
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8061/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Podcast Service Instance 2 [podcast-service-dev-002, 8062:8061]
+  podcast-service-dev-002:
+    build:
+      context: ./podcast-service
+      dockerfile: Dockerfile
+    container_name: podcast-service-dev-002
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8061
+      - AppSettings__APP_PORT=8061
+      - AppSettings__APP_BASE_URL=http://podcast-service-dev-002:8061
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      # - AppSettings__AUDIO_TRANSCRIPTION_API_URL=http://audio-transcription-ai-service-dev-001:8001/v7
+      - AppSettings__AUDIO_TRANSCRIPTION_API_URL=https://r3v6x19g-8001.asse.devtunnels.ms/v9
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=podcast-service-dev-002
+      - Infrastructure__Consul__Service__ServiceName=podcast-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://podcast-service-dev-002:8061
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=podcast-service-dev-002
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=podcast-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_PodcastDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8062:8061"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+      # - audio-transcription-ai-service-dev-001
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8061/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Subscription Service Instance 1 [subscription-service-dev-001, 8066:8066]
+  subscription-service-dev-001:
+    build:
+      context: ./subscription-service
+      dockerfile: Dockerfile
+    container_name: subscription-service-dev-001
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8066
+      - AppSettings__APP_PORT=8066
+      - AppSettings__APP_BASE_URL=http://subscription-service-dev-001:8066
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=subscription-service-dev-001
+      - Infrastructure__Consul__Service__ServiceName=subscription-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://subscription-service-dev-001:8066
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=subscription-service-dev-001
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=subscription-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_SubscriptionDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8066:8066"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8066/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Subscription Service Instance 2 [subscription-service-dev-002, 8067:8066]
+  subscription-service-dev-002:
+    build:
+      context: ./subscription-service
+      dockerfile: Dockerfile
+    container_name: subscription-service-dev-002
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8066
+      - AppSettings__APP_PORT=8066
+      - AppSettings__APP_BASE_URL=http://subscription-service-dev-002:8066
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=subscription-service-dev-002
+      - Infrastructure__Consul__Service__ServiceName=subscription-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://subscription-service-dev-002:8066
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=subscription-service-dev-002
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=subscription-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_SubscriptionDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8067:8066"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8066/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Moderation Service Instance 1 [moderation-service-dev-001, 8071:8071]
+  moderation-service-dev-001:
+    build:
+      context: ./moderation-service
+      dockerfile: Dockerfile
+    container_name: moderation-service-dev-001
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8071
+      - AppSettings__APP_PORT=8071
+      - AppSettings__APP_BASE_URL=http://moderation-service-dev-001:8071
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=moderation-service-dev-001
+      - Infrastructure__Consul__Service__ServiceName=moderation-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://moderation-service-dev-001:8071
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=moderation-service-dev-001
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=moderation-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_ModerationDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8071:8071"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8071/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Moderation Service Instance 2 [moderation-service-dev-002, 8072:8071]
+  moderation-service-dev-002:
+    build:
+      context: ./moderation-service
+      dockerfile: Dockerfile
+    container_name: moderation-service-dev-002
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8071
+      - AppSettings__APP_PORT=8071
+      - AppSettings__APP_BASE_URL=http://moderation-service-dev-002:8071
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=moderation-service-dev-002
+      - Infrastructure__Consul__Service__ServiceName=moderation-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://moderation-service-dev-002:8071
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=moderation-service-dev-002
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=moderation-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_ModerationDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8072:8071"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8071/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Transaction Service Instance 1 [transaction-service-dev-001, 8076:8076]
+  transaction-service-dev-001:
+    build:
+      context: ./transaction-service
+      dockerfile: Dockerfile
+    container_name: transaction-service-dev-001
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8076
+      - AppSettings__APP_PORT=8076
+      - AppSettings__APP_BASE_URL=http://transaction-service-dev-001:8076
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=transaction-service-dev-001
+      - Infrastructure__Consul__Service__ServiceName=transaction-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://transaction-service-dev-001:8076
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=transaction-service-dev-001
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=transaction-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_TransactionDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8076:8076"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8076/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Transaction Service Instance 2 [transaction-service-dev-002, 8077:8076] 
+  transaction-service-dev-002:
+    build:
+      context: ./transaction-service
+      dockerfile: Dockerfile
+    container_name: transaction-service-dev-002
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8076
+      - AppSettings__APP_PORT=8076
+      - AppSettings__APP_BASE_URL=http://transaction-service-dev-002:8076
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=transaction-service-dev-002
+      - Infrastructure__Consul__Service__ServiceName=transaction-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://transaction-service-dev-002:8076
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=transaction-service-dev-002
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=transaction-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_TransactionDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8077:8076"
+    depends_on:
+      - redis
+      - consul
+      - sql-server
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8076/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  saga-orchestrator-service-dev-001:
+    build:
+      context: ./saga-orchestrator-service
+      dockerfile: Dockerfile
+    container_name: saga-orchestrator-service-dev-001
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8081
+      - AppSettings__APP_PORT=8081
+      - AppSettings__APP_BASE_URL=http://saga-orchestrator-service-dev-001:8081
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=saga-orchestrator-service-dev-001
+      - Infrastructure__Consul__Service__ServiceName=saga-orchestrator-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://saga-orchestrator-service-dev-001:8081
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=saga-orchestrator-service-dev-001
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=saga-orchestrator-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_SagaOrchestratorDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+      - consul
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  saga-orchestrator-service-dev-002:
+    build:
+      context: ./saga-orchestrator-service
+      dockerfile: Dockerfile
+    container_name: saga-orchestrator-service-dev-002
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8081
+      - AppSettings__APP_PORT=8081
+      - AppSettings__APP_BASE_URL=http://saga-orchestrator-service-dev-002:8081
+      # - AppSettings__API_GATEWAY_Url=https://api-gateway.mystic-tales-podcast.xyz
+      - AppSettings__API_GATEWAY_Url=http://nginx-proxy
+      - Infrastructure__Redis__Default__ConnectionString=redis:6379
+      - Infrastructure__Consul__Service__Host=http://consul:8500
+      - Infrastructure__Consul__Service__Id=saga-orchestrator-service-dev-002
+      - Infrastructure__Consul__Service__ServiceName=saga-orchestrator-service
+      - Infrastructure__Consul__HealthCheck__BaseUrl=http://saga-orchestrator-service-dev-002:8081
+      - Infrastructure__Kafka__Cluster__BootstrapServers__0=kafka-broker-1:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__1=kafka-broker-2:19092
+      - Infrastructure__Kafka__Cluster__BootstrapServers__2=kafka-broker-3:19092
+      - Infrastructure__Kafka__Cluster__ClientId=saga-orchestrator-service-dev-002
+      - Infrastructure__Kafka__Cluster__SecurityProtocol=Plaintext
+      - Infrastructure__Kafka__Cluster__SaslMechanism=Plain
+      - Infrastructure__Kafka__Cluster__SaslUsername=
+      - Infrastructure__Kafka__Cluster__SaslPassword=
+      - Infrastructure__Kafka__Cluster__ConnectionRetries=3
+      - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
+      - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
+      - Infrastructure__Kafka__Consumer__GroupId=saga-orchestrator-service-consumer-group
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_SagaOrchestratorDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
+      - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
+    ports:
+      - "8082:8081"
+    depends_on:
+      - redis
+      - consul
+    networks:
+      - gateway-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  audio-transcription-ai-service-dev-001:
+    build:
+      context: ./audio-transcription-ai-service
+      dockerfile: Dockerfile
+    container_name: audio-transcription-ai-service-dev-001
+    ports:
+      - "8001:8001"
+    volumes:
+      # ✅ Persist HuggingFace cache
+      - huggingface-cache:/root/.cache/huggingface
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+      - HF_HUB_DISABLE_TELEMETRY=1
+    networks:
+      - gateway-network
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  kafka1_data:
+  kafka2_data:
+  kafka3_data:
+  kafka_monitor_logs:
+  sqlserver_data:
+  huggingface-cache:
+    driver: local
+# consul_data:
+
+networks:
+  gateway-network:
+    driver: bridge
+    ipam:
+      config:
+        # - subnet: 192.168.100.0/24  # Subnet nhỏ hơn, ít xung đột
+        #   gateway: 192.168.100.1
+        - subnet: 172.20.0.0/16  # Changed to avoid conflicts
+          gateway: 172.20.0.1
+    labels:
+      - "project=microservice-architecture"
+      - "environment=development"

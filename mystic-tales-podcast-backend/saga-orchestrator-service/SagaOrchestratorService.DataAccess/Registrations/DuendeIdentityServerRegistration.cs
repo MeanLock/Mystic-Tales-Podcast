@@ -58,7 +58,7 @@ namespace SagaOrchestratorService.DataAccess.Registrations
                 .AddConfigurationStore(options =>
                 {
                     options.ConfigureDbContext = b =>
-                        b.UseSqlServer(configuration.GetConnectionString("DefaultConnection"),
+                        b.UseSqlServer(configuration.GetConnectionString("SQLSERVER_DefaultConnectionString"),
                         sql => sql.MigrationsAssembly(typeof(DuendeIdentityServerRegistration).Assembly.FullName)
                         // sql =>
                         // {
@@ -71,7 +71,7 @@ namespace SagaOrchestratorService.DataAccess.Registrations
                 .AddOperationalStore(options =>
                 {
                     options.ConfigureDbContext = b =>
-                        b.UseSqlServer(configuration.GetConnectionString("DefaultConnection"),
+                        b.UseSqlServer(configuration.GetConnectionString("SQLSERVER_DefaultConnectionString"),
                         sql => sql.MigrationsAssembly(typeof(DuendeIdentityServerRegistration).Assembly.FullName)
                         // sql =>
                         // {

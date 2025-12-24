@@ -9,6 +9,7 @@ namespace SagaOrchestratorService.Common.AppConfigurations.App
         public string APP_BASE_URL { get; set; }
         public string HEALTH_CHECK_ENDPOINT { get; set; }
         public string IMAGE_SRC { get; set; }
+        public string TIME_ZONE { get; set; }
     }
     public class AppConfig : IAppConfig
     {
@@ -16,6 +17,7 @@ namespace SagaOrchestratorService.Common.AppConfigurations.App
         public string APP_BASE_URL { get; set; }
         public string HEALTH_CHECK_ENDPOINT { get; set; }
         public string IMAGE_SRC { get; set; }
+        public string TIME_ZONE { get; set; }
 
 
         public AppConfig(IConfiguration configuration)
@@ -25,6 +27,7 @@ namespace SagaOrchestratorService.Common.AppConfigurations.App
             APP_BASE_URL = appConfig.APP_BASE_URL;
             HEALTH_CHECK_ENDPOINT = appConfig.HEALTH_CHECK_ENDPOINT;
             IMAGE_SRC = appConfig.IMAGE_SRC;
+            TIME_ZONE = appConfig.TIME_ZONE;
 
         }
 

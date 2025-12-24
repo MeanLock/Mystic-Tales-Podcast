@@ -1,8 +1,8 @@
 ﻿using UserService.DataAccess.Data;
 using UserService.DataAccess.Repositories.interfaces;
 using Microsoft.EntityFrameworkCore;
-using UserService.DataAccess.Entities;
 using UserService.Common.AppConfigurations.App.interfaces;
+using UserService.DataAccess.Entities.SqlServer;
 
 namespace UserService.DataAccess.Repositories
 {
@@ -72,15 +72,15 @@ namespace UserService.DataAccess.Repositories
             var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
             if (passwordResetToken == null || passwordResetToken.IsUsed == true || passwordResetToken.ExpiredAt < now )
             {
-                throw new Exception("token không hợp lệ hoặc đã hết hạn");
+                throw new Exception("Token expired or already used");
             }
             
             if(latestToken == null)
             {
-                throw new Exception("không tìm thấy token mới nhất cho tài khoản này");
+                throw new Exception("Could not find the latest token for this account");
             }else if (latestToken.Id != passwordResetToken.Id)
             {
-                throw new Exception("token không hợp lệ");
+                throw new Exception("Invalid token");
             }
 
             return passwordResetToken;

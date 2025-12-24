@@ -68,6 +68,7 @@ namespace UserService.Common.AppConfigurations.BusinessSetting
             if (rule == null)
                 return false;
 
+
             // Check file size
             if (fileSizeBytes > rule.MaxSizeBytes)
                 return false;

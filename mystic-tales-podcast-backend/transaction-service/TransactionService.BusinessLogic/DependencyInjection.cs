@@ -12,8 +12,6 @@ namespace TransactionService.BusinessLogic
             services.AddHelpers();
             services.AddIdentityServerServices();
             services.AddSignalRHubServices();
-            services.AddEmbeddingVectorServices();
-            services.AddOpenAIServices();
             services.AddMessagingServices();
             services.AddCrossServiceServices();
             return services;

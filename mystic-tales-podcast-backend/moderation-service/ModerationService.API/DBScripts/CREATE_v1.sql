@@ -28,7 +28,7 @@ CREATE TABLE DMCAAccusationStatus (
 
 -- PodcastBuddyReport table
 CREATE TABLE PodcastBuddyReport (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     content NVARCHAR(MAX) NULL,
     accountId INT NOT NULL,
     podcastBuddyId INT NOT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE PodcastBuddyReport (
 
 -- PodcastShowReport table
 CREATE TABLE PodcastShowReport (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     content NVARCHAR(MAX) NULL,
     accountId INT NOT NULL,
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE PodcastShowReport (
 
 -- PodcastEpisodeReport table
 CREATE TABLE PodcastEpisodeReport (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     content NVARCHAR(MAX) NULL,
     accountId INT NOT NULL,
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
@@ -64,7 +64,7 @@ CREATE TABLE PodcastEpisodeReport (
 
 -- PodcastBuddyReportReviewSession table
 CREATE TABLE PodcastBuddyReportReviewSession (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastBuddyId INT NOT NULL,
     assignedStaff INT NOT NULL,
     resolvedViolationPoint INT NOT NULL DEFAULT 1,
@@ -75,7 +75,7 @@ CREATE TABLE PodcastBuddyReportReviewSession (
 
 -- PodcastShowReportReviewSession table
 CREATE TABLE PodcastShowReportReviewSession (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
     assignedStaff INT NOT NULL,
     isResolved BIT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE PodcastShowReportReviewSession (
 
 -- PodcastEpisodeReportReviewSession table
 CREATE TABLE PodcastEpisodeReportReviewSession (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
     assignedStaff INT NOT NULL,
     isResolved BIT NULL,
@@ -99,26 +99,46 @@ CREATE TABLE DMCAAccusation (
     podcastShowId UNIQUEIDENTIFIER NULL,
     podcastEpisodeId UNIQUEIDENTIFIER NULL,
     assignedStaff INT NULL,
-    lastLawsuitCheckingAlertAt DATETIME NULL DEFAULT NULL,
+    accuserEmail NVARCHAR(254) NOT NULL,
+    accuserPhone NVARCHAR(20) NOT NULL,
+    accuserFullName NVARCHAR(500) NOT NULL,
+    dismissReason NVARCHAR(MAX) NULL,
+    resolvedAt DATETIME NULL DEFAULT NULL,
+    cancelledAt DATETIME NULL DEFAULT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME))
 );
 
+-- DMCAAccusationConclusionReportType table
+CREATE TABLE DMCAAccusationConclusionReportType (
+    id INT PRIMARY KEY,
+    name NVARCHAR(50) NOT NULL
+);
+
+-- DMCAAccusationConclusionReport table
+CREATE TABLE DMCAAccusationConclusionReport (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    dmcaAccusationId INT NOT NULL,
+    dmcaAccusationConclusionReportTypeId INT NOT NULL,
+    description NVARCHAR(MAX) NULL,
+    invalidReason NVARCHAR(MAX) NULL,
+    isRejected BIT NULL DEFAULT NULL,
+    completedAt DATETIME NULL DEFAULT NULL,
+    cancelledAt DATETIME NULL DEFAULT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    FOREIGN KEY (dmcaAccusationId) REFERENCES DMCAAccusation(id),
+    FOREIGN KEY (dmcaAccusationConclusionReportTypeId) REFERENCES DMCAAccusationConclusionReportType(id)
+);
+
 -- CounterNotice table
 CREATE TABLE CounterNotice (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    accountId INT NOT NULL,
-    accountEmail NVARCHAR(MAX) NOT NULL,
-    accountPhone NVARCHAR(MAX) NOT NULL,
-    statementPerjury NVARCHAR(MAX) NOT NULL,
-    signature NVARCHAR(MAX) NOT NULL,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     dmcaAccusationId INT NOT NULL,
-    jurisdiction NVARCHAR(MAX) NOT NULL,
     isValid BIT NULL,
     invalidReason NVARCHAR(MAX) NULL,
     validatedBy INT NULL DEFAULT NULL,
     validatedAt DATETIME NULL DEFAULT NULL,
-    filedDate DATE NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (dmcaAccusationId) REFERENCES DMCAAccusation(id)
@@ -126,15 +146,7 @@ CREATE TABLE CounterNotice (
 
 -- DMCANotice table
 CREATE TABLE DMCANotice (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    podcastShowId UNIQUEIDENTIFIER NULL,
-    podcastEpisodeId UNIQUEIDENTIFIER NULL,
-    accountId INT NOT NULL,
-    accountEmail NVARCHAR(MAX) NOT NULL,
-    accountPhone NVARCHAR(MAX) NOT NULL,
-    goodFaithStatement NVARCHAR(MAX) NOT NULL,
-    workClaimed NVARCHAR(MAX) NOT NULL,
-    signature NVARCHAR(MAX) NOT NULL,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     isValid BIT NULL,
     invalidReason NVARCHAR(MAX) NULL,
     validatedBy INT NULL DEFAULT NULL,
@@ -147,23 +159,12 @@ CREATE TABLE DMCANotice (
 
 -- LawsuitProof table
 CREATE TABLE LawsuitProof (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    accountId INT NOT NULL,
-    goodFaithStatement NVARCHAR(MAX) NOT NULL,
-    courtName NVARCHAR(MAX) NOT NULL,
-    caseNumber NVARCHAR(100) NOT NULL,
-    filingDate DATE NOT NULL,
-    signature NVARCHAR(MAX) NOT NULL,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     dmcaAccusationId INT NOT NULL,
     isValid BIT NULL,
     inValidReason NVARCHAR(MAX) NULL,
     validatedBy INT NULL DEFAULT NULL,
     validatedAt DATETIME NULL DEFAULT NULL,
-    judgmentDetails NVARCHAR(MAX) NULL,
-    dateResolved DATE NULL DEFAULT NULL,
-    outcome NVARCHAR(MAX) NULL DEFAULT NULL,
-    rulingDocumentFileUrl NVARCHAR(MAX) NULL DEFAULT NULL,
-    isDefendantWon BIT NULL DEFAULT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (dmcaAccusationId) REFERENCES DMCAAccusation(id)
@@ -171,7 +172,7 @@ CREATE TABLE LawsuitProof (
 
 -- DMCAAccusationStatusTracking table
 CREATE TABLE DMCAAccusationStatusTracking (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     dmcaAccusationId INT NOT NULL,
     dmcaAccusationStatusId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -181,7 +182,7 @@ CREATE TABLE DMCAAccusationStatusTracking (
 
 -- CounterNoticeAttachFile table
 CREATE TABLE CounterNoticeAttachFile (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     counterNoticeId UNIQUEIDENTIFIER NOT NULL,
     attachFileKey NVARCHAR(MAX) NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -190,7 +191,7 @@ CREATE TABLE CounterNoticeAttachFile (
 
 -- DMCANoticeAttachFile table
 CREATE TABLE DMCANoticeAttachFile (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     dmcaNoticeId UNIQUEIDENTIFIER NOT NULL,
     attachFileKey NVARCHAR(MAX) NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -199,7 +200,7 @@ CREATE TABLE DMCANoticeAttachFile (
 
 -- LawsuitProofAttachFile table
 CREATE TABLE LawsuitProofAttachFile (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     lawsuitProofId UNIQUEIDENTIFIER NOT NULL,
     attachFileKey NVARCHAR(MAX) NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),

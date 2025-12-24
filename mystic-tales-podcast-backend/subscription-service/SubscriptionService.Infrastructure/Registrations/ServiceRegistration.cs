@@ -20,6 +20,7 @@ using SubscriptionService.Infrastructure.Configurations.Payos;
 using Net.payOS;
 using SubscriptionService.Infrastructure.Services.Kafka;
 using SubscriptionService.Infrastructure.Services.Audio.AcoustID;
+using SubscriptionService.Infrastructure.Services.Consul.DistributedLock;
 
 namespace SubscriptionService.Infrastructure.Registrations
 {
@@ -127,7 +128,8 @@ namespace SubscriptionService.Infrastructure.Registrations
             IConfiguration configuration)
         {
             // Register Redis service
-            services.AddScoped<RedisCacheService>();
+            services.AddScoped<RedisInstanceCacheService>();
+            services.AddScoped<RedisSharedCacheService>();
 
             // Configure Redis connection
             services.AddSingleton<IConnectionMultiplexer>(sp =>
@@ -176,6 +178,10 @@ namespace SubscriptionService.Infrastructure.Registrations
                 });
             });
 
+            // Register Consul Distributed Lock Service
+            services.AddSingleton<ConsulDistributedLockService>();
+            services.AddSingleton<ConsulSessionManager>();
+            
             return services;
         }
 

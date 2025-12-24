@@ -1,0 +1,755 @@
+/* BEM Naming Convention */
+/* Block: channel-subscription, subscription-card, revenue-chart */
+/* Element: __title, __container, __left, __right, etc. */
+/* Modifier: --active, --disabled, etc. */
+
+/* Color Variables */
+:root {
+    --color-primary: #aee339;
+    --color-white: #ffffff;
+    --color-border: #666666;
+    --color-bg-dark: #1a1a1a;
+    --color-bg-darker: #0f0f0f;
+    --color-text-light: #e0e0e0;
+    --color-text-muted: #999999;
+}
+
+/* Channel Subscription Block */
+.show-subscription {
+    padding: 2.7rem 2.5rem 0;
+
+    &__title {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--color-white);
+        margin-bottom: 32px;
+        letter-spacing: 1px;
+        text-align: left;
+        font-family: 'inter', sans-serif !important;
+
+    }
+  &__btn {
+       background-color: var(--color-primary);
+         color: var(--color-bg-darker);
+         font-weight: bold;
+    }
+    &__container {
+        display: flex;
+        gap: 32px;
+        align-items: stretch;
+        min-height: 500px;
+    }
+
+    &__left {
+        flex: 0 0 40%;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__right {
+        flex: 1 1 60%;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+
+
+    &__add-btn {
+        padding: 12px 24px;
+        background-color: var(--color-primary);
+        color: var(--color-bg-darker);
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    &__add-btn:hover {
+        background-color: #c4f04d;
+        transform: translateY(-2px);
+    }
+
+    &__add-btn:active {
+        transform: translateY(0);
+    }
+}
+
+/* Subscription Card Block */
+.subscription-card {
+    background-color: var(--color-bg-dark);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.3s ease;
+
+    &:hover {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 20px rgba(174, 227, 57, 0.1);
+    }
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    &__name {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--color-white);
+        margin: 0;
+    }
+
+    &__badge {
+        display: inline-block;
+        padding: 6px 12px;
+        background-color: var(--color-primary);
+        color: var(--color-bg-darker);
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    &__price {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    &__amount {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--color-primary);
+    }
+
+    &__period {
+        font-size: 14px;
+        color: var(--color-text-muted);
+    }
+
+    &__description {
+        font-size: 14px;
+        color: var(--white-75);
+        margin-bottom: 24px;
+        line-height: 1.5;
+        text-align: left;
+    }
+
+    &__pricing-section {
+        margin-bottom: 24px;
+    }
+
+    &__pricing-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-white);
+        margin: 0 0 16px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    &__pricing-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    &__benefits {
+        margin-top: 1.5rem;
+        padding: 12px 0 20px 20px;
+        border: 1px solid var(--color-border);
+        border-radius: 16px;
+    }
+
+    &__benefits-title {
+        text-align: left;
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--white-60);
+        margin: 0 0 16px 0;
+        letter-spacing: 0.5px;
+        font-family: 'inter', sans-serif !important;
+    }
+
+    &__benefits-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        column-gap: 15px;
+    }
+
+    &__benefit-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 12px;
+        color: var(--color-text-light);
+    }
+
+    &__benefit-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        color: var(--primary-green);
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+}
+
+
+.pricing-option {
+    padding: 16px;
+    background-color: var(--color-bg-darker);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    transition: all 0.3s ease;
+
+    &--featured {
+        border-color: var(--color-primary);
+        background-color: rgba(174, 227, 57, 0.08);
+    }
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    &__cycle {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    &__badge {
+        display: inline-block;
+        padding: 4px 8px;
+        background-color: var(--color-primary);
+        color: var(--color-bg-darker);
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+    }
+
+    &__price {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        margin-bottom: 8px;
+    }
+
+    &__amount {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--color-primary);
+    }
+
+    &__currency {
+        font-size: 12px;
+        color: var(--color-text-muted);
+        font-weight: 600;
+    }
+
+    &__period {
+        font-size: 12px;
+        color: var(--color-text-muted);
+    }
+}
+
+.subscription-modal-content {
+    background-color: rgba(0, 0, 0, 0.2) !important;
+        border: none!important;
+    color: #fff;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: var(--primary-green);
+        border-radius: 4px;
+    }
+
+    .MuiTextField-root {
+        .MuiOutlinedInput-root {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+            backdrop-filter: blur(5px);
+            
+            fieldset {
+                border-color: rgba(255, 255, 255, 0.3) !important;
+            }
+
+            &:hover fieldset {
+                border-color: var(--primary-green) !important;
+            }
+
+            &.Mui-focused fieldset {
+                border-color: var(--primary-green) !important;
+                border-width: 2px !important;
+                box-shadow: 0 0 0 1px rgba(174, 227, 57, 0.2);
+            }
+
+            input, textarea {
+                color: white !important;
+                
+                &::placeholder {
+                    color: rgba(255, 255, 255, 0.6) !important;
+                }
+            }
+        }
+
+        .MuiInputLabel-root {
+            color: rgba(255, 255, 255, 0.8) !important;
+
+            &.Mui-focused {
+                color: var(--primary-green) !important;
+            }
+        }
+    }
+
+    .MuiButton-contained {
+        background: linear-gradient(135deg, var(--primary-green), #9dd129) !important;
+        color: #000 !important;
+        font-weight: 700 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 15px rgba(174, 227, 57, 0.3) !important;
+        backdrop-filter: blur(10px);
+
+        &:hover {
+            background: linear-gradient(135deg, #9dd129, var(--primary-green)) !important;
+            box-shadow: 0 6px 20px rgba(174, 227, 57, 0.4) !important;
+            transform: translateY(-1px);
+        }
+
+        &:disabled {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: rgba(255, 255, 255, 0.4) !important;
+            box-shadow: none !important;
+        }
+    }
+
+    .MuiButton-outlined {
+        border-color: var(--primary-green) !important;
+        color: var(--primary-green) !important;
+        background-color: rgba(174, 227, 57, 0.1) !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+
+        &:hover {
+            background-color: rgba(174, 227, 57, 0.2) !important;
+            border-color: #9dd129 !important;
+            box-shadow: 0 2px 8px rgba(174, 227, 57, 0.3) !important;
+        }
+    }
+
+    .MuiChip-root {
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        
+        &:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+    }
+
+    .MuiDivider-root {
+        border-color: rgba(255, 255, 255, 0.2) !important;
+        backdrop-filter: blur(5px);
+    }
+
+    .pricing-container {
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
+    }
+
+    .MuiTableContainer-root {
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+
+        .MuiTable-root {
+            .MuiTableHead-root {
+                background: rgba(255, 255, 255, 0.08);
+                
+                .MuiTableCell-root {
+                    color: #fff !important;
+                    font-weight: 600 !important;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+                }
+            }
+
+            .MuiTableBody-root {
+                .MuiTableRow-root {
+                    transition: background-color 0.2s;
+
+                    &:hover {
+                        background-color: rgba(255, 255, 255, 0.03) !important;
+                    }
+
+                    .MuiTableCell-root {
+                        color: rgba(255, 255, 255, 0.9) !important;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                    }
+                }
+            }
+        }
+    }
+
+    // Scrollbar for history sections
+    .MuiBox-root {
+        &::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: var(--primary-green);
+            border-radius: 3px;
+            
+            &:hover {
+                background: #c4f04d;
+            }
+        }
+    }
+
+     &__description {
+        margin-top: 8px;
+
+        &-label {
+            color: #999999 !important;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        &-editor {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+            .ql-toolbar {
+                border: 1px solid #555 !important;
+                border-radius: 8px 8px 0 0;
+                padding: 12px !important;
+
+                .ql-formats {
+                    margin-right: 15px !important;
+                }
+
+                .ql-picker-label,
+                .ql-picker-item,
+                button {
+                    color: white !important;
+                    padding: 6px 8px !important;
+                    margin: 2px !important;
+                    height: 28px !important;
+
+                    &:hover {
+                        background-color: #555 !important;
+                    }
+
+                    &.ql-active {
+                        background-color: var(--primary-green) !important;
+
+                        .ql-stroke {
+                            stroke: black !important;
+                        }
+
+                    }
+                }
+
+                svg {
+                    font-size: large;
+                }
+
+                .ql-stroke {
+                    stroke: white !important;
+                }
+
+                .ql-fill {
+                    fill: white !important;
+                }
+
+                .ql-picker {
+                    color: white !important;
+                }
+
+                .ql-picker-options {
+                    background-color: #3a3a3a !important;
+                    border: 1px solid #555 !important;
+                    border-radius: 4px !important;
+                }
+            }
+
+            .ql-container {
+                background-color: #2a2a2a !important;
+                border: 2px solid #555 !important;
+                border-top: none !important;
+                border-radius: 0 0 8px 8px;
+                min-height: 100px !important;
+                font-size: 14px !important;
+
+                .ql-editor {
+                    color: white !important;
+                    font-family: 'Inter', sans-serif !important;
+                    padding: 16px !important;
+                    line-height: 1.6 !important;
+                    min-height: 180px !important;
+
+                    &.ql-blank::before {
+                        color: #999 !important;
+                        font-style: italic !important;
+                        font-size: 14px !important;
+                    }
+
+                    p,
+                    ol,
+                    ul {
+                        margin-bottom: 8px !important;
+                    }
+
+                    strong {
+                        font-weight: 600 !important;
+                    }
+
+                    em {
+                        font-style: italic !important;
+                    }
+
+                    u {
+                        text-decoration: underline !important;
+                    }
+
+                    a {
+                        color: var(--primary-green) !important;
+                    }
+                }
+
+                .ql-editor.ql-blank::before {
+                    content: 'Enter your channel description here...' !important;
+                }
+
+                .ql-tooltip {
+                    background-color: var(--primary-grey) !important;
+                    color: white !important;
+                    box-shadow: none !important;
+                    left: max(8px, var(--ql-tooltip-left, 8px)) !important;
+
+                }
+
+
+                .ql-preview,
+                .ql-remove,
+                .ql-action::after {
+                    color: var(--primary-green) !important;
+                }
+            }
+
+        }
+    }
+}
+
+
+/* Revenue Chart Block */
+.revenue-chart {
+    background-color: var(--color-bg-dark);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 24px;
+
+    &__header {
+        margin-bottom: 24px;
+    }
+
+    &__title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--color-white);
+    }
+
+    &__subtitle {
+        font-size: 13px;
+        color: var(--color-text-muted);
+        margin: 0;
+    }
+
+    &__stats {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    &__stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+    }
+
+    &__stat-label {
+        font-size: 12px;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    &__stat-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--color-primary);
+    }
+
+    &__graph {
+        width: 100%;
+        height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+.bg-none{
+    background-color: transparent !important;
+ box-shadow: none !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .channel-subscription {
+        &__container {
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        &__left {
+            flex: 1 1 100%;
+        }
+
+        &__right {
+            flex: 1 1 100%;
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .channel-subscription {
+        &__title {
+            font-size: 24px;
+            margin-bottom: 24px;
+        }
+
+        &__container {
+            gap: 16px;
+        }
+    }
+
+    .subscription-card {
+        padding: 16px;
+
+        &__name {
+            font-size: 18px;
+        }
+
+        &__amount {
+            font-size: 24px;
+        }
+
+        &__pricing-options {
+            grid-template-columns: 1fr;
+        }
+
+        &__benefits-list {
+            grid-template-columns: 1fr ;
+        }
+    }
+
+    .revenue-chart {
+        padding: 16px;
+        &__title {
+            font-size: 14px;
+        }
+
+        &__graph {
+            height: 250px;
+        }
+
+        &__stats {
+            flex-direction: column;
+            gap: 12px;
+        }
+    }
+}
+
+#subscription-table {
+    margin-top: 5rem;
+    .ag-header-cell-text {
+        color: var(--white-75);
+    }
+
+    .ag-header-container {
+        background-color: var(--primary-grey);
+    }
+
+    .ag-icon {
+        color: var(--primary-green);
+    }
+
+    .ag-header-cell-resize::after {
+        background-color: var(--primary-green);
+    }
+
+    .ag-header {
+        font-size: 0.8rem;
+        font-weight: 400;
+    }
+
+    .ag-root-wrapper {
+        border: 0.5px solid var(--secondary-grey);
+        border-left: none;
+        border-radius: 0rem !important;
+        border-right: none;
+    }
+
+    .ag-body-container {
+        background-color: var(--primary-grey);
+
+    }
+
+    .ag-paging-panel {
+        height: 3rem;
+        padding-right: 3rem;
+    }
+}

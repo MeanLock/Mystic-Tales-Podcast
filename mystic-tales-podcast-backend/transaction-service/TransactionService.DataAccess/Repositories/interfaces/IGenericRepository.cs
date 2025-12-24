@@ -5,7 +5,9 @@ namespace TransactionService.DataAccess.Repositories.interfaces
     public interface IGenericRepository<T> where T : class
     {
         IQueryable<T> FindAll(Expression<Func<T, bool>>? predicate = null, params Expression<Func<T, object>>[] includeProperties);
+        public IQueryable<T> FindAll(Expression<Func<T, bool>>? predicate = null, Func<IQueryable<T>, IQueryable<T>>? includeFunc = null);
         Task<T?> FindByIdAsync(object id, params Expression<Func<T, object>>[] includeProperties);
+        Task<T?> FindByIdAsync(object id, Func<IQueryable<T>, IQueryable<T>>? includeFunc = null);
 
         Task<T?> FindByIdWithPaths(object id, params string[] includePaths);
         IQueryable<T> FindAllWithPaths(Expression<Func<T, bool>>? predicate = null, params string[] includePaths);

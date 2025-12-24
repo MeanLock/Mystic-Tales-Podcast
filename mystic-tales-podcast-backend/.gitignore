@@ -3,3 +3,18 @@
 **/ffmpeg/bin/ffplay
 **/ffmpeg/bin/ffprobe
 **/ffmpeg/
+
+# remote: error: Trace: feec98c5e04f68b338ee7ea1b7adac6a0a404bc25f684fbfecadc81649fac10c        
+# remote: error: See https://gh.io/lfs for more information.        
+# remote: error: File mystic-tales-podcast-backend/audio-separation-ai-service/outputs/626113c6bd4f4f2ca7dbe70dea9dd422_input.mp3 is 104.04 MB; this exceeds GitHub's file size limit of 100.00 MB        
+# remote: error: File mystic-tales-podcast-backend/audio-separation-ai-service/model/model_bs_roformer_ep_317_sdr_12.9755.ckpt is 609.71 MB; this exceeds GitHub's file size limit of 100.00 MB   
+
+**/audio-separation-ai-service/outputs/*.mp3    
+**/audio-separation-ai-service/model/*.ckpt
+
+# AppSettings files for all backend services
+**/appsettings.json
+**/appsettings.*.json
+!**/appsettings.Development.example.json
+!**/appsettings.Production.example.json
+

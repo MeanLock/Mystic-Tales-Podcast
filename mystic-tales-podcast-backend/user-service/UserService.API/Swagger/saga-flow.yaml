@@ -1,0 +1,5864 @@
+version: "1.0"
+
+flows:
+  user-registration-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo tài khoản"
+    save-file: "MainImageFile"
+    steps:
+      - name: "create-account"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Nhận thông tin tài khoản để tạo tài khoản"
+        parameters:
+          - Email
+          - Password
+          - FullName
+          - Dob
+          - Gender
+          - Address
+          - Phone
+          - MainImageFileKey
+          - RoleId
+        next-request-data:
+          - Email
+          - Password
+          - FullName
+          - Dob
+          - Gender
+          - Address
+          - Phone
+          - MainImageFileKey
+          - RoleId
+        response-data:
+          - AccountId
+          - CreatedAt
+          - VerifyCode
+          - Email
+        onSuccess:
+          emit: "create-account.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-account.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  user-email-verification-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xác nhận tài khoản"
+    save-file: ""
+    steps:
+      - name: "verify-account"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Nhận verifyCode và email để xác nhận tài khoản"
+        parameters:
+          - VerifyCode
+          - Email
+        next-request-data:
+          - VerifyCode
+          - Email
+        response-data:
+          - VerifyCode
+          - Email
+        onSuccess:
+          emit: "verify-account.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "verify-account.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  user-manual-login-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Đăng nhập thủ công"
+    save-file: ""
+    steps:
+      - name: "login-account-manual"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Nhận thông tin đăng nhập để query"
+        parameters:
+          - Email
+          - Password
+        next-request-data:
+          - Email
+          - Password
+          - JwtToken
+        response-data:
+          - JwtToken
+        onSuccess:
+          emit: "login-account-manual.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "login-account-manual.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  user-google-login-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Đăng nhập bằng Google"
+    save-file: ""
+    steps:
+      - name: "login-account-google"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Nhận AuthorizationCode và RedirectUri để login và gửi về token"
+        parameters:
+          - AuthorizationCode
+          - RedirectUri
+        next-request-data:
+          - AuthorizationCode
+          - RedirectUri
+        response-data:
+          - JwtToken
+        onSuccess:
+          emit: "login-account-google.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "login-account-google.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  user-update-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật thông tin người dùng"
+    save-file: "MainImageFile"
+    steps:
+      - name: "update-user"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Nhận thông tin account để cập nhật tài khoản"
+        parameters:
+          - AccountId
+          - Email
+          - FullName
+          - Dob
+          - Gender
+          - Address
+          - Phone
+          - MainImageFileKey
+        next-request-data:
+          - AccountId
+          - Email
+          - FullName
+          - Dob
+          - Gender
+          - Address
+          - Phone
+          - MainImageFileKey
+        response-data:
+          - AccountId
+          - Email
+          - FullName
+          - Dob
+          - Gender
+          - Address
+          - Phone
+          - MainImageFileKey
+          - UpdatedAt
+        onSuccess:
+          emit: "update-user.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-user.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  forgot-password-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Quên mật khẩu"
+    save-file: ""
+    steps:
+      - name: "send-reset-password-link"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Nhận thông tin account để gửi link reset-password"
+        parameters:
+          - Email
+        next-request-data:
+          - Email
+        response-data:
+          - ResetPasswordLink
+        onSuccess:
+          emit: "send-reset-password-link.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "send-reset-password-link.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  password-reset-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Đặt lại mật khẩu"
+    save-file: ""
+    steps:
+      - name: "reset-account-password"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Nhận token, password mới và email để reset-password"
+        parameters:
+          - ResetPasswordToken
+          - Email
+          - NewPassword
+        next-request-data:
+          - ResetPasswordToken
+          - Email
+          - NewPassword
+        response-data:
+          - ResetPasswordToken
+          - Email
+          - NewPassword
+        onSuccess:
+          emit: "reset-account-password.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "reset-account-password.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcaster-profile-creation-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo hồ sơ podcaster"
+    save-file: "CommitmentDocumentFile"
+    steps:
+      - name: "create-podcaster-profile"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Tạo profile podcaster cho customer"
+        parameters:
+          - AccountId
+          - Name
+          - Description
+          - CommitmentDocumentFileKey
+        next-request-data:
+          - AccountId
+          - Name
+          - Description
+          - CommitmentDocumentFileKey
+        response-data:
+          - PodcasterProfileId
+          - AccountId
+          - Name
+          - Description
+          - CreatedAt
+        onSuccess:
+          emit: "create-podcaster-profile.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-podcaster-profile.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcaster-profile-update-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật hồ sơ podcaster"
+    save-file: "BuddyAudioFile"
+    steps:
+      - name: "update-podcaster-profile"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Cập nhật profile của podcaster"
+        parameters:
+          - AccountId
+          - Name
+          - Description
+          - BuddyAudioFileKey
+        next-request-data:
+          - AccountId
+          - Name
+          - Description
+          - BuddyAudioFileKey
+        response-data:
+          - AccountId
+          - Name
+          - Description
+          - BuddyAudioFileKey
+          - UpdatedAt
+        onSuccess:
+          emit: "update-podcaster-profile.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-podcaster-profile.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcaster-verification-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xác minh podcaster"
+    save-file: ""
+    steps:
+      - name: "verify-podcaster"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Xác minh podcaster profile bởi staff"
+        parameters:
+          - AccountId
+          - IsVerified
+        next-request-data:
+          - AccountId
+          - IsVerified
+        response-data:
+          - AccountId
+          - IsVerified
+        onSuccess:
+          emit: "verify-podcaster.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "verify-podcaster.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcaster-storage-size-increase-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tăng dung lượng lưu trữ"
+    save-file: ""
+    steps:
+      - name: "increase-storage-size"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Thêm dung lượng storage cho podcaster"
+        parameters:
+          - StorageSize
+          - AccountId
+        next-request-data:
+          - StorageSize
+          - AccountId
+        response-data:
+          - StorageSize
+          - AccountId
+          - NewStorageSize
+          - UpdatedAt
+        onSuccess:
+          emit: "increase-storage-size.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "increase-storage-size.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcaster-storage-size-decrease-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Giảm dung lượng lưu trữ"
+    save-file: ""
+    steps:
+      - name: "decrease-storage-size"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Giảm dung lượng storage cho podcaster và tăng dưng lượng xài"
+        parameters:
+          - StorageSize
+          - AccountId
+        next-request-data:
+          - StorageSize
+          - AccountId
+        response-data:
+          - StorageSize
+          - AccountId
+          - NewStorageSize
+          - UpdatedAt
+        onSuccess:
+          emit: "decrease-storage-size.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "decrease-storage-size.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  user-deactivation-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Vô hiệu hóa tài khoản"
+    save-file: ""
+    steps:
+      - name: "deactivate-account"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Deactivate tài khoản user"
+        parameters:
+          - AccountId
+          - IsDeactivate
+        next-request-data:
+          - AccountId
+          - IsDeactivate
+        response-data:
+          - AccountId
+          - IsDeactivate
+        onSuccess:
+          emit: "deactivate-account.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "deactivate-account.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  user-violation-punishment-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xử phạt vi phạm"
+    save-file: ""
+    steps:
+      - name: "add-account-violation-point"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Cộng violation points cho tài khoản"
+        parameters:
+          - AccountId
+          - ViolationPoint
+        next-request-data:
+          - AccountId
+          - ViolationPoint
+        response-data:
+          - AccountId
+          - NewViolationPoint
+          - NewViolationLevel
+        onSuccess:
+          emit: "add-account-violation-point.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "add-account-violation-point.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  user-violation-reversal-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hoàn tác vi phạm"
+    save-file: ""
+    steps:
+      - name: "subtract-account-violation-point"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Trừ violation points cho tài khoản"
+        parameters:
+          - AccountId
+          - ViolationPoint
+        next-request-data:
+          - AccountId
+          - ViolationPoint
+        response-data:
+          - AccountId
+          - NewViolationPoint
+          - NewViolationLevel
+        onSuccess:
+          emit: "subtract-account-violation-point.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "subtract-account-violation-point.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  user-violation-threshold-reach-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xử lý khi đạt ngưỡng vi phạm"
+    save-file: ""
+    steps:
+      - name: "check-violation-threshold"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Kiểm tra ngưỡng violation để áp dụng punishment"
+        parameters:
+          - AccountId
+          - SystemConfigProfileId
+        next-request-data:
+          - AccountId
+          - SystemConfigProfileId
+        response-data:
+          - AccountId
+          - SystemConfigProfileId
+          - ViolationLevel
+          - PunishmentDays
+        onSuccess:
+          emit: "check-violation-threshold.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "check-violation-threshold.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  user-violation-decay-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Giảm điểm vi phạm theo thời gian"
+    save-file: ""
+    steps:
+      - name: "decrease-account-violation-point"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Giảm violation points theo thời gian (automated)"
+        parameters:
+          - AccountId
+          - SystemConfigProfileId
+        next-request-data:
+          - AccountId
+          - SystemConfigProfileId
+        response-data:
+          - AccountId
+          - NewViolationPoint
+          - NewViolationLevel
+        onSuccess:
+          emit: "decrease-account-violation-point.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "decrease-account-violation-point.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-listen-tracking-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Theo dõi lượt nghe podcast"
+    save-file: ""
+    steps:
+      - name: "save-episode-history"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Lưu lịch sử nghe podcast episode"
+        parameters:
+          - AccountId
+          - PodcastEpisodeId
+          - ListenTimestamp
+        next-request-data:
+          - AccountId
+          - PodcastEpisodeId
+          - ListenTimestamp
+        response-data:
+          - AccountId
+          - PodcastEpisodeId
+          - ListenTimestamp
+          - AccountPodcastListenHistoryId
+        onSuccess:
+          emit: "save-episode-history.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "save-episode-history.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-buddy-rating-recalculation-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tính lại đánh giá podcast buddy"
+    save-file: ""
+    steps:
+      - name: "update-podcaster-rating"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Tính lại average rating cho podcaster"
+        parameters:
+          - PodcastBuddyId
+        next-request-data:
+          - PodcastBuddyId
+        response-data:
+          - PodcastBuddyId
+          - NewRating
+        onSuccess:
+          emit: "update-podcaster-rating.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-podcaster-rating.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcaster-follow-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Theo dõi podcaster"
+    save-file: ""
+    steps:
+      - name: "create-podcaster-followed"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Follow podcaster"
+        parameters:
+          - AccountId
+          - PodcastBuddyId
+        next-request-data:
+          - AccountId
+          - PodcastBuddyId
+        response-data:
+          - AccountFollowedPodcasterId
+          - CreatedAt
+        onSuccess:
+          emit: "create-podcaster-followed.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-podcaster-followed.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcaster-unfollow-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Bỏ theo dõi podcaster"
+    save-file: ""
+    steps:
+      - name: "delete-podcaster-followed"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Unfollow podcaster"
+        parameters:
+          - AccountId
+          - PodcastBuddyId
+        next-request-data:
+          - AccountId
+          - PodcastBuddyId
+        response-data:
+          - AccountId
+          - PodcastBuddyId
+        onSuccess:
+          emit: "delete-podcaster-followed.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-podcaster-followed.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  account-balance-addition-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Nạp tiền vào tài khoản"
+    save-file: ""
+    steps:
+      - name: "add-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Thêm tiền vào ví"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - AccountId
+          - Amount
+        response-data:
+          - AccountId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "add-account-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "add-account-balance-amount.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  account-balance-subtraction-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Rút tiền từ tài khoản"
+    save-file: ""
+    steps:
+      - name: "subtract-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Trừ tiền từ ví "
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - AccountId
+          - Amount
+        response-data:
+          - AccountId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "subtract-account-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "subtract-account-balance-amount.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  notification-creation-flow:
+    topic: "notification-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo thông báo đơn"
+    save-file: ""
+    steps:
+      - name: "create-account-notification"
+        topic: "notification-domain"
+        handle-service: "UserService"
+        description: "Tạo thông báo đơn cho 1 tài khoản"
+        parameters:
+          - Notification
+        next-request-data:
+          - Notification
+        response-data:
+          - AccountNotificationId
+          - Notification
+          - CreatedAt
+        onSuccess:
+          emit: "create-account-notification.success"
+          topic: "notification-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-single-account-notification.failed"
+          topic: "notification-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  channel-creation-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo kênh podcast"
+    save-file: "MainImageFile, BackgroundImageFile"
+    steps:
+      - name: "create-channel"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Tạo podcast channel mới"
+        parameters:
+          - Name
+          - Description
+          - MainImageFileKey
+          - BackgroundImageFileKey
+          - CategoryId
+          - SubCategoryId
+          - HashtagIds
+          - PodcasterId
+        next-request-data:
+          - Name
+          - Description
+          - MainImageFileKey
+          - BackgroundImageFileKey
+          - CategoryId
+          - SubCategoryId
+          - HashtagIds
+          - PodcasterId
+        response-data:
+          - PodcastChannelId
+          - Name
+          - Description
+          - MainImageFileKey
+          - BackgroundImageFileKey
+          - CategoryId
+          - SubCategoryId
+          - HashtagIds
+          - PodcasterId
+          - CreatedAt
+        onSuccess:
+          emit: "create-channel.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-channel.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  channel-update-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật kênh podcast"
+    save-file: "MainImageFile, BackgroundImageFile"
+    steps:
+      - name: "update-channel"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Cập nhật thông tin channel"
+        parameters:
+          - PodcastChannelId
+          - Name
+          - Description
+          - MainImageFileKey
+          - BackgroundImageFileKey
+          - CategoryId
+          - SubCategoryId
+          - HashtagIds
+        next-request-data:
+          - PodcastChannelId
+          - Name
+          - Description
+          - MainImageFileKey
+          - BackgroundImageFileKey
+          - CategoryId
+          - SubCategoryId
+          - HashtagIds
+        response-data:
+          - PodcastChannelId
+          - Name
+          - Description
+          - MainImageFileKey
+          - BackgroundImageFileKey
+          - CategoryId
+          - SubCategoryId
+          - HashtagIds
+          - UpdatedAt
+        onSuccess:
+          emit: "update-channel.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-channel.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  channel-publish-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xuất bản kênh"
+    save-file: ""
+    steps:
+      - name: "publish-channel"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Publish channel"
+        parameters:
+          - PodcastChannelId
+        next-request-data:
+          - PodcastChannelId
+        response-data:
+          - PodcastChannelId
+        onSuccess:
+          emit: "publish-channel.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "publish-channel.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  channel-unpublish-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy xuất bản kênh"
+    save-file: ""
+    steps:
+      - name: "unpublish-channel"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Nhận PodcastChannelId và PodcastShowId để inactive channel, show, xóa các SubscriptionRegistration và cuối cùng unpublish channel"
+        parameters:
+          - PodcastChannelId
+          - PodcastShowId
+        next-request-data:
+          - PodcastChannelId
+          - PodcastShowId
+        response-data:
+          - PodcastChannelId
+          - PodcastShowId
+        onSuccess:
+          emit: "unpublish-channel.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "refund-channel-subscription-account"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
+          nextFlows: []
+        onFailure:
+          emit: "unpublish-channel.failed"
+          topic: "content-management-domain"
+          handle-service: "PodcastService"
+          nextSteps: []
+          nextFlows: []
+      - name: "refund-channel-subscription-account"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService "
+        description: "Nhận PodcastChannelId và PodcastShowId để lấy các SubscriptionRegistration để lấy các AccountId và giá để cần hoàn tiền"
+        parameters:
+          - PodcastChannelId
+          - PodcastShowId
+        next-request-data:
+          - PodcastChannelId
+          - PodcastShowId
+        response-data:
+          - PodcastChannelId
+          - PodcastShowId
+        onSuccess:
+          emit: "refund-channel-subscription-account.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "refund-channel-subscription-account.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "unpublish-channel-rollback-flow"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
+
+  channel-deletion-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa kênh podcast"
+    save-file: ""
+    steps:
+      - name: "delete-channel"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa kênh podcast"
+        parameters:
+          - PodcastChannelId
+        next-request-data:
+          - PodcastChannelId
+        response-data:
+          - PodcastChannelId
+          - DeletedAt
+        onSuccess:
+          emit: "delete-channel.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-channel.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  channel-favorite-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Yêu thích kênh podcast"
+    save-file: ""
+    steps:
+      - name: "create-channel-favorited"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Thêm channel vào danh sách yêu thích"
+        parameters:
+          - AccountId
+          - PodcastChannelId
+        next-request-data:
+          - AccountId
+          - PodcastChannelId
+        response-data:
+          - AccountFavoritedPodcastChannelId
+          - CreatedAt
+        onSuccess:
+          emit: "create-channel-favorited.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-channel-favorited.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  channel-unfavorite-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Bỏ yêu thích kênh podcast"
+    save-file: ""
+    steps:
+      - name: "delete-channel-favorited"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa channel khỏi danh sách yêu thích"
+        parameters:
+          - AccountId
+          - PodcastChannelId
+        next-request-data:
+          - AccountId
+          - PodcastChannelId
+        response-data:
+          - AccountId
+          - PodcastChannelId
+        onSuccess:
+          emit: "delete-channel-favorited.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-channel-favorited.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  show-creation-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo chương trình podcast"
+    save-file: "MainImageFile"
+    steps:
+      - name: "create-show"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Tạo podcast show mới"
+        parameters:
+          - Name
+          - Description
+          - Language
+          - ReleaseDate
+          - Copyright
+          - UploadFrequency
+          - MainImageFileKey
+          - PodcasterId
+          - CategoryId
+          - SubCategoryId
+          - ChannelId
+          - SubscriptionTypeId
+          - HashtagIds
+        next-request-data:
+          - Name
+          - Description
+          - Language
+          - ReleaseDate
+          - Copyright
+          - UploadFrequency
+          - MainImageFileKey
+          - PodcasterId
+          - CategoryId
+          - SubCategoryId
+          - ChannelId
+          - SubscriptionTypeId
+          - HashtagIds
+        response-data:
+          - PodcastShowId
+          - Name
+          - Description
+          - Language
+          - ReleaseDate
+          - Copyright
+          - UploadFrequency
+          - MainImageFileKey
+          - PodcasterId
+          - CategoryId
+          - SubCategoryId
+          - ChannelId
+          - SubscriptionTypeId
+          - HashtagIds
+          - CreatedAt
+        onSuccess:
+          emit: "create-show.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-show.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  show-update-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật chương trình podcast"
+    save-file: "MainImageFile"
+    steps:
+      - name: "update-show"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Cập nhật thông tin podcast show"
+        parameters:
+          - PodcastShowId
+          - Name
+          - Description
+          - Language
+          - ReleaseDate
+          - Copyright
+          - UploadFrequency
+          - MainImageFileKey
+          - CategoryId
+          - SubCategoryId
+          - SubscriptionTypeId
+          - HashtagIds
+        next-request-data:
+          - PodcastShowId
+          - Name
+          - Description
+          - Language
+          - ReleaseDate
+          - Copyright
+          - UploadFrequency
+          - MainImageFileKey
+          - CategoryId
+          - SubCategoryId
+          - SubscriptionTypeId
+          - HashtagIds
+        response-data:
+          - PodcastShowId
+          - Name
+          - Description
+          - Language
+          - ReleaseDate
+          - Copyright
+          - UploadFrequency
+          - MainImageFileKey
+          - CategoryId
+          - SubCategoryId
+          - SubscriptionTypeId
+          - HashtagIds
+          - UpdatedAt
+        onSuccess:
+          emit: "update-show.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-show.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  show-deletion-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa podcast show"
+    save-file: ""
+    steps:
+      - name: "delete-show"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa podcast show"
+        parameters:
+          - PodcastShowId
+        next-request-data:
+          - PodcastShowId
+        response-data:
+          - PodcastShowId
+          - DeletedAt
+        onSuccess:
+          emit: "delete-show.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-show.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  show-status-update-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật trạng thái chương trình podcast"
+    save-file: ""
+    steps:
+      - name: "update-show-status"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Cập nhật trạng thái podcast show (active/inactive)"
+        parameters:
+          - PodcastShowId
+          - PodcastShowStatusId
+        next-request-data:
+          - PodcastShowId
+          - PodcastShowStatusId
+        response-data:
+          - PodcastShowStatusTrackingId
+          - PodcastShowId
+          - PodcastShowStatusId
+          - CreatedAt
+        onSuccess:
+          emit: "update-show-status.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-show-status.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  show-publish-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xuất bản chương trình podcast"
+    save-file: ""
+    steps:
+      - name: "publish-show"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Publish podcast show"
+        parameters:
+          - PodcastShowId
+        next-request-data:
+          - PodcastShowId
+        response-data:
+          - PodcastShowId
+        onSuccess:
+          emit: "publish-show.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "publish-show.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  show-unpublish-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy xuất bản chương trình podcast"
+    save-file: ""
+    steps:
+      - name: "unpublish-show"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Unpublish podcast show"
+        parameters:
+          - PodcastShowId
+        next-request-data:
+          - PodcastShowId
+        response-data:
+          - PodcastShowId
+          - PodcastSubscriptionId
+        onSuccess:
+          emit: "unpublish-show.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps:
+            - name: "refund-podcast-subscription-account"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
+          nextFlows: []
+        onFailure:
+          emit: "unpublish-show.failed"
+          topic: "content-management-domain"
+          handle-service: "PodcastService"
+          nextSteps: []
+          nextFlows: []
+      - name: "refund-podcast-subscription-account"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Nhận PodcastShowId để lấy các SubscriptionRegistration để lấy các AccountId và giá để cần hoàn tiền"
+        parameters:
+          - PodcastSubscriptionId
+        next-request-data:
+          - PodcastShowId
+          - PodcastSubscriptionId
+        response-data:
+          - PodcastShowId
+          - PodcastSubscriptionId
+        onSuccess:
+          emit: "refund-podcast-subscription-account.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "refund-podcast-subscription-account.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows:
+            - name: "unpublish-show-rollback-flow"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
+
+  show-audio-submission-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gửi audio cho chương trình podcast"
+    save-file: "AudioFile"
+    steps:
+      - name: " submit-show-trailer-audio-file"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Submit trailer audio file cho show"
+        parameters:
+          - PodcastShowId
+          - AudioFileKey
+        next-request-data:
+          - PodcastShowId
+          - AudioFileKey
+          - AudioFileSize
+          - AudioLength
+        response-data:
+          - PodcastShowId
+          - AudioFileKey
+          - AudioFileSize
+          - AudioLength
+          - UpdatedAt
+        onSuccess:
+          emit: " submit-show-trailer-audio-file.success"
+          topic: "content-management-domain"
+          handle-service: "PodcastService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: " submit-show-trailer-audio-file.failed"
+          topic: "content-management-domain"
+          handle-service: "PodcastService"
+          nextSteps: []
+          nextFlows: []
+
+  show-channel-assignment-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gán chương trình vào kênh"
+    save-file: ""
+    steps:
+      - name: "assign-show"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Gán show vào channel"
+        parameters:
+          - PodcastShowId
+          - PodcastChannelId
+        next-request-data:
+          - PodcastShowId
+          - PodcastChannelId
+        response-data:
+          - PodcastShowId
+          - PodcastChannelId
+          - UpdatedAt
+        onSuccess:
+          emit: "assign-show.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "assign-show.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  show-rating-recalculation-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tính lại đánh giá chương trình podcast"
+    save-file: ""
+    steps:
+      - name: "update-show-rating"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Tính lại average rating cho show"
+        parameters:
+          - PodcastShowId
+        next-request-data:
+          - PodcastShowId
+        response-data:
+          - PodcastShowId
+          - NewRating
+        onSuccess:
+          emit: "update-show-rating.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-show-rating.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  show-follow-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Theo dõi chương trình podcast"
+    save-file: ""
+    steps:
+      - name: "create-show-followed"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Follow show"
+        parameters:
+          - AccountId
+          - PodcastShowId
+        next-request-data:
+          - AccountId
+          - PodcastShowId
+        response-data:
+          - AccountFollowedPodcastShowId
+          - CreatedAt
+        onSuccess:
+          emit: "create-show-followed.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-show-followed.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  show-unfollow-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Bỏ theo dõi chương trình podcast"
+    save-file: ""
+    steps:
+      - name: "delete-show-followed"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Unfollow show"
+        parameters:
+          - AccountId
+          - PodcastShowId
+        next-request-data:
+          - AccountId
+          - PodcastShowId
+        response-data:
+          - AccountId
+          - PodcastShowId
+        onSuccess:
+          emit: "delete-show-followed.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-show-followed.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-creation-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo tập podcast"
+    save-file: "MainImageFile"
+    steps:
+      - name: "create-episode"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Tạo episode mới"
+        parameters:
+          - Title
+          - Description
+          - ExplicitContent
+          - ReleaseDate
+          - MainImageFileKey
+          - EpisodeSubscriptionTypeId
+          - PodcastShowId
+          - SeasonNumber
+          - HashtagIds
+        next-request-data:
+          - Title
+          - Description
+          - ExplicitContent
+          - ReleaseDate
+          - MainImageFileKey
+          - EpisodeSubscriptionTypeId
+          - PodcastShowId
+          - SeasonNumber
+          - HashtagIds
+        response-data:
+          - PodcastEpisodeId
+          - Title
+          - Description
+          - ExplicitContent
+          - ReleaseDate
+          - MainImageFileKey
+          - EpisodeSubscriptionTypeId
+          - PodcastShowId
+          - SeasonNumber
+          - HashtagIds
+          - CreatedAt
+        onSuccess:
+          emit: "create-episode.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-episode.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-update-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật tập podcast"
+    save-file: "MainImageFile"
+    steps:
+      - name: "update-episode"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Cập nhật thông tin episode"
+        parameters:
+          - PodcastEpisodeId
+          - Title
+          - Description
+          - ExplicitContent
+          - ReleaseDate
+          - MainImageFileKey
+          - EpisodeSubscriptionTypeId
+          - SeasonNumber
+          - HashtagIds
+        next-request-data:
+          - PodcastEpisodeId
+          - Title
+          - Description
+          - ExplicitContent
+          - ReleaseDate
+          - MainImageFileKey
+          - EpisodeSubscriptionTypeId
+          - SeasonNumber
+          - HashtagIds
+        response-data:
+          - PodcastEpisodeId
+          - Title
+          - Description
+          - ExplicitContent
+          - ReleaseDate
+          - MainImageFileKey
+          - EpisodeSubscriptionTypeId
+          - SeasonNumber
+          - HashtagIds
+          - UpdatedAt
+        onSuccess:
+          emit: "update-episode.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-episode.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-status-update-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật trạng thái tập podcast"
+    save-file: ""
+    steps:
+      - name: "update-episode-status"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Cập nhật trạng thái episode"
+        parameters:
+          - PodcastEpisodeId
+          - PodcastEpisodeStatusId
+        next-request-data:
+          - PodcastEpisodeId
+          - PodcastEpisodeStatusId
+        response-data:
+          - PodcastEpisodeStatusTrackingId
+          - PodcastEpisodeId
+          - PodcastEpisodeStatusId
+          - CreatedAt
+        onSuccess:
+          emit: "update-episode-status.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-episode-status.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-audio-submission-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gửi audio cho tập podcast"
+    save-file: "AudioFile"
+    steps:
+      - name: "submit-episode-audio-file"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Submit/cập nhật audio file cho episode"
+        parameters:
+          - PodcastEpisodeId
+          - AudioFingerPrint
+          - AudioFileKey
+          - AudioFileSize
+          - AudioLength
+        next-request-data:
+          - PodcastEpisodeId
+          - AudioFingerPrint
+          - AudioFileKey
+          - AudioFileSize
+          - AudioLength
+        response-data:
+          - PodcastEpisodeId
+          - AudioFingerPrint 
+          - AudioFileKey
+          - AudioFileSize
+          - AudioLength
+          - UpdatedAt
+        onSuccess:
+          emit: "submit-episode-audio-file.success"
+          topic: "content-management-domain"
+          handle-service: "PodcastService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "submit-episode-audio-file.failed"
+          topic: "content-management-domain"
+          handle-service: "PodcastService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-publish-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xuất bản tập podcast"
+    save-file: ""
+    steps:
+      - name: "publish-episode"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Publish episode"
+        parameters:
+          - PodcastEpisodeId
+        next-request-data:
+          - PodcastEpisodeId
+        response-data:
+          - PodcastEpisodeId
+          - UpdatedAt
+        onSuccess:
+          emit: "publish-episode.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "publish-episode.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-license-upload-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tải lên giấy phép bản quyền tập podcast"
+    save-file: "LicenseFile"
+    steps:
+      - name: "upload-episode-license-file"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Upload episode license file"
+        parameters:
+          - PodcastEpisodeId
+          - LicenseFileKey
+        next-request-data:
+          - PodcastEpisodeId
+          - LicenseFileKey
+        response-data:
+          - PodcastEpisodeId
+        onSuccess:
+          emit: "upload-episode-license-file.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "episode-publish-request-flow"
+              topic: "content-management-domain"
+              handle-service: "SagaOrchestratorService"
+        onFailure:
+          emit: "upload-episode-license-file.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-unpublish-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy xuất bản tập podcast"
+    save-file: ""
+    steps:
+      - name: "unpublish-episode"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Unpublish episode"
+        parameters:
+          - PodcastEpisodeId
+        next-request-data:
+          - PodcastEpisodeId
+        response-data:
+          - PodcastEpisodeId
+        onSuccess:
+          emit: "unpublish-episode.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "unpublish-episode.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-save-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Lưu tập podcast"
+    save-file: ""
+    steps:
+      - name: "create-episode-saved"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Lưu episode vào danh sách đã lưu"
+        parameters:
+          - AccountId
+          - PodcastEpisodeId
+        next-request-data:
+          - AccountId
+          - PodcastEpisodeId
+        response-data:
+          - AccountSavedPodcastEpisodeId
+          - CreatedAt
+        onSuccess:
+          emit: "create-episode-saved.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-episode-saved.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-unsave-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Bỏ lưu tập podcast"
+    save-file: ""
+    steps:
+      - name: "delete-episode-saved"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa episode khỏi danh sách đã lưu"
+        parameters:
+          - AccountId
+          - PodcastEpisodeId
+        next-request-data:
+          - AccountId
+          - PodcastEpisodeId
+        response-data:
+          - AccountId
+          - PodcastEpisodeId
+        onSuccess:
+          emit: "delete-episode-saved.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-episode-saved.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-publish-request-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Yêu cầu kiểm duyệt episode"
+    save-file: ""
+    steps:
+      - name: "audio-content-automatic-examination"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Kiểm duyệt nội dung audio để flag episode và tạo review session nếu cần"
+        parameters:
+          - PodcastEpisodeId
+        next-request-data:
+          - PodcastEpisodeId
+        response-data:
+          - PodcastEpisodeId
+          - PodcastEpisodePublishReviewSessionId
+        onSuccess:
+          emit: "audio-content-automatic-examination.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "audio-content-automatic-examination.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-content-review-flow:
+    topic: "content-moderation-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Đánh giá nội dung tập podcast"
+    save-file: ""
+    steps:
+      - name: "audio-content-staff-examination"
+        topic: "content-moderation-domain"
+        handle-service: "PodcastService"
+        description: "Staff kiểm duyệt nội dung vào quyêt định có cho đăng hay không"
+        parameters:
+          - PodcastEpisodePublishReviewSessionId
+          - IsAccepted
+          - Note
+          - Deadline
+        next-request-data:
+          - PodcastEpisodePublishReviewSessionId
+          - IsAccepted
+          - Note
+          - Deadline
+        response-data:
+          - PodcastEpisodePublishReviewSessionId
+          - IsAccepted
+          - Note
+          - Deadline
+          - UpdatedAt
+        onSuccess:
+          emit: "review-podcast-episode-content.success"
+          topic: ""
+          handle-service: ""
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "review-podcast-episode-content.failed"
+          topic: ""
+          handle-service: ""
+          nextSteps: []
+          nextFlows: []
+
+  episode-deletion-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa tập podcast"
+    save-file: ""
+    steps:
+      - name: "delete-episode"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa episode"
+        parameters:
+          - PodcastEpisodeId
+        next-request-data:
+          - PodcastEpisodeId
+        response-data:
+          - PodcastEpisodeId
+          - DeletedAt
+        onSuccess:
+          emit: "delete-episode.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-episode.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  content-dmca-takedown-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xử lý khiếu nại bản quyền"
+    save-file: ""
+    steps:
+      - name: "takedown-content"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Chuyển status của episode hoặc show thành taken down"
+        parameters:
+          - PodcastEpisodeId
+          - PodcastShowId
+          - TakenDownReason
+        next-request-data:
+          - PodcastEpisodeId
+          - PodcastShowId
+          - TakenDownReason
+        response-data:
+          - PodcastEpisodeId
+          - PodcastShowId
+          - TakenDownReason
+          - UpdatedAt
+        onSuccess:
+          emit: "takedown-content.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "takedown-content.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  content-restoration-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Khôi phục nội dung"
+    save-file: ""
+    steps:
+      - name: "restore-content"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Khôi phục status của episode hoặc show thành published"
+        parameters:
+          - PodcastEpisodeId
+          - PodcastShowId
+        next-request-data:
+          - PodcastEpisodeId
+          - PodcastShowId
+        response-data:
+          - PodcastEpisodeId
+          - PodcastShowId
+          - UpdatedAt
+        onSuccess:
+          emit: "restore-content.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "restore-content.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  hashtags-creation-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo hashtag"
+    save-file: ""
+    steps:
+      - name: "create-hashtag"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Tạo hashtag mới nếu chưa tồn tại"
+        parameters:
+          - HashtagName
+        next-request-data:
+          - HashtagName
+        response-data:
+          - HashtagId
+          - HashtagName
+          - CreatedAt
+        onSuccess:
+          emit: "create-hashtag.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-hashtag.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  content-statistics-calculation-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tính toán thống kê nội dung"
+    save-file: ""
+    steps:
+      - name: "update-listen-count"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Cập nhật số lượt nghe cho episode, channel hoặc show thêm 1"
+        parameters:
+          - PodcastChannelId
+          - PodcastShowId
+          - PodcastEpisodeId
+        next-request-data:
+          - PodcastChannelId
+          - PodcastShowId
+          - PodcastEpisodeId
+        response-data:
+          - PodcastChannelId
+          - PodcastShowId
+          - PodcastEpisodeId
+          - ListenCount
+          - UpdatedAt
+        onSuccess:
+          emit: "update-listen-count.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-listen-count.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-creation-flow:
+    topic: "booking-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo booking với podcaster"
+    save-file: ""
+    steps:
+      - name: "create-booking"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Tạo booking và booking negotiation đầu tiên"
+        parameters:
+          - Title
+          - Description
+          - AccountId
+          - PodcastBuddyId
+        next-request-data:
+          - Title
+          - Description
+          - AccountId
+          - PodcastBuddyId
+        response-data:
+          - BookingId
+          - Title
+          - Description
+          - AccountId
+          - PodcastBuddyId
+          - CreatedAt
+        onSuccess:
+          emit: "create-booking.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-booking.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-negotiation-flow:
+    topic: "booking-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Thương lượng đặt chỗ"
+    save-file: "DemoAudioFile"
+    steps:
+      - name: "create-booking-negotiation"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Tạo booking negotiation và đổi booking status"
+        parameters:
+          - AccountId
+          - Deadline
+          - Note
+          - DemoAudioRequired
+          - DemoAudioFileKey
+          - Price
+        next-request-data:
+          - AccountId
+          - Deadline
+          - Note
+          - DemoAudioRequired
+          - DemoAudioFileKey
+          - Price
+        response-data:
+          - BookingNegotiationId
+          - CreatedAt
+        onSuccess:
+          emit: "create-booking-negotiation.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-booking-negotiation.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-producing-request-creation-flow:
+    topic: "booking-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Yêu cầu sản xuất nội dung"
+    save-file: ""
+    steps:
+      - name: "create-producing-request"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Tạo booking producing request"
+        parameters:
+          - BookingId
+          - Note
+          - Deadline
+          - BookingPodcastTrackIds # List of PodcastTrackIds
+        next-request-data:
+          - BookingId
+          - Note
+          - Deadline
+          - BookingPodcastTrackIds
+        response-data:
+          - BookingProducingRequestId
+          - BookingId
+          - Note
+          - Deadline
+          - BookingPodcastTrackIds
+          - CreatedAt
+        onSuccess:
+          emit: "create-producing-request.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-producing-request.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-producing-request-agreement-flow:
+    topic: "booking-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Đồng ý yêu cầu sản xuất nội dung"
+    save-file: ""
+    steps:
+      - name: "agree-producing-request"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Cập nhật booking khi podcaster accept/reject producing request"
+        parameters:
+          - BookingProducingRequestId
+          - IsAccepted
+        next-request-data:
+          - BookingProducingRequestId
+          - IsAccepted
+        response-data:
+          - BookingProducingRequestId
+          - IsAccepted
+          - UpdatedAt
+        onSuccess:
+          emit: "agree-producing-request.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "agree-producing-request.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-track-submission-flow:
+    topic: "booking-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gửi track cho booking"
+    save-file: "AudioFile"
+    steps:
+      - name: "submit-booking-track"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Submit audio file cho booking track"
+        parameters:
+          - BookingProducingRequestId
+          - AudioFileKey
+          - AudioFileSize
+          - AudioLength
+        next-request-data:
+          - BookingProducingRequestId
+          - AudioFileKey
+          - AudioFileSize
+          - AudioLength
+        response-data:
+          - BookingProducingRequestId
+          - BookingPodcastTrackId
+          - AudioFileKey
+          - AudioFileSize
+          - AudioLength
+          - CreatedAt
+        onSuccess:
+          emit: "submit-booking-track.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "submit-booking-track.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-track-preview-flow:
+    topic: "booking-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật lượng preview còn lại của một booking track"
+    save-file: ""
+    steps:
+      - name: "update-booking-track"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Cập nhật lượng preview còn lại"
+        parameters:
+          - BookingPodcastTrackId
+        next-request-data:
+          - BookingPodcastTrackId
+        response-data:
+          - BookingPodcastTrackId
+          - RemainingPreviewListenSlot
+        onSuccess:
+          emit: "update-booking-track.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-booking-track.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-negotiation-agree-flow:
+    topic: "booking-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Đồng ý thỏa thuận đặt booking"
+    save-file: ""
+    steps:
+      - name: "agree-booking-negotiation"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Cập nhật lại booking với thông tin booking negotiation gần nhất khi agree"
+        parameters:
+          - BookingNegotiationId
+        next-request-data:
+          - BookingNegotiationId
+        response-data:
+          - BookingNegotiationId
+          - UpdatedAt
+        onSuccess:
+          emit: "agree-booking-negotiation.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "agree-booking-negotiation.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-completion-flow:
+    topic: "booking-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hoàn thành booking"
+    save-file: ""
+    steps:
+      - name: "complete-booking"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Cập nhật status booking thành completed"
+        parameters:
+          - BookingId
+        next-request-data:
+          - BookingId
+        response-data:
+          - BookingId
+          - UpdatedAt
+        onSuccess:
+          emit: "complete-booking.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "complete-booking.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-reject-flow:
+    topic: "booking-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Từ chối booking"
+    save-file: ""
+    steps:
+      - name: "reject-booking"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Reject booking"
+        parameters:
+          - BookingId
+        next-request-data:
+          - BookingId
+        response-data:
+          - BookingId
+          - UpdatedAt
+        onSuccess:
+          emit: "reject-booking.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "reject-booking.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-manual-cancellation-flow:
+    topic: "booking-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy booking"
+    save-file: ""
+    steps:
+      - name: "cancel-booking-manual"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Cancel hoặc reject booking với lý do"
+        parameters:
+          - BookingId
+          - BookingManualCancelledReason
+        next-request-data:
+          - BookingId
+          - BookingManualCancelledReason
+        response-data:
+          - BookingId
+          - BookingManualCancelledReason
+          - UpdatedAt
+        onSuccess:
+          emit: "cancel-booking-manual.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "cancel-booking-manual.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-auto-cancellation-flow:
+    topic: "booking-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy booking"
+    save-file: ""
+    steps:
+      - name: "cancel-booking-auto"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Cancel hoặc reject booking với lý do"
+        parameters:
+          - BookingId
+          - BookingAutoCancelReason
+        next-request-data:
+          - BookingId
+          - BookingAutoCancelReason
+        response-data:
+          - BookingId
+          - BookingAutoCancelReason
+          - UpdatedAt
+        onSuccess:
+          emit: "cancel-booking-auto.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "cancel-booking-auto.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-subscription-creation-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo gói đăng ký podcast"
+    save-file: ""
+    steps:
+      - name: "create-podcast-subscription"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Tạo gói subscription cho show/channel"
+        parameters:
+          - Name
+          - Description
+          - PodcastShowId
+          - PodcastChannelId
+          - PodcastSubscriptionCycleTypePrice
+          - PodcastSubscriptionBenefitId
+          - PodcasterId
+        next-request-data:
+          - Name
+          - Description
+          - PodcastShowId
+          - PodcastChannelId
+          - PodcastSubscriptionCycleTypePrice
+          - PodcastSubscriptionBenefitId
+          - PodcasterId
+        response-data:
+          - PodcastSubscriptionId
+          - Name
+          - Description
+          - PodcastShowId
+          - PodcastChannelId
+          - PodcastSubscriptionCycleTypePrice
+          - PodcastSubscriptionBenefitId
+          - PodcasterId
+          - CreatedAt
+        onSuccess:
+          emit: "create-podcast-subscription.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-podcast-subscription.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-subscription-update-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật gói đăng ký podcast"
+    save-file: ""
+    steps:
+      - name: "update-podcast-subscription"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Cập nhật thông tin subscription và tạo version mới"
+        parameters:
+          - PodcastSubscriptionId
+          - Name
+          - Description
+          - PodcastSubscriptionCycleTypePrice
+          - PodcastSubscriptionBenefitId
+        next-request-data:
+          - PodcastSubscriptionId
+          - Name
+          - Description
+          - PodcastSubscriptionCycleTypePrice
+          - PodcastSubscriptionBenefitId
+        response-data:
+          - PodcastSubscriptionId
+          - Name
+          - Description
+          - PodcastSubscriptionCycleTypePrice
+          - PodcastSubscriptionBenefitId
+          - UpdatedAt
+          - NewVersion
+        onSuccess:
+          emit: "update-podcast-subscription.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-podcast-subscription.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-subscription-active-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Kích hoạt gói đăng ký podcast"
+    save-file: ""
+    steps:
+      - name: "activate-podcast-subscription"
+        topic: ""
+        handle-service: ""
+        description: "Kích hoạt gói đăng ký podcast"
+        parameters:
+          - PodcastSubscriptionId
+        next-request-data:
+          - PodcastSubscriptionId
+        response-data:
+          - PodcastSubscriptionId
+          - IsActive
+          - UpdatedAt
+        onSuccess:
+          emit: "activate-podcast-subscription.success"
+          topic: ""
+          handle-service: ""
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "activate-podcast-subscription.failed"
+          topic: ""
+          handle-service: ""
+          nextSteps: []
+          nextFlows: []
+
+  podcast-subscription-inactive-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy kích hoạt gói đăng ký podcast"
+    save-file: ""
+    steps:
+      - name: "inactive-podcast-subscription"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Nhận PodcastSubscriptionId để inactive subscription, xóa các SubscriptionRegistration"
+        parameters:
+          - PodcastSubscriptionId
+        next-request-data:
+          - PodcastSubscriptionId
+        response-data:
+          - PodcastSubscriptionId
+          - IsActive
+          - UpdatedAt
+        onSuccess:
+          emit: "deactivate-podcast-subscription.success"
+          topic: ""
+          handle-service: ""
+          nextSteps:
+            - name: "refund-podcast-subscription-account"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
+          nextFlows: []
+        onFailure:
+          emit: "deactivate-podcast-subscription.failed"
+          topic: "content-management-domain"
+          handle-service: "PodcastService"
+          nextSteps: []
+          nextFlows: []
+      - name: "refund-podcast-subscription-account"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Nhận PodcastSubscriptionId để lấy các SubscriptionRegistration để lấy các AccountId và giá để chạy flow podcast-subscription-refund-flow"
+        parameters:
+          - PodcastSubscriptionId
+        next-request-data:
+          - PodcastSubscriptionId
+          - IsActive
+        response-data:
+          - PodcastSubscriptionId
+          - IsActive
+        onSuccess:
+          emit: "refund-podcast-subscription-account.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "refund-podcast-subscription-account.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-subscription-registration-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Đăng ký gói đăng ký podcast"
+    save-file: ""
+    steps:
+      - name: "create-account-podcast-subscription-registration"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Customer đăng ký subscription package"
+        parameters:
+          - AccountId
+          - PodcastSubscriptionId
+          - SubscriptionCycleTypeId
+        next-request-data:
+          - AccountId
+          - PodcastSubscriptionId
+          - SubscriptionCycleTypeId
+        response-data:
+          - PodcastSubscriptionRegistrationId
+          - AccountId
+          - PodcastSubscriptionId
+          - SubscriptionCycleTypeId
+          - CreatedAt
+        onSuccess:
+          emit: "create-account-podcast-subscription-registration.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-account-podcast-subscription-registration.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  member-subscription-creation-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo gói đăng ký thành viên"
+    save-file: ""
+    steps:
+      - name: "create-member-subscription"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Tạo gói member subscription"
+        parameters:
+          - Name
+          - Description
+          - PodcastSubscriptionCycleTypePrice 
+          - MemberSubscriptionBenefitIds
+        next-request-data:
+          - Name
+          - Description
+          - PodcastSubscriptionCycleTypePrice 
+          - MemberSubscriptionBenefitIds
+        response-data:
+          - MemberSubscriptionId
+          - Name
+          - Description
+          - PodcastSubscriptionCycleTypePrice
+          - MemberSubscriptionBenefitIds
+          - CreatedAt
+        onSuccess:
+          emit: "create-member-subscription.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-member-subscription.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  member-subscription-update-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật gói đăng ký thành viên"
+    save-file: ""
+    steps:
+      - name: "update-member-subscription"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Cập nhật thông tin member subscription và tạo version mới"
+        parameters:
+          - MemberSubscriptionId
+          - Name
+          - Description
+          - PodcastSubscriptionCycleTypePrice 
+          - MemberSubscriptionBenefitIds
+        next-request-data:
+          - MemberSubscriptionId
+          - Name
+          - Description
+          - PodcastSubscriptionCycleTypePrice 
+          - MemberSubscriptionBenefitIds
+        response-data:
+          - MemberSubscriptionId
+          - Name
+          - Description
+          - PodcastSubscriptionCycleTypePrice 
+          - MemberSubscriptionBenefitIds
+          - UpdatedAt
+          - NewVersion
+        onSuccess:
+          emit: "update-member-subscription.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-member-subscription.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  member-subscription-active-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Kích hoạt gói đăng ký thành viên"
+    save-file: ""
+    steps:
+      - name: "active-member-subscription"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Kích hoạt member subscription"
+        parameters:
+          - MemberSubscriptionId
+        next-request-data:
+          - MemberSubscriptionId
+        response-data:
+          - MemberSubscriptionId
+          - IsActive
+          - UpdatedAt
+        onSuccess:
+          emit: "active-member-subscription.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "active-member-subscription.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  member-subscription-inactive-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy kích hoạt gói đăng ký thành viên"
+    save-file: ""
+    steps:
+      - name: "inactive-member-subscription"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Nhận MemberSubscriptionId để inactive member subscription, xóa các MemberSubscriptionRegistration"
+        parameters:
+          - MemberSubscriptionId
+        next-request-data:
+          - MemberSubscriptionId
+        response-data:
+          - MemberSubscriptionId
+          - IsActive
+          - UpdatedAt
+        onSuccess:
+          emit: "inactive-member-subscription.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps:
+            - name: "refund-member-subscription-account"
+              topic: "subscription-management-domain"
+              handle-service: "SubscriptionService"
+          nextFlows: []
+        onFailure:
+          emit: "inactive-member-subscription.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SubscriptionService"
+          nextSteps: []
+          nextFlows: []
+      - name: "refund-member-subscription-account"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Nhận MemberSubscriptionId để lấy các MemberSubscriptionRegistration để lấy các AccountId và giá để chạy flow member-subscription-refund-flow"
+        parameters:
+          - MemberSubscriptionId
+        next-request-data:
+          - MemberSubscriptionId
+          - IsActive
+        response-data:
+          - MemberSubscriptionId
+          - IsActive
+        onSuccess:
+          emit: "refund-member-subscription-account.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "refund-member-subscription-account.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  member-subscription-registration-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Đăng ký gói đăng ký thành viên"
+    save-file: ""
+    steps:
+      - name: "create-account-member-subscription-registration"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Customer đăng ký member subscription"
+        parameters:
+          - AccountId
+          - MemberSubscriptionId
+          - SubscriptionCycleTypeId
+        next-request-data:
+          - AccountId
+          - MemberSubscriptionId
+          - SubscriptionCycleTypeId
+        response-data:
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - MemberSubscriptionId
+          - SubscriptionCycleTypeId
+          - CreatedAt
+        onSuccess:
+          emit: "create-account-member-subscription-registration.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-account-member-subscription-registration.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-subscription-cancellation-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy đăng ký gói podcast subscription"
+    save-file: ""
+    steps:
+      - name: "cancel-podcast-subscription-registration"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Hủy đăng ký gói subscription"
+        parameters:
+          - PodcastSubscriptionRegistrationId
+        next-request-data:
+          - PodcastSubscriptionRegistrationId
+        response-data:
+          - PodcastSubscriptionRegistrationId
+          - CancelledAt
+        onSuccess:
+          emit: "cancel-podcast-subscription-registration.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "cancel-podcast-subscription-registration.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  member-subscription-cancellation-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy đăng ký gói member subscription"
+    save-file: ""
+    steps:
+      - name: "cancel-member-subscription-registration"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Hủy đăng ký gói subscription"
+        parameters:
+          - MemberSubscriptionRegistrationId
+        next-request-data:
+          - MemberSubscriptionRegistrationId
+        response-data:
+          - MemberSubscriptionRegistrationId
+          - CancelledAt
+        onSuccess:
+          emit: "cancel-member-subscription-registration.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "cancel-member-subscription-registration.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-subscription-deletion-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa đăng ký gói podcast subscription"
+    save-file: ""
+    steps:
+      - name: "delete-podcast-subscription"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Xóa đăng ký gói subscription"
+        parameters:
+          - PodcastSubscriptionId
+        next-request-data:
+          - PodcastSubscriptionId
+        response-data:
+          - PodcastSubscriptionId
+          - DeletedAt
+        onSuccess:
+          emit: "delete-podcast-subscription.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-podcast-subscription.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  member-subscription-deletion-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa đăng ký gói member subscription"
+    save-file: ""
+    steps:
+      - name: "delete-member-subscription"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Xóa đăng ký gói subscription"
+        parameters:
+          - MemberSubscriptionId
+        next-request-data:
+          - MemberSubscriptionId
+        response-data:
+          - MemberSubscriptionId
+          - DeletedAt
+        onSuccess:
+          emit: "delete-member-subscription.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-member-subscription.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  account-balance-deposit-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Nạp tiền vào tài khoản"
+    save-file: ""
+    steps:
+      - name: "create-payment-link"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo account balance transaction và tạo link thanh toán"
+        parameters:
+          - AccountId
+          - Amount
+          - ReturnUrl
+          - CancelUrl
+          - TransactionTypeId
+        next-request-data:
+          - AccountId
+          - Amount
+          - ReturnUrl
+          - CancelUrl
+          - TransactionTypeId
+        response-data:
+          - PaymentLinkUrl
+          - AccountBalanceTransactionId
+        onSuccess:
+          emit: "create-payment-link.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "confirm-payment"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+          nextFlows: []
+        onFailure:
+          emit: "create-payment-link.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "confirm-payment"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Xác nhận thanh toán thành công từ payment gateway, cập nhật status account balance thành success"
+        parameters:
+          - AccountBalanceTransactionId
+        next-request-data:
+          - AccountId
+          - Amount
+          - ReturnUrl
+          - CancelUrl
+          - TransactionTypeId
+          - AccountBalanceTransactionId
+        response-data:
+          - Amount
+        onSuccess:
+          emit: "confirm-payment.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "add-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "confirm-payment.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
+      - name: "add-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Thêm tiền vô ví"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - AccountId
+          - Amount
+          - ReturnUrl
+          - CancelUrl
+          - TransactionTypeId
+          - AccountBalanceTransactionId
+        response-data:
+          - AccountId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "add-account-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "add-account-balance-amount.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  account-balance-withdrawal-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Rút tiền từ tài khoản"
+    save-file: ""
+    steps:
+      - name: "create-withdrawal-request"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo record withdrawal transaction"
+        parameters:
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - AccountBalanceTransactionId
+          - CreatedAt
+        onSuccess:
+          emit: "create-withdrawal-request.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "subtract-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "create-withdrawal-request.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
+      - name: "subtract-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Trừ tiền từ ví"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - AccountId
+          - NewBalance
+          - UpdatedAt
+        onSuccess:
+          emit: "subtract-account-balance-amount.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "complete-withdrawal-request"
+              topic: "payment-processing-domain"
+              handle-service: "TransactionService"
+          nextFlows: []
+        onFailure:
+          emit: "subtract-account-balance-amount.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "create-withdrawal-request-rollback-flow"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+
+  booking-deposit-payment-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Thanh toán đặt cọc"
+    save-file: ""
+    steps:
+      - name: "create-booking-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo booking transaction record cho deposit"
+        parameters:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        next-request-data:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - BookingTransactionId
+          - CreatedAt
+        onSuccess:
+          emit: "create-booking-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "subtract-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "create-booking-transaction.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
+      - name: "subtract-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Trừ tiền từ ví customer"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - AccountId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "subtract-account-balance-amount.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "complete-booking-transaction"
+              topic: "payment-processing-domain"
+              handle-service: "TransactionService"
+          nextFlows: 
+            - name: "booking-negotiation-agree-flow"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+        onFailure:
+          emit: "subtract-account-balance-amount.failed"
+          topic: "payment-processing-domain"
+          handle-service: ""
+          nextSteps: []
+          nextFlows: 
+            - name: "create-booking-transaction-rollback-flow"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+      - name: "complete-booking-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Cập nhật status thành success cho booking transaction"
+        parameters:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        next-request-data:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - BookingTransactionId
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+          - UpdatedAt
+        onSuccess:
+          emit: "complete-booking-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "booking-negotiation-agree-flow"
+              topic: "booking-management-domain"
+              handle-service: "SagaOrchestratorService"
+        onFailure:
+          emit: "complete-booking-transaction.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "subtract-account-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+
+  booking-final-payment-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Thanh toán phần còn lại của booking"
+    save-file: ""
+    steps:
+      - name: "create-booking-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo booking transaction record cho final payment"
+        parameters:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        next-request-data:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - BookingTransactionId
+          - CreatedAt
+        onSuccess:
+          emit: "create-booking-final-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "add-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "create-booking-final-transaction.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
+      - name: "add-podcaster-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Thêm tiền vô ví podcaster"
+        parameters:
+          - PodcasterId
+          - Amount
+        next-request-data:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - PodcasterId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "add-podcaster-balance-amount.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "subtract-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "add-podcaster-balance-amount.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: 
+            - name: "create-booking-transaction-rollback-flow"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+      - name: "subtract-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Trừ tiền từ ví customer"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - Account
+          - NewBalance
+          - UpdatedAt
+        onSuccess:
+          emit: "subtract-account-balance-amount.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "complete-booking-transaction"
+              topic: "payment-processing-domain"
+              handle-service: "TransactionService"
+          nextFlows: []
+        onFailure:
+          emit: "subtract-account-balance-amount.failed"
+          topic: "payment-processing-domain"
+          handle-service: "TransactionService"
+          nextSteps: []
+          nextFlows: 
+            - name: "add-podcaster-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+            - name: "create-booking-transaction-rollback-flow"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+      - name: "complete-booking-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Cập nhật status thành success cho booking transaction"
+        parameters:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        next-request-data:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - BookingTransactionId
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+          - UpdatedAt
+        onSuccess:
+          emit: "complete-booking-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "booking-completion-flow"
+              topic: "booking-management-domain"
+              handle-service: "SagaOrchestratorService"
+        onFailure:
+          emit: "complete-booking-transaction.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "subtract-account-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+            - name: "add-podcaster-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+
+  booking-refund-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hoàn tiền booking"
+    save-file: ""
+    steps:
+      - name: "create-booking-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo booking transaction record cho hoàn tiền"
+        parameters:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        next-request-data:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - BookingTransactionId
+          - CreatedAt
+        onSuccess:
+          emit: "refund-booking-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "subtract-podcaster-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+          nextFlows: []
+        onFailure:
+          emit: "refund-booking-transaction.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
+      - name: "subtract-podcaster-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Trừ tiền từ ví podcaster"
+        parameters:
+          - PodcasterId
+          - Amount
+        next-request-data:
+          - BookingTransactionId
+        response-data:
+          - PodcasterId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "subtract-podcaster-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "add-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "subtract-podcaster-balance-amount.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: 
+            - name: "create-booking-transaction-rollback-flow"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+      - name: "add-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Thêm tiền vô ví customer"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - BookingTransactionId
+        response-data:
+          - AccountId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "add-account-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "complete-booking-transaction"
+              topic: "payment-processing-domain"
+              handle-service: "TransactionService"
+          nextFlows: []
+        onFailure:
+          emit: "add-account-balance-amount.failed"
+          topic: "payment-processing-domain"
+          handle-service: "TransactionService"
+          nextSteps: []
+          nextFlows: 
+            - name: "subtract-podcaster-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+            - name: "create-booking-transaction-rollback-flow"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+      - name: "complete-booking-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Cập nhật status thành success cho booking transaction"
+        parameters:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        next-request-data:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - BookingTransactionId
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+          - UpdatedAt
+        onSuccess:
+          emit: "complete-booking-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "complete-booking-transaction.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "add-account-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+            - name: "subtract-podcaster-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+
+  booking-deposit-compenstation-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hoàn tiền đặt cọc booking do podcaster từ chối yêu cầu"
+    save-file: ""
+    steps:
+      - name: "create-booking-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo booking transaction record cho hoàn tiền đặt cọc"
+        parameters:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        next-request-data:
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - BookingTransactionId
+          - CreatedAt
+        onSuccess:
+          emit: "refund-booking-deposit-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "add-podcaster-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "refund-booking-deposit-transaction.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
+      - name: "add-podcaster-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Thêm tiền vô ví podcaster"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - BookingTransactionId
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - AccountId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "add-podcaster-balance-amount.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "complete-booking-transaction"
+              topic: "payment-processing-domain"
+              handle-service: "TransactionService"
+          nextFlows: []
+        onFailure:
+          emit: "add-podcaster-balance-amount.failed"
+          topic: "payment-processing-domain"
+          handle-service: "TransactionService"
+          nextSteps: []
+          nextFlows: 
+            - name: "create-booking-transaction-rollback-flow"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+      - name: "complete-booking-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Cập nhật status thành success cho booking transaction hoàn tiền đặt cọc"
+        parameters:
+          - BookingTransactionId
+        next-request-data:
+          - BookingTransactionId
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - BookingTransactionId
+          - BookingId
+          - Amount
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+          - UpdatedAt
+        onSuccess:
+          emit: "complete-booking-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "complete-booking-transaction.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "add-podcaster-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+
+  podcast-subscription-payment-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Thanh toán gia hạn gói đăng ký podcast"
+    save-file: ""
+    steps:
+      - name: "create-podcast-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo subscription payment transaction"
+        parameters:
+          - PodcastSubscriptionRegistrationId
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - PodcastSubscriptionRegistrationId
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - PodcastSubscriptionPaymentTransactionId
+          - CreatedAt
+        onSuccess:
+          emit: "create-podcast-subscription-payment-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "subtract-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "create-podcast-subscription-payment-transaction.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
+      - name: "subtract-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Trừ tiền từ ví customer"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - PodcastSubscriptionPaymentTransactionId
+        response-data:
+          - AccountId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "subtract-account-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "complete-podcast-subscription-transaction"
+              topic: "payment-processing-domain"
+              handle-service: "TransactionService"
+          nextFlows: []
+        onFailure:
+          emit: "subtract-account-balance-amount.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: 
+            - name: "create-podcast-subscription-transaction-rollback-flow"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+      - name: "complete-podcast-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Cập nhật status thành success cho podcast subscription payment transaction"
+        parameters:
+          - PodcastSubscriptionRegistrationId
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - PodcastSubscriptionRegistrationId
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - PodcastSubscriptionTransactionId
+          - PodcastSubscriptionRegistrationId
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+          - UpdatedAt
+        onSuccess:
+          emit: "complete-podcast-subscription-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "complete-podcast-subscription-transaction.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "subtract-account-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+
+  member-subscription-payment-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Thanh toán gia hạn gói đăng ký thành viên"
+    save-file: ""
+    steps:
+      - name: "create-member-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo member subscription payment transaction"
+        parameters:
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - MemberSubscriptionPaymentTransactionId
+          - CreatedAt
+        onSuccess:
+          emit: "create-member-subscription-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "subtract-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "create-member-subscription-transaction.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
+      - name: "subtract-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Trừ tiền từ ví customer"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - MemberSubscriptionPaymentTransactionId
+        response-data:
+          - AccountId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "subtract-account-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "complete-member-subscription-transaction"
+              topic: "payment-processing-domain"
+              handle-service: "TransactionService"
+          nextFlows: []
+        onFailure:
+          emit: "subtract-account-balance-amount.failed"
+          topic: "payment-processing-domain"
+          handle-service: "TransactionService"
+          nextSteps: []
+          nextFlows: 
+            - name: "create-member-subscription-transaction-rollback-flow"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+      - name: "complete-member-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Cập nhật status thành success cho member subscription payment transaction"
+        parameters:
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - MemberSubscriptionTransactionId
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+          - UpdatedAt
+        onSuccess:
+          emit: "complete-member-subscription-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "complete-member-subscription-transaction.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "subtract-account-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+
+  podcast-subscription-refund-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hoàn tiền gói đăng ký podcast"
+    save-file: ""
+    steps:
+      - name: "create-podcast-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo podcast subscription transaction"
+        parameters:
+          - PodcastSubscriptionRegistrationId
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - PodcastSubscriptionRegistrationId
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - PodcastSubscriptionTransaction
+          - CreatedAt
+        onSuccess:
+          emit: "create-podcast-subscription-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "add-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "create-podcast-subscription-transaction.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
+      - name: "add-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Thêm tiền vô ví customer"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - PodcastSubscriptionTransactionId
+        response-data:
+          - AccountId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "add-account-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "subtract-podcaster-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "add-account-balance-amount.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: 
+            - name: "create-podcast-subscription-transaction-rollback-flow"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+      - name: "subtract-podcaster-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Trừ tiền từ ví podcaster"
+        parameters:
+          - PodcasterId
+          - Amount
+        next-request-data:
+          - PodcastSubscriptionTransactionId
+        response-data:
+          - PodcasterId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "subtract-podcaster-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "complete-podcast-subscription-transaction"
+              topic: "payment-processing-domain"
+              handle-service: "TransactionService"
+          nextFlows: []
+        onFailure:
+          emit: "subtract-podcaster-balance-amount.failed"
+          topic: "payment-processing-domain"
+          handle-service: "TransactionService"
+          nextSteps: []
+          nextFlows: 
+            - name: "add-account-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+            - name: "create-podcast-subscription-transaction-rollback-flow"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+      - name: "complete-podcast-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Cập nhật status thành success cho podcast subscription transaction"
+        parameters:
+          - PodcastSubscriptionRegistrationId
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - PodcastSubscriptionRegistrationId
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - PodcastSubscriptionTransactionId
+          - PodcastSubscriptionRegistrationId
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+          - UpdatedAt
+        onSuccess:
+          emit: "complete-podcast-subscription-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "complete-podcast-subscription-transaction.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "add-account-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+            - name: "subtract-podcaster-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+
+  member-subscription-refund-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hoàn tiền gói đăng ký thành viên"
+    save-file: ""
+    steps:
+      - name: "create-member-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo member subscription transaction"
+        parameters:
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - MemberSubscriptionTransactionId
+          - CreatedAt
+        onSuccess:
+          emit: "create-member-subscription-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "add-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "create-member-subscription-transaction.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
+      - name: "add-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Thêm tiền vô ví customer"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - MemberSubscriptionTransactionId
+        response-data:
+          - AccountId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "add-account-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "complete-member-subscription-transaction"
+              topic: "payment-processing-domain"
+              handle-service: "TransactionService"
+          nextFlows: []
+        onFailure:
+          emit: "add-account-balance-amount.failed"
+          topic: "payment-processing-domain"
+          handle-service: "TransactionService"
+          nextSteps: []
+          nextFlows: 
+            - name: "create-member-subscription-transaction-rollback-flow" 
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+      - name: "complete-member-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Cập nhật status thành success cho member subscription transaction"
+        parameters:
+          - MemberSubscriptionTransactionId
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - MemberSubscriptionTransactionId
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - MemberSubscriptionTransactionId
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+          - UpdatedAt
+        onSuccess:
+          emit: "complete-member-subscription-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "complete-member-subscription-transaction.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "add-account-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+
+  # storage-purchase-flow:
+
+  show-review-creation-flow:
+    topic: "public-review-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo review cho podcast show"
+    save-file: ""
+    steps:
+      - name: "create-show-review"
+        topic: "public-review-management-domain"
+        handle-service: "PodcastService"
+        description: "Tạo review cho podcast show"
+        parameters:
+          - AccountId
+          - PodcastShowId
+          - Title
+          - Content
+          - Rating
+        next-request-data:
+          - AccountId
+          - PodcastShowId
+          - Title
+          - Content
+          - Rating
+        response-data:
+          - PodcastShowReviewId
+          - AccountId
+          - PodcastShowId
+          - Title
+          - Content
+          - Rating
+          - CreatedAt
+        onSuccess:
+          emit: "create-show-review.success"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-show-review.failed"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  show-review-update-flow:
+    topic: "public-review-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật review cho podcast show"
+    save-file: ""
+    steps:
+      - name: "update-show-review"
+        topic: "public-review-management-domain"
+        handle-service: "PodcastService"
+        description: "Cập nhật review cho podcast show"
+        parameters:
+          - PodcastShowReviewId
+          - Title
+          - Content
+          - Rating
+        next-request-data:
+          - PodcastShowReviewId
+          - Title
+          - Content
+          - Rating
+        response-data:
+          - PodcastShowReviewId
+          - Title
+          - Content
+          - Rating
+          - UpdatedAt
+        onSuccess:
+          emit: "update-show-review.success"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-show-review.failed"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  show-review-deletion-flow:
+    topic: "public-review-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa review cho podcast show"
+    save-file: ""
+    steps:
+      - name: "delete-show-review"
+        topic: "public-review-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa review cho podcast show"
+        parameters:
+          - PodcastShowReviewId
+        next-request-data:
+          - PodcastShowReviewId
+        response-data:
+          - PodcastShowReviewId
+          - DeletedAt
+        onSuccess:
+          emit: "delete-show-review.success"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-show-review.failed"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-buddy-review-creation-flow:
+    topic: "public-review-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo review cho podcast buddy"
+    save-file: ""
+    steps:
+      - name: "create-podcast-buddy-review"
+        topic: "public-review-management-domain"
+        handle-service: "PodcastService"
+        description: "Tạo review cho podcast buddy"
+        parameters:
+          - AccountId
+          - PodcastBuddyId
+          - Title
+          - Content
+          - Rating
+        next-request-data:
+          - AccountId
+          - PodcastBuddyId
+          - Title
+          - Content
+          - Rating
+        response-data:
+          - PodcastBuddyReviewId
+          - AccountId
+          - PodcastBuddyId
+          - Title
+          - Content
+          - Rating
+          - CreatedAt
+        onSuccess:
+          emit: "create-buddy-review.success"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-buddy-review.failed"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-buddy-review-update-flow:
+    topic: "public-review-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật review cho podcast buddy"
+    save-file: ""
+    steps:
+      - name: "update-podcast-buddy-review"
+        topic: "public-review-management-domain"
+        handle-service: "PodcastService"
+        description: "Cập nhật review cho podcast buddy"
+        parameters:
+          - PodcastBuddyReviewId
+          - Title
+          - Content
+          - Rating
+        next-request-data:
+          - PodcastBuddyReviewId
+          - Title
+          - Content
+          - Rating
+        response-data:
+          - PodcastBuddyReviewId
+          - Title
+          - Content
+          - Rating
+          - UpdatedAt
+        onSuccess:
+          emit: "update-buddy-review.success"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-buddy-review.failed"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-buddy-review-deletion-flow:
+    topic: "public-review-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa review cho podcast buddy"
+    save-file: ""
+    steps:
+      - name: "delete-podcast-buddy-review"
+        topic: "public-review-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa review cho podcast buddy"
+        parameters:
+          - PodcastBuddyReviewId
+        next-request-data:
+          - PodcastBuddyReviewId
+        response-data:
+          - PodcastBuddyReviewId
+          - DeletedAt
+        onSuccess:
+          emit: "delete-buddy-review.success"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-buddy-review.failed"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  buddy-report-submission-flow:
+    topic: "report-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Báo cáo podcast buddy"
+    save-file: ""
+    steps:
+      - name: "create-podcast-buddy-report"
+        topic: "report-management-domain"
+        handle-service: "ModerationService"
+        description: "Tạo report báo cáo podcaster buddy vi phạm"
+        parameters:
+          - AccountId
+          - PodcastBuddyId
+          - PodcastBuddyReportTypeId
+          - Content
+        next-request-data:
+          - AccountId
+          - PodcastBuddyId
+          - PodcastBuddyReportTypeId
+          - Content
+        response-data:
+          - PodcastBuddyReportId
+          - AccountId
+          - PodcastBuddyId
+          - PodcastBuddyReportTypeId
+          - Content
+          - CreatedAt
+        onSuccess:
+          emit: "create-podcast-buddy-report.success"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-podcast-buddy-report.failed"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  show-report-submission-flow:
+    topic: "report-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Báo cáo podcast show"
+    save-file: ""
+    steps:
+      - name: "create-show-report"
+        topic: "report-management-domain"
+        handle-service: "ModerationService"
+        description: "Tạo report báo cáo show vi phạm"
+        parameters:
+          - AccountId
+          - PodcastShowId
+          - PodcastShowReportTypeId
+          - Content
+        next-request-data:
+          - AccountId
+          - PodcastShowId
+          - PodcastShowReportTypeId
+          - Content
+        response-data:
+          - PodcastShowReportId
+          - AccountId
+          - PodcastShowId
+          - PodcastShowReportTypeId
+          - Content
+          - CreatedAt
+        onSuccess:
+          emit: "create-show-report.success"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-show-report.failed"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-report-submission-flow:
+    topic: "report-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Báo cáo podcast episode"
+    save-file: ""
+    steps:
+      - name: "create-episode-report"
+        topic: "report-management-domain"
+        handle-service: "ModerationService"
+        description: "Tạo report báo cáo episode vi phạm"
+        parameters:
+          - AccountId
+          - PodcastEpisodeId
+          - PodcastEpisodeReportTypeId
+          - Content
+        next-request-data:
+          - AccountId
+          - PodcastEpisodeId
+          - PodcastEpisodeReportTypeId
+          - Content
+        response-data:
+          - PodcastEpisodeReportId
+          - AccountId
+          - PodcastEpisodeId
+          - PodcastEpisodeReportTypeId
+          - Content
+          - CreatedAt
+        onSuccess:
+          emit: "create-episode-report.success"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-episode-report.failed"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  buddy-report-review-session-creation-flow:
+    topic: "report-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo phiên review báo cáo của podcast buddy"
+    save-file: ""
+    steps:
+      - name: "create-podcast-buddy-report-review-session"
+        topic: "report-management-domain"
+        handle-service: "ModerationService"
+        description: "Tạo phiên review báo cáo cho staff"
+        parameters:
+          - PodcastBuddyId
+          - AssignedStaffId
+        next-request-data:
+          - PodcastBuddyId
+          - AssignedStaffId
+        response-data:
+          - PodcastBuddyReportReviewSessionId
+          - PodcastBuddyId
+          - AssignedStaffId
+          - CreatedAt
+        onSuccess:
+          emit: "create-podcast-buddy-report-review-session.success"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-podcast-buddy-report-review-session.failed"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  show-report-review-session-creation-flow:
+    topic: "report-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo phiên review báo cáo của show"
+    save-file: ""
+    steps:
+      - name: "create-show-report-review-session"
+        topic: "report-management-domain"
+        handle-service: "ModerationService"
+        description: "Tạo phiên review báo cáo cho staff"
+        parameters:
+          - PodcastShowId
+          - AssignedStaffId
+        next-request-data:
+          - PodcastShowId
+          - AssignedStaffId
+        response-data:
+          - PodcastShowReportReviewSessionId
+          - PodcastShowId
+          - AssignedStaffId
+          - CreatedAt
+        onSuccess:
+          emit: "create-show-report-review-session.success"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-show-report-review-session.failed"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-report-review-session-creation-flow:
+    topic: "report-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo phiên review báo cáo của episode"
+    save-file: ""
+    steps:
+      - name: "create-episode-report-review-session"
+        topic: "report-management-domain"
+        handle-service: "ModerationService"
+        description: "Tạo phiên review báo cáo cho staff"
+        parameters:
+          - PodcastEpisodeId
+          - AssignedStaffId
+        next-request-data:
+          - PodcastEpisodeId
+          - AssignedStaffId
+        response-data:
+          - PodcastEpisodeReportReviewSessionId
+          - PodcastEpisodeId
+          - AssignedStaffId
+          - CreatedAt
+        onSuccess:
+          emit: "create-episode-report-review-session.success"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-episode-report-review-session.failed"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-buddy-report-resolve-flow:
+    topic: "report-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xử lý báo cáo podcast buddy"
+    save-file: ""
+    steps:
+      - name: "resolve-podcast-buddy-report"
+        topic: "report-management-domain"
+        handle-service: "ModerationService"
+        description: "Staff resolve podcast buddy report và chạy flow user-violation-punishment-flow nếu có phạt"
+        parameters:
+          - IsResolved
+          - ResolvedViolationPoint
+          - PodcastBuddyReportReviewSessionId
+        next-request-data:
+          - IsResolved
+          - ResolvedViolationPoint
+          - PodcastBuddyReportReviewSessionId
+        response-data:
+          - IsResolved
+          - ResolvedViolationPoint
+          - PodcastBuddyReportReviewSessionId
+          - UpdatedAt
+        onSuccess:
+          emit: "resolve-buddy-report.success"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "resolve-buddy-report.failed"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-show-report-resolve-flow:
+    topic: "report-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xử lý báo cáo podcast show"
+    save-file: ""
+    steps:
+      - name: "resolve-podcast-show-report"
+        topic: "report-management-domain"
+        handle-service: "ModerationService"
+        description: "Staff resolve podcast show report và chạy flow show-deletion-flow nếu có phạt"
+        parameters:
+          - IsResolved
+          - PodcastShowReportReviewSessionId
+        next-request-data:
+          - IsResolved
+          - PodcastShowReportReviewSessionId
+        response-data:
+          - IsResolved
+          - PodcastShowReportReviewSessionId
+          - UpdatedAt
+        onSuccess:
+          emit: "resolve-show-report.success"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "resolve-show-report.failed"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-episode-report-resolve-flow:
+    topic: "report-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xử lý báo cáo podcast episode"
+    save-file: ""
+    steps:
+      - name: "resolve-podcast-episode-report"
+        topic: "report-management-domain"
+        handle-service: "ModerationService"
+        description: "Staff resolve podcast episode report và chạy flow episode-deletion-flow nếu có phạt"
+        parameters:
+          - IsResolved
+          - PodcastEpisodeReportReviewSessionId
+        next-request-data:
+          - IsResolved
+          - PodcastEpisodeReportReviewSessionId
+        response-data:
+          - IsResolved
+          - PodcastEpisodeReportReviewSessionId
+          - UpdatedAt
+        onSuccess:
+          emit: "resolve-episode-report.success"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "resolve-episode-report.failed"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  content-dmca-accusation-creation-flow:
+    topic: "dmca-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo cáo buộc DMCA"
+    save-file: "DMCANoticeAttachFile"
+    steps:
+      - name: "create-dmca-accusation"
+        topic: "dmca-management-domain"
+        handle-service: "ModerationService"
+        description: "Tạo DMCAaccusation và DMCAnotice"
+        parameters:
+          - AccountId
+          - GoodFaithStatement
+          - WorkClaimed
+          - Signature
+          - DMCANoticeAttachFileKeys
+        next-request-data:
+          - AccountId
+          - GoodFaithStatement
+          - WorkClaimed
+          - Signature
+          - DMCAAttachFileKeys
+        response-data:
+          - DMCAAccusationId
+          - DMCANoticeId
+          - AccountId
+          - GoodFaithStatement
+          - WorkClaimed
+          - Signature
+          - DMCAAttachFileKeys
+          - CreatedAt
+        onSuccess:
+          emit: "create-dmca-accusation.success"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-dmca-accusation.failed"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  content-dmca-staff-assignment-flow:
+    topic: "dmca-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Staff nhận xử lý cáo buộc DMCA"
+    save-file: ""
+    steps:
+      - name: "assign-dmca-accusation-to-staff"
+        topic: "dmca-management-domain"
+        handle-service: "ModerationService"
+        description: "Staff nhận xử lý cáo buộc DMCA"
+        parameters:
+          - DMCAAccusationId
+          - StaffAccountId
+        next-request-data:
+          - DMCAAccusationId
+          - StaffAccountId
+        response-data:
+          - DMCAAccusationId
+          - StaffAccountId
+          - UpdatedAt
+        onSuccess:
+          emit: "assign-dmca-accusation-to-staff.success"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "assign-dmca-accusation-to-staff.failed"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  content-dmca-counter-notice-creation-flow:
+    topic: "dmca-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo phản hồi cáo buộc DMCA"
+    save-file: ""
+    steps:
+      - name: "create-counter-notice"
+        topic: "dmca-management-domain"
+        handle-service: "ModerationService"
+        description: "Tạo DMCAcounternotice"
+        parameters:
+          - DMCAAccusationId
+          - AccountId
+          - StatementPerfury
+          - Jurisdiction
+          - Signature
+          - CounterNoticeAttachFileKeys 
+        next-request-data:
+          - DMCAAccusationId
+          - AccountId
+          - StatementPerfury
+          - Jurisdiction
+          - Signature
+          - CounterNoticeAttachFileKeys
+        response-data:
+          - DMCAAccusationId
+          - DMCAcounternoticeId
+          - AccountId
+          - StatementPerfury
+          - Jurisdiction
+          - Signature
+          - CounterNoticeAttachFileKeys
+          - CreatedAt
+        onSuccess:
+          emit: "create-counter-notice.success"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-counter-notice.failed"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  content-dmca-lawsuit-creation-flow:
+    topic: "dmca-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo thông tin kiện cáo cáo buộc DMCA"
+    save-file: ""
+    steps:
+      - name: "create-lawsuit-proof"
+        topic: "dmca-management-domain"
+        handle-service: "ModerationService"
+        description: "Tạo  LawsuitProof"
+        parameters:
+          - DMCAAccusationId
+          - AccountId
+          - GoodFaithStatement
+          - CourtName
+          - CaseNumber
+          - FilingDate
+          - Signature
+          - LawsuitProofAttachFileKeys
+        next-request-data:
+          - DMCAAccusationId
+          - AccountId
+          - GoodFaithStatement
+          - CourtName
+          - CaseNumber
+          - FilingDate
+          - Signature
+          - LawsuitProofAttachFileKeys
+        response-data:
+          - DMCAAccusationId
+          - LawsuitProofId
+          - AccountId
+          - GoodFaithStatement
+          - CourtName
+          - CaseNumber
+          - FilingDate
+          - Signature
+          - LawsuitProofAttachFileKeys
+          - CreatedAt
+        onSuccess:
+          emit: "create-lawsuit-proof.success"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-lawsuit-proof.failed"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  update-dmca-accusation-status-flow:
+    topic: "dmca-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật trạng thái phiên tòa cáo buộc DMCA"
+    save-file: ""
+    steps:
+      - name: "update-dmca-accusation-status"
+        topic: "dmca-management-domain"
+        handle-service: "ModerationService"
+        description: "Cập nhật status của DMCAAccusation và chạy flow dựa status đó"
+        parameters:
+          - DMCAAccusationId
+          - DMCAAccusationAction
+        next-request-data:
+          - DMCAAccusationId
+          - DMCAAccusationAction
+        response-data:
+          - DMCAAccusationId
+          - DMCAAccusationAction
+          - UpdatedAt
+        onSuccess:
+          emit: "update-dmca-accusation-status.success"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-dmca-accusation-status.failed"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  config-creation-flow:
+    topic: "system-configuration-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo cấu hình hệ thống"
+    save-file: ""
+    steps:
+      - name: "create-system-config"
+        topic: "system-configuration-domain"
+        handle-service: "SystemConfigurationService"
+        description: "Admin tạo một config mới"
+        parameters:
+          - Name
+          - PodcastSubscriptionConfig
+          - PodcastSuggestionConfig
+          - BookingConfig
+          - AccountConfig
+          - AccountViolationLevelConfig
+          - ReviewSessionConfig
+        next-request-data:
+          - Name
+          - PodcastSubscriptionConfig
+          - PodcastSuggestionConfig
+          - BookingConfig
+          - AccountConfig
+          - AccountViolationLevelConfig
+          - ReviewSessionConfig
+        response-data:
+          - SystemConfigProfileId
+          - Name
+          - PodcastSubscriptionConfig
+          - PodcastSuggestionConfig
+          - BookingConfig
+          - AccountConfig
+          - AccountViolationLevelConfig
+          - ReviewSessionConfig
+          - CreatedAt
+        onSuccess:
+          emit: "create-system-config.success"
+          topic: "system-configuration-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-system-config.failed"
+          topic: "system-configuration-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  config-update-flow:
+    topic: "system-configuration-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật cấu hình hệ thống"
+    save-file: ""
+    steps:
+      - name: "update-system-config"
+        topic: "system-configuration-domain"
+        handle-service: "SystemConfigurationService"
+        description: "Admin cập nhật một config"
+        parameters:
+          - SystemConfigProfileId
+          - Name
+          - PodcastSubscriptionConfig
+          - PodcastSuggestionConfig
+          - BookingConfig
+          - AccountConfig
+          - AccountViolationLevelConfig
+          - ReviewSessionConfig
+        next-request-data:
+          - SystemConfigProfileId
+          - Name
+          - PodcastSubscriptionConfig
+          - PodcastSuggestionConfig
+          - BookingConfig
+          - AccountConfig
+          - AccountViolationLevelConfig
+          - ReviewSessionConfig
+        response-data:
+          - SystemConfigProfileId
+          - Name
+          - PodcastSubscriptionConfig
+          - PodcastSuggestionConfig
+          - BookingConfig
+          - AccountConfig
+          - AccountViolationLevelConfig
+          - ReviewSessionConfig
+          - UpdatedAt
+        onSuccess:
+          emit: "update-system-config.success"
+          topic: "system-configuration-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-system-config.failed"
+          topic: "system-configuration-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  config-activation-flow:
+    topic: "system-configuration-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Kích hoạt cấu hình hệ thống"
+    save-file: ""
+    steps:
+      - name: "activate-system-config"
+        topic: "system-configuration-domain"
+        handle-service: "SystemConfigurationService"
+        description: "Admin kích hoạt hoặc tắt config"
+        parameters:
+          - SystemConfigProfileId
+          - IsActive
+        next-request-data:
+          - SystemConfigProfileId
+          - IsActive
+        response-data:
+          - SystemConfigProfileId
+          - IsActive
+          - UpdatedAt
+        onSuccess:
+          emit: "activate-system-config.success"
+          topic: "system-configuration-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "activate-system-config.failed"
+          topic: "system-configuration-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  config-deletion-flow:
+    topic: "system-configuration-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa cấu hình hệ thống"
+    save-file: ""
+    steps:
+      - name: "delete-system-config"
+        topic: "system-configuration-domain"
+        handle-service: "SystemConfigurationService"
+        description: "Admin xóa một config"
+        parameters:
+          - SystemConfigProfileId
+        next-request-data:
+          - SystemConfigProfileId
+        response-data:
+          - SystemConfigProfileId
+          - DeletedAt
+        onSuccess:
+          emit: "delete-system-config.success"
+          topic: "system-configuration-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-system-config.failed"
+          topic: "system-configuration-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  user-service-mail-sending-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gửi email dạng UserService enum"
+    save-file: ""
+    steps:
+      - name: "send-user-service-email"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Gửi email với các thông tin cần thiết"
+        parameters:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        next-request-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        response-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        onSuccess:
+          emit: "send-user-service-email.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "send-user-service-email.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  system-configuration-service-mail-sending-flow:
+    topic: "system-configuration-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gửi email dạng SystemConfigurationService enum"
+    save-file: ""
+    steps:
+      - name: "send-system-configuration-service-email"
+        topic: "system-configuration-domain"
+        handle-service: "SystemConfigurationService"
+        description: "Gửi email với các thông tin cần thiết"
+        parameters:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        next-request-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        response-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        onSuccess:
+          emit: "send-system-configuration-service-email.success"
+          topic: "system-configuration-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "send-system-configuration-service-email.failed"
+          topic: "system-configuration-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-management-service-mail-sending-flow:
+    topic: "booking-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gửi email dạng BookingManagementService enum"
+    save-file: ""
+    steps:
+      - name: "send-booking-management-service-email"
+        topic: "booking-management-domain"
+        handle-service: "BookingService"
+        description: "Gửi email với các thông tin cần thiết"
+        parameters:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        next-request-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        response-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        onSuccess:
+          emit: "send-booking-management-service-email.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "send-booking-management-service-email.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-service-mail-sending-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gửi email dạng PodcastService enum"
+    save-file: ""
+    steps:
+      - name: "send-podcast-service-email"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Gửi email với các thông tin cần thiết"
+        parameters:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        next-request-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        response-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        onSuccess:
+          emit: "send-podcast-service-email.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "send-podcast-service-email.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  subscription-service-mail-sending-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gửi email dạng SubscriptionService enum"
+    save-file: ""
+    steps:
+      - name: "send-subscription-service-email"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Gửi email với các thông tin cần thiết"
+        parameters:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        next-request-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        response-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        onSuccess:
+          emit: "send-subscription-service-email.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "send-subscription-service-email.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  moderation-service-mail-sending-flow:
+    topic: "report-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gửi email dạng ModerationService enum"
+    save-file: ""
+    steps:
+      - name: "send-moderation-service-email"
+        topic: "report-management-domain"
+        handle-service: "ModerationService"
+        description: "Gửi email với các thông tin cần thiết"
+        parameters:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        next-request-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        response-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        onSuccess:
+          emit: "send-moderation-service-email.success"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "send-moderation-service-email.failed"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  transaction-service-mail-sending-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gửi email dạng TransactionService enum"
+    save-file: ""
+    steps:
+      - name: "send-transaction-service-email"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Gửi email với các thông tin cần thiết"
+        parameters:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        next-request-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        response-data:
+          - MailTypeName
+          - MailObject
+          - ToEmail
+        onSuccess:
+          emit: "send-transaction-service-email.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "send-transaction-service-email.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcaster-subscription-income-release-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Giải phóng thu nhập từ đăng ký cho podcaster"
+    save-file: ""
+    steps:
+      - name: "create-podcast-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo podcast subscription transaction"
+        parameters:
+          - PodcastSubscriptionRegistrationId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - PodcastSubscriptionRegistrationId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - AccountBalanceTransactionId
+          - PodcastSubscriptionRegistrationId
+          - Amount
+          - TransactionTypeId
+          - CreatedAt
+        onSuccess:
+          emit: "create-account-balance-transaction.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "add-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "create-account-balance-transaction.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "add-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Thêm tiền vô ví Podcaster"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - MemberSubscriptionTransactionId
+        response-data:
+          - AccountId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "add-account-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "complete-member-subscription-transaction"
+              topic: "payment-processing-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "add-account-balance-amount.failed"
+          topic: "payment-processing-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
+      - name: "complete-podcast-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Hoàn thành podcast subscription transaction"
+        parameters:
+          - AccountBalanceTransactionId
+        next-request-data:
+          - AccountBalanceTransactionId
+        response-data:
+          - AccountBalanceTransactionId
+          - TransactionStatusId
+        onSuccess:
+          emit: "complete-podcast-subscription-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "complete-podcast-subscription-transaction.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "add-account-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+
+  unpublish-show-rollback-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
+    save-file: ""
+    steps:
+    - name: "unpublish-show-rollback"
+      topic: "content-management-domain"
+      handle-service: "PodcastService"
+      description: "Chuyển trạng thái của show lại và xóa deletedAt của các podcast subscription registration"
+      parameters:
+        - PodcastShowId
+      next-request-data:
+        - PodcastShowId
+      response-data:
+        - PodcastShowId
+      onSuccess:
+        emit: "unpublish-show-rollback.success"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        nextSteps: []
+        nextFlows: []
+      onFailure:
+        emit: "unpublish-show-rollback.failed"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        nextSteps: []
+        nextFlows: []
+
+  unpublish-channel-rollback-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Rollback việc hủy xuất bản channel"
+    save-file: ""
+    steps:
+    - name: "unpublish-channel-rollback"
+      topic: "content-management-domain"
+      handle-service: "PodcastService"
+      description: "Chuyển trạng thái của channel và show lại và xóa deletedAt của các podcast subscription registration"
+      parameters:
+        - PodcastChannelId
+        - PodcastShowId
+      next-request-data:
+        - PodcastChannelId
+        - PodcastShowId
+      response-data:
+        - PodcastChannelId
+        - PodcastShowId
+      onSuccess:
+        emit: "unpublish-channel-rollback.success"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        nextSteps: []
+        nextFlows: []
+      onFailure:
+        emit: "unpublish-channel-rollback.failed"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        nextSteps: []
+        nextFlows: []
+
+  create-payment-link-rollback-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
+    save-file: ""
+    steps:
+    - name: "create-payment-link-rollback"
+      topic: "payment-processing-domain"
+      handle-service: "TransactionService"
+      description: "Chuyển trạng thái của account balance transaction thành failed"
+      parameters:
+        - AccountBalanceTransactionId
+      next-request-data:
+        - AccountBalanceTransactionId
+      response-data:
+        - AccountBalanceTransactionId
+        - TransactionStatusId
+      onSuccess:
+        emit: "create-payment-link-rollback.success"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        nextSteps: []
+        nextFlows: []
+      onFailure:
+        emit: "create-payment-link-rollback.failed"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        nextSteps: []
+        nextFlows: []
+
+  add-account-balance-amount-rollback-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
+    save-file: ""
+    steps:
+    - name: "add-account-balance-amount-rollback"
+      topic: "user-management-domain"
+      handle-service: "UserService"
+      description: "Rút lại tiền đã gửi tới ví (chỉ 1 trong 2 accountid và podcasterid được có id)"
+      parameters:
+        - AccountId
+        - PodcasterId
+        - Amount
+      next-request-data:
+        - AccountId
+        - PodcasterId
+        - Amount
+      response-data:
+        - AccountId
+        - PodcasterId
+        - Amount
+        - NewBalance
+      onSuccess:
+        emit: "add-account-balance-amount-rollback.success"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        nextSteps: []
+        nextFlows: []
+      onFailure:
+        emit: "add-account-balance-amount-rollback.failed"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        nextSteps: []
+        nextFlows: []
+
+  subtract-account-balance-amount-rollback-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
+    save-file: ""
+    steps:
+    - name: "subtract-account-balance-amount-rollback"
+      topic: "user-management-domain"
+      handle-service: "UserService"
+      description: "Thêm lại tiền đã rút từ ví (chỉ 1 trong 2 accountid và podcasterid được có id)"
+      parameters:
+        - AccountId
+        - PodcasterId
+        - Amount
+      next-request-data:
+        - AccountId
+        - PodcasterId
+        - Amount
+      response-data:
+        - AccountId
+        - PodcasterId
+        - Amount
+        - NewBalance
+      onSuccess:
+        emit: "subtract-account-balance-amount-rollback.success"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        nextSteps: []
+        nextFlows: []
+      onFailure:
+        emit: "subtract-account-balance-amount-rollback.failed"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        nextSteps: []
+        nextFlows: []
+
+  add-podcaster-balance-amount-rollback-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
+    save-file: ""
+    steps:
+    - name: "add-podcaster-balance-amount-rollback"
+      topic: "user-management-domain"
+      handle-service: "UserService"
+      description: "Rút lại tiền đã gửi tới ví Podcaster"
+      parameters:
+        - PodcasterId
+        - Amount
+      next-request-data:
+        - PodcasterId
+        - Amount
+      response-data:
+        - PodcasterId
+        - Amount
+        - NewBalance
+      onSuccess:
+        emit: "add-podcaster-balance-amount-rollback.success"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        nextSteps: []
+        nextFlows: []
+      onFailure:
+        emit: "add-podcaster-balance-amount-rollback.failed"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        nextSteps: []
+        nextFlows: []
+
+  subtract-podcaster-balance-amount-rollback-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
+    save-file: ""
+    steps:
+    - name: "subtract-podcaster-balance-amount-rollback"
+      topic: "user-management-domain"
+      handle-service: "UserService"
+      description: "Thêm lại tiền đã rút từ ví Podcaster"
+      parameters:
+        - PodcasterId
+        - Amount
+      next-request-data:
+        - PodcasterId
+        - Amount
+      response-data:
+        - PodcasterId
+        - Amount
+        - NewBalance
+      onSuccess:
+        emit: "subtract-podcaster-balance-amount-rollback.success"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        nextSteps: []
+        nextFlows: []
+      onFailure:
+        emit: "subtract-podcaster-balance-amount-rollback.failed"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        nextSteps: []
+        nextFlows: []
+
+  create-account-balance-transaction-rollback-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
+    save-file: ""
+    steps:
+    - name: "create-account-balance-transaction-rollback"
+      topic: "payment-processing-domain"
+      handle-service: "TransactionService"
+      description: "Chuyển trạng thái của account balance transaction thành failed"
+      parameters:
+        - AccountBalanceTransactionId
+      next-request-data:
+        - AccountBalanceTransactionId
+      response-data:
+        - AccountBalanceTransactionId
+        - TransactionStatusId
+      onSuccess:
+        emit: "create-account-balance-transaction-rollback.success"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        nextSteps: []
+        nextFlows: []
+      onFailure:
+        emit: "create-account-balance-transaction-rollback.failed"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        nextSteps: []
+        nextFlows: []
+
+  create-booking-transaction-rollback-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
+    save-file: ""
+    steps:
+    - name: "create-booking-transaction-rollback"
+      topic: "payment-processing-domain"
+      handle-service: "TransactionService"
+      description: "Chuyển trạng thái của booking transaction thành failed"
+      parameters:
+        - BookingTransactionId
+      next-request-data:
+        - BookingTransactionId
+      response-data:
+        - BookingTransactionId
+        - TransactionStatusId
+      onSuccess:
+        emit: "create-booking-transaction-rollback.success"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        nextSteps: []
+        nextFlows: []
+      onFailure:
+        emit: "create-booking-transaction-rollback.failed"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        nextSteps: []
+        nextFlows: []
+
+  create-podcast-subscription-transaction-rollback-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
+    save-file: ""
+    steps:
+    - name: "create-podcast-subscription-transaction-rollback"
+      topic: "payment-processing-domain"
+      handle-service: "TransactionService"
+      description: "Chuyển trạng thái của member subscription transaction thành failed"
+      parameters:
+        - PodcastSubscriptionTransactionId
+      next-request-data:
+        - PodcastSubscriptionTransactionId
+      response-data:
+        - MemberSubscriptionTransactionId
+        - TransactionStatusId
+      onSuccess:
+        emit: "create-podcast-subscription-transaction-rollback.success"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        nextSteps: []
+        nextFlows: []
+      onFailure:
+        emit: "create-podcast-subscription-transaction-rollback.failed"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        nextSteps: []
+        nextFlows: []
+
+  create-member-subscription-transaction-rollback-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
+    save-file: ""
+    steps:
+    - name: "create-member-subscription-transaction-rollback"
+      topic: "payment-processing-domain"
+      handle-service: "TransactionService"
+      description: "Chuyển trạng thái của member subscription transaction thành failed"
+      parameters:
+        - MemberSubscriptionTransactionId
+      next-request-data:
+        - MemberSubscriptionTransactionId
+      response-data:
+        - MemberSubscriptionTransactionId
+        - TransactionStatusId
+      onSuccess:
+        emit: "create-member-subscription-transaction-rollback.success"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        nextSteps: []
+        nextFlows: []
+      onFailure:
+        emit: "create-member-subscription-transaction-rollback.failed"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        nextSteps: []
+        nextFlows: []

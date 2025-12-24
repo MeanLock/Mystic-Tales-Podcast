@@ -1,0 +1,84 @@
+// Text
+$text-primary: var(--room-browser_text-primary, #000000); // used (màu chữ chính) default: #000000
+$text-secondary: var(--room-browser_text-secondary, #60708a); // used (màu chữ phụ) default: #60708a
+$text-link: var(--room-browser_text-link, #005ae0); 
+$text-placeholder: var(--room-browser_text-placeholder, #000000);
+$text-error: var(--room-browser_text-error, #000000);
+$text-success: var(--room-browser_text-success, #000000);
+$text-muted: var(--room-browser_text-muted, #000000);
+
+// Input
+$input-bg-primary: var(--room-browser_input-bg-primary, #ffffff);  // used (màu nền chính của Input) default: #ffffff
+$input-bg-secondary: var(--room-browser_input-bg-secondary, #e5e7eb);  // used (màu nền phụ của Input) default: #e5e7eb
+$input-border-primary: var(--room-browser_input-border-primary, #0000000d); // used (màu viền của Input) default: #0000000d
+$input-border-secondary: var(--room-browser_input-border-secondary, #00000000); 
+$input-text-primary: var(--room-browser_input-text-primary, #000000); 
+$input-text-secondary: var(--room-browser_input-text-secondary, #000000);
+$input-focus-border-primary: var(--room-browser_input-focus-border-primary, #005ae0);  // used (màu viền khi focus của Input) default: #005ae0
+$input-focus-border-secondary: var(--room-browser_input-focus-border-secondary, #005ae0);
+$input-box-shadow-primary: var(--room-browser_input-box-shadow-primary, #00000033);  // used (box-shadow của Input khi focus) default: 0 0 10px 0 #00000033
+$input-box-shadow-secondary: var(--room-browser_input-box-shadow-secondary, #00000033);
+
+// Title
+$title-primary: var(--room-browser_title-primary, #000000);    
+$title-secondary: var(--room-browser_title-secondary, #000000);
+$title-error: var(--room-browser_title-error, #000000);
+$title-success: var(--room-browser_title-success, #000000);
+
+// Button
+$button-bg-primary: var(--room-browser_button-bg-primary, #ffffff);  // used (màu nền của Button) default: #ffffff
+$button-bg-secondary: var(--room-browser_button-bg-secondary, #005ae0); 
+$button-hover-bg-primary: var(--room-browser_button-hover-bg-primary, #e5e7eb);   // used (màu nền của Button khi hover) default: #e5e7eb
+$button-hover-bg-secondary: var(--room-browser_button-hover-bg-secondary, #000000);
+$button-text-primary: var(--room-browser_button-text-primary, #000000); 
+$button-text-secondary: var(--room-browser_button-text-secondary, #ffffff); 
+$button-hover-text-primary: var(--room-browser_button-hover-text-primary, #000000);  // used (màu chữ của Button khi hover) default: #000000
+$button-hover-text-secondary: var(--room-browser_button-hover-text-secondary, #000000);
+$button-active-bg-primary: var(--room-browser_button-active-bg-primary, #e5efff);  // used (màu nền của Button khi active, xài trong filter button) default: #e5efff
+$button-active-bg-secondary: var(--room-browser_button-active-bg-secondary, #000000);
+$button-active-text-primary: var(--room-browser_button-active-text-primary, #005ae0);  // used (màu chữ của Button khi active, xài trong filter button) default: #005ae0
+$button-active-text-secondary: var(--room-browser_button-active-text-secondary, #000000);
+$button-disabled-bg: var(--room-browser_button-disabled-bg, #000000);
+$button-disabled-text: var(--room-browser_button-disabled-text, #000000);
+
+// Action Button
+$action-button-bg: var(--room-browser_action-button-bg, #ffffff);   // used (màu nền của Action Button) default: #ffffff
+$action-group-bg: var(--room-browser_action-group-bg, #ffffff); 
+$action-button-hover-bg: var(--room-browser_action-button-hover-bg, #ccd0d5);  // used (màu nền khi hover của Action Button) default: #ccd0d5
+$action-button-active-bg: var(--room-browser_action-button-active-bg, #c1d9ff);  
+$action-button-active-hover-bg: var(--room-browser_action-button-active-hover-bg, #c1d9ff); // used (màu nền khi hover của Action Button khi active) default: #c1d9ff
+$action-button-active-text: var(--room-browser_action-button-active-text, #005ae0); // used (màu chữ của Action Button khi active) default: #005ae0
+
+// Background
+$background-primary: var(--room-browser_background-primary, #ffffff);   // used (màu nền chính) default: #ffffff
+$background-secondary: var(--room-browser_background-secondary, #ffffff); 
+$background-overlay: var(--room-browser_background-overlay, rgba(0, 0, 0, 0.5));
+$background-highlight: var(--room-browser_background-highlight, #000000);
+$background-card: var(--room-browser_background-card, #000000);
+
+// Icon
+$icon-primary: var(--room-browser_icon-primary, #000000);  // used (màu icon chính) default: #000000
+$icon-secondary: var(--room-browser_icon-secondary, #b1b5b9); // used (màu icon phụ) default: #b1b5b9
+$icon-disabled: var(--room-browser_icon-disabled, #000000);
+$icon-highlight: var(--room-browser_icon-highlight, #000000);
+
+// Divider & Border
+$border-primary: var(--room-browser_border-primary, #000000); // used (màu viền chính) default: #000000
+$border-secondary: var(--room-browser_border-secondary, #00000026); // used (màu viền phụ) default: #00000026
+$divider-light: var(--room-browser_divider-light, #000000);
+$divider-dark: var(--room-browser_divider-dark, #000000);
+
+// Shadow
+$shadow-primary: var(--room-browser_shadow-primary, 0 2px 4px #0000001a);
+$shadow-secondary: var(--room-browser_shadow-secondary, 0 2px 6px #00000033);
+
+// Popup
+$popup-bg: var(--room-browser_popup-bg, #ffffff); // used (màu nền của PopUp) default: #ffffff
+$popup-item-bg: var(--room-browser_popup-bg, #ffffff); // used (màu nền của item trong PopUp) default: #ffffff
+$popup-item-hover-bg: var(--room-browser_popup-hover-bg, #e5e7eb); // used (màu nền của item trong PopUp khi hover) default: #e5e7eb
+$popup-item-border: var(--room-browser_popup-border, #ccd0d5); // used (màu viền của ảnh trong item trong PopUp ) default: #ccd0d5
+
+// Room Item
+$room-item-bg: var(--room-browser_room-item-bg, #ffffff); // used (màu nền của Room Item) default: #ffffff
+$room-item-hover-bg: var(--room-browser_room-item-hover-bg, #e5e7eb); // used (màu nền của Room Item khi hover) default: #f5f6f7
+$room-item-active-bg: var(--room-browser_room-item-border, #dbebff);  // used (màu nền của Room Item khi active) default: #dbebff

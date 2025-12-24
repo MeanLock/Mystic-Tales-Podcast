@@ -41,10 +41,14 @@ namespace BookingManagementService.Common.Registrations
             services.AddSingleton<IEmbeddingVectorModelConfig, EmbeddingVectorModelConfig>();
             services.AddSingleton<IAccountConfig, AccountConfig>();
             services.AddSingleton<IFileValidationConfig, FileValidationConfig>();
+            services.AddSingleton<IMailPropertiesConfig, MailPropertiesConfig>();
+            services.AddSingleton<IDMCAAccusationConfig, DMCAAccusationConfig>();
+            services.AddSingleton<IBackgroundJobsConfig, BackgroundJobsConfig>();
+            services.AddSingleton<ICustomerListenSessionProcedureConfig, CustomerListenSessionProcedureConfig>();
+            services.AddSingleton<IBookingListenSessionConfig, BookingListenSessionConfig>();
 
             // SystemService
-            services.AddSingleton<ISystemServiceConfig,SystemServiceConfig>();
- 
+            services.AddSingleton<ISystemServiceConfig, SystemServiceConfig>();
             return services;
         }
     }

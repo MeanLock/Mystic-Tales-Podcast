@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using UserService.Common.AppConfigurations.App.interfaces;
-using UserService.Common.Configurations.Consul.interfaces;
+using UserService.Infrastructure.Configurations.Consul.interfaces;
 
 namespace UserService.API.Configurations.App
 {

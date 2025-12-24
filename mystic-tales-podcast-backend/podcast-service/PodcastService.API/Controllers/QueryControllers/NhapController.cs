@@ -5,12 +5,24 @@ using PodcastService.BusinessLogic.Models.CrossService;
 using PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using PodcastService.Infrastructure.Services.Audio.AcoustID;
 using PodcastService.Infrastructure.Models.Audio.AcoustID;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using PodcastService.BusinessLogic.Enums.Account;
+using PodcastService.BusinessLogic.DTOs.Account;
+using PodcastService.BusinessLogic.DTOs.Subscription;
+using PodcastService.BusinessLogic.DTOs.Episode;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.Authorization;
+using PodcastService.BusinessLogic.DTOs.Cache;
+using PodcastService.BusinessLogic.SignalRHubs;
+using PodcastService.Infrastructure.Services.Audio.Hls;
 
 namespace PodcastService.API.Controllers.QueryControllers
 {
     [Route("api/nhap")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class NhapController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;
@@ -19,16 +31,77 @@ namespace PodcastService.API.Controllers.QueryControllers
         private readonly FileIOHelper _fileIOHelper;
         private readonly AcoustIDAudioFingerprintGenerator _acoustIDAudioFingerprintGenerator;
         private readonly AcoustIDAudioFingerprintComparator _acoustIDAudioFingerprintComparator;
+        private readonly IHubContext<PodcastContentNotificationHub> _signalHubContext;
+        private readonly FFMpegCoreHlsService _ffMpegCoreHlsService;
 
         public NhapController(GenericQueryService genericQueryService, HttpServiceQueryClient httpServiceQueryClient,
             FileIOHelper fileIOHelper, AcoustIDAudioFingerprintGenerator acoustIDAudioFingerprintGenerator,
-            AcoustIDAudioFingerprintComparator acoustIDAudioFingerprintComparator)
+            AcoustIDAudioFingerprintComparator acoustIDAudioFingerprintComparator,
+            IHubContext<PodcastContentNotificationHub> signalHubContext,
+            FFMpegCoreHlsService ffMpegCoreHlsService)
         {
             _genericQueryService = genericQueryService;
             _httpServiceQueryClient = httpServiceQueryClient;
             _fileIOHelper = fileIOHelper;
             _acoustIDAudioFingerprintGenerator = acoustIDAudioFingerprintGenerator;
             _acoustIDAudioFingerprintComparator = acoustIDAudioFingerprintComparator;
+            _signalHubContext = signalHubContext;
+            _ffMpegCoreHlsService = ffMpegCoreHlsService;
+        }
+
+        [HttpGet("test-get-restricted-terms")]
+        public async Task<IActionResult> TestGetRestrictedTerms()
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastRestrictedTerms",
+                            QueryType = "findall",
+                            EntityType = "PodcastRestrictedTerm",
+                                Parameters = JObject.FromObject(new
+                                {
+
+                                }),
+                            Fields = new[] { "Id", "Term" }
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+
+            // return Ok((JArray)result.Results["podcastRestrictedTerms"]);
+            List<string> terms = ((JArray)result.Results["podcastRestrictedTerms"]).Select(terms => terms["Term"].ToString()).ToList();
+            return Ok(terms);
+        }
+
+        [HttpGet("test-get-staff")]
+        public async Task<IActionResult> TestGetStaff()
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                {
+                    new BatchQueryItem
+                    {
+                        Key = "account",
+                        QueryType = "findall",
+                        EntityType = "Account",
+
+                        Parameters = JObject.FromObject(new
+                        {
+                            where = new
+                            {
+                                RoleId = (int) RoleEnum.Staff
+                            },
+                        }),
+                    }
+                }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+            var accounts = ((JArray)result.Results["account"]).ToObject<List<AccountDTO>>();
+            return Ok(accounts);
         }
 
         [HttpPost("generate-audio-fingerprint")]
@@ -83,6 +156,29 @@ namespace PodcastService.API.Controllers.QueryControllers
                 Console.WriteLine($"Error comparing fingerprints: {ex.Message}");
                 return StatusCode(500, "Internal server error while comparing fingerprints.");
             }
+        }
+
+        // Active SignlR 30s heartbeat to send a message to client
+        [HttpGet("signalr-active-test")]
+        public IActionResult SignalRActiveTest()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            Console.WriteLine($"Account ID from HttpContext: {account?.Id}");
+            // timeout 30s và gửi message về client
+            Task.Run(async () =>
+            {
+                await Task.Delay(5000); // 30 seconds delay
+                await _signalHubContext.Clients.User(account.Id.ToString()).SendAsync("ReceiveMessageeee", JObject.FromObject(new { Messageee = "SignalR is active and the server is reachable." }));
+            });
+            return Ok("SignalR is active and the server is reachable. userId: " + account?.Id);
+        }
+
+        // test get root path 
+        [HttpGet("test-get-root-path")]
+        public IActionResult TestGetRootPath()
+        {
+            var rootPath = _ffMpegCoreHlsService.GetProjectRootPath();
+            return Ok(rootPath);
         }
     }
 }

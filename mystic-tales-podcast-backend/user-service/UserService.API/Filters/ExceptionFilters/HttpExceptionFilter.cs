@@ -15,7 +15,7 @@ namespace UserService.API.Filters.ExceptionFilters
 
             int status = (int)HttpStatusCode.InternalServerError;
             // string message = "Lỗi hệ thống!";
-            string message = "Something went wrong!";
+            string message = "Something went wrong! \nError details: " + context.Exception.Message;
 
             if (context.Exception is HttpRequestException httpRequestException)
             {

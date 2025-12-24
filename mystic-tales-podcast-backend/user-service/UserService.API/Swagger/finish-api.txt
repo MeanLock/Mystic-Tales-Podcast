@@ -1,0 +1,6 @@
+/api/user-service/api/auth/register/customer
+/api/user-service/api/auth/account-verification
+/api/user-service/api/auth/register/staff
+/api/user-service/api/auth/login-manual
+/api/user-service/api/auth/login-google
+

@@ -5,5 +5,6 @@ namespace BookingManagementService.Common.AppConfigurations.BusinessSetting.inte
     public interface IAccountConfig
     {
         int VerifyCodeLength { get; set; }
+        int AccountStatusCacheExpirySeconds { get; set; }
     }
 }

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI Whisper Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="text"], input[type="password"], select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .file-upload {
+            position: relative;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9ff;
+        }
+
+        .file-upload:hover {
+            border-color: #764ba2;
+            background: #f0f1ff;
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-info {
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .transcript {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            line-height: 1.8;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .meta-info {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #856404;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 OpenAI Whisper Transcription</h1>
+        <p class="subtitle">Test Speech-to-Text với Whisper API</p>
+
+        <div class="input-group">
+            <label>OpenAI API Key</label>
+            <input type="password" id="apiKey" placeholder="sk-...">
+        </div>
+
+        <div class="input-group">
+            <label>Model</label>
+            <select id="model">
+                <option value="whisper-1">whisper-1</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Ngôn ngữ (tùy chọn)</label>
+            <select id="language">
+                <option value="">Auto-detect</option>
+                <option value="vi">Tiếng Việt</option>
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Audio File (MP3, MP4, WAV, M4A - tối đa 25MB)</label>
+            <div class="file-upload" id="fileUpload">
+                <input type="file" id="audioFile" accept="audio/*,video/*">
+                📁 Click hoặc kéo thả file audio vào đây
+                <div class="file-info" id="fileInfo"></div>
+            </div>
+        </div>
+
+        <button id="transcribeBtn" onclick="transcribe()">
+            🚀 Bắt đầu Transcribe
+        </button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Đang xử lý audio...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="result" id="result">
+            <h3>📝 Kết quả Transcript:</h3>
+            <div class="transcript" id="transcript"></div>
+            <div class="meta-info">
+                <div class="meta-item">
+                    ⏱️ Thời gian: <span id="duration"></span>
+                </div>
+                <div class="meta-item">
+                    🌐 Ngôn ngữ: <span id="detectedLang"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="note">
+            💡 <strong>Lưu ý:</strong> API key của bạn chỉ được lưu trong session hiện tại và không được gửi đi đâu khác ngoài OpenAI.
+            Lấy API key tại: <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let apiKey = '';
+
+        document.getElementById('audioFile').addEventListener('change', function(e) {
+            selectedFile = e.target.files[0];
+            if (selectedFile) {
+                const sizeMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
+                document.getElementById('fileInfo').textContent = 
+                    `✓ ${selectedFile.name} (${sizeMB} MB)`;
+            }
+        });
+
+        document.getElementById('apiKey').addEventListener('input', function(e) {
+            apiKey = e.target.value.trim();
+        });
+
+        async function transcribe() {
+            const error = document.getElementById('error');
+            const result = document.getElementById('result');
+            const loading = document.getElementById('loading');
+            const btn = document.getElementById('transcribeBtn');
+
+            error.classList.remove('show');
+            result.classList.remove('show');
+
+            if (!apiKey) {
+                error.textContent = '❌ Vui lòng nhập OpenAI API Key';
+                error.classList.add('show');
+                return;
+            }
+
+            if (!selectedFile) {
+                error.textContent = '❌ Vui lòng chọn file audio';
+                error.classList.add('show');
+                return;
+            }
+
+            if (selectedFile.size > 25 * 1024 * 1024) {
+                error.textContent = '❌ File quá lớn! Tối đa 25MB';
+                error.classList.add('show');
+                return;
+            }
+
+            loading.classList.add('show');
+            btn.disabled = true;
+
+            const startTime = Date.now();
+
+            try {
+                // Create FormData inside try block to avoid cloning issues
+                const formData = new FormData();
+                formData.append('file', selectedFile, selectedFile.name);
+                formData.append('model', document.getElementById('model').value);
+                formData.append('response_format', 'json');
+                
+                const language = document.getElementById('language').value;
+                if (language) {
+                    formData.append('language', language);
+                }
+
+                // Use XMLHttpRequest instead of fetch for better FormData support
+                const xhr = new XMLHttpRequest();
+                
+                xhr.open('POST', 'https://api.openai.com/v1/audio/transcriptions', true);
+                xhr.setRequestHeader('Authorization', `Bearer ${apiKey}`);
+
+                xhr.onload = function() {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        
+                        if (xhr.status !== 200) {
+                            throw new Error(data.error?.message || 'Có lỗi xảy ra');
+                        }
+
+                        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+
+                        document.getElementById('transcript').textContent = data.text;
+                        document.getElementById('duration').textContent = `${duration}s`;
+                        document.getElementById('detectedLang').textContent = language || 'Auto-detected';
+                        
+                        result.classList.add('show');
+                    } catch (err) {
+                        error.textContent = `❌ Lỗi: ${err.message}`;
+                        error.classList.add('show');
+                    } finally {
+                        loading.classList.remove('show');
+                        btn.disabled = false;
+                    }
+                };
+
+                xhr.onerror = function() {
+                    error.textContent = '❌ Lỗi kết nối. Vui lòng kiểm tra API key và thử lại.';
+                    error.classList.add('show');
+                    loading.classList.remove('show');
+                    btn.disabled = false;
+                };
+
+                xhr.send(formData);
+
+            } catch (err) {
+                error.textContent = `❌ Lỗi: ${err.message}`;
+                error.classList.add('show');
+                loading.classList.remove('show');
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

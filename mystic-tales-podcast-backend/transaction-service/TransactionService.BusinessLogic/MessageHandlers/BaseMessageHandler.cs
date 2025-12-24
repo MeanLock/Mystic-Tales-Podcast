@@ -26,5 +26,17 @@ namespace TransactionService.BusinessLogic.MessageHandlers
                 return null;
             }
         }
+        protected string SerializeToJson<T>(T data) where T : class
+        {
+            try
+            {
+                return JsonConvert.SerializeObject(data, Formatting.Indented);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to serialize data: {Data}", data);
+                return "{}";
+            }
+        }
     }
 }

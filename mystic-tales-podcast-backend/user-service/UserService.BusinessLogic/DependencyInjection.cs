@@ -16,6 +16,7 @@ namespace UserService.BusinessLogic
             services.AddOpenAIServices();
             services.AddMessagingServices();
             services.AddCrossServiceServices();
+            services.AddAudioServices();
             return services;
         }
     }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using PodcastService.DataAccess.Entities.postgres;
+using PodcastService.DataAccess.Entities.Postgres;
 
 namespace PodcastService.DataAccess.Data;
 

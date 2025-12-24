@@ -1,10 +1,6 @@
-﻿using SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices;
-using Microsoft.Extensions.DependencyInjection;
-using SubscriptionService.BusinessLogic.Services.DbServices.FilterServices;
-using SubscriptionService.BusinessLogic.Services.DbServices.SurveyServices;
-using SubscriptionService.BusinessLogic.Services.DbServices.PaymentServices;
-using SubscriptionService.BusinessLogic.Services.DbServices.ReportServices;
+﻿using Microsoft.Extensions.DependencyInjection;
 using SubscriptionService.BusinessLogic.Services.DbServices.MiscServices;
+using SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices;
 
 namespace SubscriptionService.BusinessLogic.Registrations
 {
@@ -12,33 +8,15 @@ namespace SubscriptionService.BusinessLogic.Registrations
     {
         public static IServiceCollection AddDbServices(this IServiceCollection services)
         {
-            // ConfigServices
-            services.AddScoped<SystemConfigService>();
-
             // SubscriptionServices
-            services.AddScoped<AuthService>();
-            services.AddScoped<AccountService>();
-
-            // PaymentServices
-            services.AddScoped<AccountPaymentService>();
-
-            // SurveyServices
-            services.AddScoped<SurveyCoreService>();
-            services.AddScoped<SurveySessionService>();
-            services.AddScoped<SurveyResponseService>();
-            services.AddScoped<SurveyTransactionService>();
-
-            // FilterServices
-            services.AddScoped<FilterTagService>();
-
-            // ReportServices
-            services.AddScoped<SurveyStatisticsService>();
-            services.AddScoped<TransactionStatisticsService>();
-            services.AddScoped<UserStatisticsService>();
+            services.AddScoped<PodcastSubscriptionService>();
+            services.AddScoped<MemberSubscriptionService>();
 
             // MiscServices
-            services.AddScoped<PlatformFeedbackService>();
+            services.AddScoped<MailOperationService>();
 
+            // CachingServices
+            services.AddScoped<AccountCachingService>();
 
 
 

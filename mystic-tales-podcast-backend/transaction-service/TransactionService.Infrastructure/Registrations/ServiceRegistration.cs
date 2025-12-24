@@ -20,6 +20,7 @@ using TransactionService.Infrastructure.Configurations.Payos;
 using Net.payOS;
 using TransactionService.Infrastructure.Services.Kafka;
 using TransactionService.Infrastructure.Services.Audio.AcoustID;
+using TransactionService.Infrastructure.Services.Consul.DistributedLock;
 
 namespace TransactionService.Infrastructure.Registrations
 {
@@ -127,7 +128,8 @@ namespace TransactionService.Infrastructure.Registrations
             IConfiguration configuration)
         {
             // Register Redis service
-            services.AddScoped<RedisCacheService>();
+            services.AddScoped<RedisInstanceCacheService>();
+            services.AddScoped<RedisSharedCacheService>();
 
             // Configure Redis connection
             services.AddSingleton<IConnectionMultiplexer>(sp =>
@@ -175,6 +177,10 @@ namespace TransactionService.Infrastructure.Registrations
                     config.Address = new Uri(consulServiceHost);
                 });
             });
+
+            // Register Consul Distributed Lock Service
+            services.AddSingleton<ConsulDistributedLockService>();
+            services.AddSingleton<ConsulSessionManager>();
 
             return services;
         }

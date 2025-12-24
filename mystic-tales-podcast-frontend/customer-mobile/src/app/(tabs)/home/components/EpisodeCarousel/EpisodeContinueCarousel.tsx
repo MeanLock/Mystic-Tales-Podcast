@@ -1,0 +1,139 @@
+import React, { useMemo } from "react";
+import { EpisodeCardWithImageProps, EpisodeFromApi } from "@/src/types/episode";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
+import { Text } from "@/src/components/ui/Text";
+import { MaterialIcons } from "@expo/vector-icons";
+import EpisodeContinueListeningCard from "./EpisodeCardContinueListening";
+import { Episode } from "@/src/core/types/episode.type";
+import { useDispatch } from "react-redux";
+import { useRouter } from "expo-router";
+import { setEpisodesData } from "@/src/features/episode/episodeSlice";
+
+const ITEM_SPACING = 14; // Horizontal spacing between columns
+const ITEM_HEIGHT = 80; // Height of each episode card
+const ITEM_VERTICAL_SPACING = 14; // Vertical spacing between cards in a column
+const itemsPerColumn = 3; // Number of items per column
+
+export type ContinueListenSession = {
+  Episode: {
+    Id: string;
+    Name: string;
+    MainImageFileKey: string;
+    ReleaseDate: string;
+    AudioLength: number;
+    IsReleased: boolean;
+  };
+  Podcaster: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    MainImageFileKey: string;
+  };
+  PodcastEpisodeListenSession: {
+    Id: string;
+    LastListenDurationSeconds: number;
+  };
+};
+
+const EpisodeContinueCarousel = ({
+  title,
+  episodes,
+}: {
+  title: React.ReactNode;
+  episodes: ContinueListenSession[];
+}) => {
+  // Organize episodes into groups for the grid layout
+  const gridData = useMemo(() => {
+    // Group episodes into columns (3 items per column)
+    const columns = [];
+    for (let i = 0; i < episodes.length; i += itemsPerColumn) {
+      const column = episodes.slice(i, i + itemsPerColumn);
+      columns.push(column);
+    }
+    return columns;
+  }, [episodes]);
+
+  const renderGridColumn = ({ item }: { item: ContinueListenSession[] }) => {
+    // Calculate dynamic height based on actual number of items in this column
+    const columnHeight =
+      ITEM_HEIGHT * item.length +
+      ITEM_VERTICAL_SPACING * Math.max(0, item.length - 1);
+
+    return (
+      <View style={[styles.gridColumn, { height: columnHeight }]}>
+        {item.map((episode, index) => (
+          <View
+            key={episode.Episode.Id}
+            style={[
+              styles.episodeContainer,
+              // Remove margin from last item
+              index === item.length - 1 ? null : styles.episodeMargin,
+            ]}
+          >
+            <EpisodeContinueListeningCard episode={episode} />
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  const dispatch = useDispatch(); //thịnh
+  const router = useRouter();
+  const handleViewMoreEpisodesFromFeed = () => {
+    // Implement navigation or action to view more episodes from the show
+    dispatch(
+      setEpisodesData({
+        episodes: episodes.map((episode) => episode.Episode) as Episode[],
+        title: `Continue Listening`,
+        from: "Feed",
+      })
+    );
+    // Navigate to the episodes list page
+    router.push(`/(content)/episodes`);
+  };
+
+  return (
+    <View className="gap-5 mb-10">
+      {/* Title with See More */}
+      <Pressable onPress={() => handleViewMoreEpisodesFromFeed()}>
+        <View className="flex flex-row items-center justify-between w-full">
+          {title}
+          <View className="flex flex-row justify-center items-center gap-2">
+            <Text className="text-white font-medium p-0">See more</Text>
+            <MaterialIcons name="arrow-circle-right" size={16} color={"#fff"} />
+          </View>
+        </View>
+      </Pressable>
+
+      {/* Episodes Grid FlatList */}
+      <FlatList
+        data={gridData}
+        renderItem={renderGridColumn}
+        keyExtractor={(_, index) => `grid-column-${index}`}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
+        ItemSeparatorComponent={() => <View style={{ width: ITEM_SPACING }} />}
+        style={{ width: "100%" }}
+      />
+    </View>
+  );
+};
+
+export default EpisodeContinueCarousel;
+
+const styles = StyleSheet.create({
+  contentContainer: {
+    paddingHorizontal: 0,
+  },
+  gridColumn: {
+    width: 350, // Width of each column
+    // Height is now calculated dynamically in renderGridColumn
+  },
+  episodeContainer: {
+    height: ITEM_HEIGHT,
+  },
+  episodeMargin: {
+    marginBottom: ITEM_VERTICAL_SPACING,
+  },
+});

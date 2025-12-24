@@ -4,7 +4,7 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>  
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -26,6 +26,8 @@
 		<PackageReference Include="Confluent.Kafka" Version="2.3.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.0" />
+		<PackageReference Include="itext7" Version="9.4.0" />
+		<PackageReference Include="itext7.bouncy-castle-adapter" Version="9.4.0" />
 
 		<PackageReference Include="NAudio" Version="2.2.1" />
 		<PackageReference Include="AcoustID.NET" Version="1.3.3" />
@@ -34,7 +36,7 @@
 
 	<ItemGroup>
 		<Folder Include="Configurations\" />
-		<None Update="Configurations\Audio\Hls\ffmpeg\bin\ffmpeg.exe">
+		<!-- <None Update="Configurations\Audio\Hls\ffmpeg\bin\ffmpeg.exe">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="Configurations\Audio\Hls\ffmpeg\bin\ffplay.exe">
@@ -42,7 +44,8 @@
 		</None>
 		<None Update="Configurations\Audio\Hls\ffmpeg\bin\ffprobe.exe">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
+		</None> -->
+		<EmbeddedResource Include="Configurations\Fonts\NotoSansCJKRegular.otf" />
 	</ItemGroup>
 
 </Project>

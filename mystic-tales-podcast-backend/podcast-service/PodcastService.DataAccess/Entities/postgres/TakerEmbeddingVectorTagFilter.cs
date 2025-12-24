@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using Pgvector;
 
-namespace PodcastService.DataAccess.Entities.postgres;
+namespace PodcastService.DataAccess.Entities.Postgres;
 
 public partial class TakerEmbeddingVectorTagFilter
 {

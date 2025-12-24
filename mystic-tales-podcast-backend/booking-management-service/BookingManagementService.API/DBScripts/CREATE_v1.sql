@@ -22,41 +22,61 @@ CREATE TABLE Booking (
     accountId INT NOT NULL,
     podcastBuddyId INT NOT NULL,
     price DECIMAL(18,2) NULL,
+    deadlineDays INT NULL,
     deadline DATE NULL,
     demoAudioFileKey NVARCHAR(MAX) NULL,
     bookingManualCancelledReason NVARCHAR(MAX) NULL,
     bookingAutoCancelReason NVARCHAR(MAX) NULL,
+    assignedStaffId INT NULL,
+    customerBookingCancelDepositRefundRate FLOAT NULL DEFAULT NULL,
+    podcastBuddyBookingCancelDepositRefundRate FLOAT NULL DEFAULT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME))
 );
 
--- BookingRequirementAttachFile table
-CREATE TABLE BookingRequirementAttachFile (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    bookingId INT NOT NULL,
-    attachFileKey NVARCHAR(MAX) NOT NULL,
-    description NVARCHAR(MAX) NOT NULL DEFAULT '',
-    FOREIGN KEY (bookingId) REFERENCES Booking(id)
+-- PodcastBookingToneCategory table
+CREATE TABLE PodcastBookingToneCategory (
+    id INT PRIMARY KEY,
+    name NVARCHAR(100) NOT NULL
 );
 
--- BookingNegotiation table
-CREATE TABLE BookingNegotiation (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
-    bookingId INT NOT NULL,
-    note NVARCHAR(MAX) NOT NULL DEFAULT '',
-    deadline DATE NULL,
-    price DECIMAL(18,2) NULL,
-    demoAudioRequired BIT NOT NULL DEFAULT 0,
-    demoAudioFileKey NVARCHAR(MAX) NULL,
-    isCompleted BIT NOT NULL DEFAULT 0,
-    isFromCustomer BIT NOT NULL DEFAULT 1,
+-- PodcastBookingTone table
+CREATE TABLE PodcastBookingTone (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    name NVARCHAR(100) NOT NULL,
+    description NVARCHAR(500) NULL DEFAULT NULL,
+    podcastBookingToneCategoryId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    FOREIGN KEY (bookingId) REFERENCES Booking(id)
+    deletedAt DATETIME NULL DEFAULT NULL,
+    FOREIGN KEY (podcastBookingToneCategoryId) REFERENCES PodcastBookingToneCategory(id)
+);
+
+-- PodcastBuddyBookingTone table
+CREATE TABLE PodcastBuddyBookingTone (
+    podcasterId INT NOT NULL,
+    podcastBookingToneId UNIQUEIDENTIFIER NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    PRIMARY KEY (podcasterId, podcastBookingToneId),
+    FOREIGN KEY (podcastBookingToneId) REFERENCES PodcastBookingTone(id)
+);
+
+-- BookingRequirement table
+CREATE TABLE BookingRequirement (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    bookingId INT NOT NULL,
+    name NVARCHAR(MAX) NOT NULL DEFAULT '',
+    description NVARCHAR(MAX) NOT NULL DEFAULT '',
+    requirementDocumentFileKey NVARCHAR(MAX) NOT NULL,
+    [order] INT NOT NULL,
+    wordCount INT NOT NULL,
+    podcastBookingToneId UNIQUEIDENTIFIER NOT NULL,
+    FOREIGN KEY (bookingId) REFERENCES Booking(id),
+    FOREIGN KEY (podcastBookingToneId) REFERENCES PodcastBookingTone(id)
 );
 
 -- BookingStatusTracking table
 CREATE TABLE BookingStatusTracking (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     bookingId INT NOT NULL,
     bookingStatusId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -66,32 +86,49 @@ CREATE TABLE BookingStatusTracking (
 
 -- BookingProducingRequest table
 CREATE TABLE BookingProducingRequest (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     bookingId INT NOT NULL,
     note NVARCHAR(MAX) NOT NULL DEFAULT '',
-    deadline DATE NOT NULL,
+    deadlineDays INT NULL,
+    deadline DATE NULL,
     isAccepted BIT NULL,
     finishedAt DATETIME NULL DEFAULT NULL,
+    rejectReason NVARCHAR(MAX) NULL DEFAULT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (bookingId) REFERENCES Booking(id)
 );
 
 -- BookingPodcastTrack table
 CREATE TABLE BookingPodcastTrack (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     bookingId INT NOT NULL,
     bookingProducingRequestId UNIQUEIDENTIFIER NOT NULL,
     audioFileKey NVARCHAR(MAX) NOT NULL,
     audioFileSize FLOAT NOT NULL,
     audioLength INT NOT NULL,
+    audioEncryptionKeyId UNIQUEIDENTIFIER NULL DEFAULT NULL,
+    audioEncryptionKeyFileKey NVARCHAR(MAX) NULL DEFAULT NULL,
     remainingPreviewListenSlot INT NOT NULL,
+    bookingRequirementId UNIQUEIDENTIFIER NOT NULL,
     FOREIGN KEY (bookingId) REFERENCES Booking(id),
-    FOREIGN KEY (bookingProducingRequestId) REFERENCES BookingProducingRequest(id)
+    FOREIGN KEY (bookingProducingRequestId) REFERENCES BookingProducingRequest(id),
+    FOREIGN KEY (bookingRequirementId) REFERENCES BookingRequirement(id)
+);
+
+CREATE TABLE BookingPodcastTrackListenSession (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT NOT NULL,
+    bookingPodcastTrackId UNIQUEIDENTIFIER NOT NULL,
+    lastListenDurationSeconds INT NOT NULL DEFAULT 0,
+    isCompleted BIT NOT NULL DEFAULT 0,
+    expiredAt DATETIME NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    FOREIGN KEY (bookingPodcastTrackId) REFERENCES BookingPodcastTrack(id)
 );
 
 -- BookingProducingRequestPodcastTrackToEdit table
 CREATE TABLE BookingProducingRequestPodcastTrackToEdit (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     bookingProducingRequestId UNIQUEIDENTIFIER NOT NULL,
     bookingPodcastTrackId UNIQUEIDENTIFIER NOT NULL,
     FOREIGN KEY (bookingProducingRequestId) REFERENCES BookingProducingRequest(id),
@@ -100,7 +137,7 @@ CREATE TABLE BookingProducingRequestPodcastTrackToEdit (
 
 -- BookingChatRoom table
 CREATE TABLE BookingChatRoom (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     bookingId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (bookingId) REFERENCES Booking(id)
@@ -108,7 +145,7 @@ CREATE TABLE BookingChatRoom (
 
 -- BookingChatMessages table
 CREATE TABLE BookingChatMessages (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     text NVARCHAR(MAX) NULL,
     audioFileKey NVARCHAR(MAX) NULL,
     chatRoomId UNIQUEIDENTIFIER NOT NULL,

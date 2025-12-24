@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+sentence-transformers
+numpy
+pydantic
+
+python-multipart
+transformers
+torch
+torchaudio
+torchvision
+soundfile
+librosa
+python-jose
+aiofiles
+pydub

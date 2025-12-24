@@ -65,6 +65,15 @@ namespace PodcastService.BusinessLogic.Helpers.FileHelpers
             var fileName = Path.GetFileName(normalizedPath);
             return Path.GetFileNameWithoutExtension(fileName);
         }
+        
+        public static string CombinePathFromProjectRootFolder(params string[] pathParts)
+        {
+            var projectRoot = Directory.GetCurrentDirectory();
+            var allParts = new string[pathParts.Length + 1];
+            allParts[0] = projectRoot;
+            Array.Copy(pathParts, 0, allParts, 1, pathParts.Length);
+            return Path.Combine(allParts);
+        }
 
         /// <summary>
         /// Extracts the folder path from a full file path
@@ -78,9 +87,9 @@ namespace PodcastService.BusinessLogic.Helpers.FileHelpers
 
             var normalizedPath = NormalizeFilePath(filePath);
             var directoryPath = Path.GetDirectoryName(normalizedPath);
-            
-            return string.IsNullOrEmpty(directoryPath) 
-                ? string.Empty 
+
+            return string.IsNullOrEmpty(directoryPath)
+                ? string.Empty
                 : NormalizeFolderPath(directoryPath);
         }
 

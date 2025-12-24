@@ -21,6 +21,8 @@ using Net.payOS;
 using UserService.Infrastructure.Services.Kafka;
 using UserService.Infrastructure.Services.Audio.AcoustID;
 using UserService.Infrastructure.Services.Audio.Hls;
+using UserService.Infrastructure.Services.Audio.Tuning;
+using UserService.Infrastructure.Services.Consul.DistributedLock;
 
 namespace UserService.Infrastructure.Registrations
 {
@@ -128,7 +130,8 @@ namespace UserService.Infrastructure.Registrations
             IConfiguration configuration)
         {
             // Register Redis service
-            services.AddScoped<RedisCacheService>();
+            services.AddScoped<RedisInstanceCacheService>();
+            services.AddScoped<RedisSharedCacheService>();
 
             // Configure Redis connection
             services.AddSingleton<IConnectionMultiplexer>(sp =>
@@ -177,6 +180,10 @@ namespace UserService.Infrastructure.Registrations
                 });
             });
 
+            // Register Consul Distributed Lock Service
+            services.AddSingleton<ConsulDistributedLockService>();
+            services.AddSingleton<ConsulSessionManager>();
+
             return services;
         }
 
@@ -210,8 +217,13 @@ namespace UserService.Infrastructure.Registrations
             services.AddScoped<AcoustIDAudioFingerprintComparator>();
 
             // HLS Service
-            services.AddScoped<HlsService>();
+            services.AddScoped<FFMegLocalHlsService>();
             services.AddScoped<FFMpegCoreHlsService>();
+
+            // Audio Tuning Services
+            services.AddScoped<EqualizerTuningService>();
+            services.AddScoped<AITuningService>();
+            services.AddScoped<AdvanceTuningService>();
 
 
             return services;

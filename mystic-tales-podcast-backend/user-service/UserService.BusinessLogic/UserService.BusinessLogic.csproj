@@ -13,7 +13,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="DTOs\" />
+    <Folder Include="DTOs\MessageQueue\BookingManagementDomain\" />
+    <Folder Include="DTOs\MessageQueue\ChatCommunicationDomain\" />
+    <Folder Include="DTOs\MessageQueue\ContentManagementDomain\" />
+    <Folder Include="DTOs\MessageQueue\ContentModerationDomain\" />
+    <Folder Include="DTOs\MessageQueue\DmcaManagementDomain\" />
+    <Folder Include="DTOs\MessageQueue\NotificationDomain\" />
+    <Folder Include="DTOs\MessageQueue\PaymentProcessingDomain\" />
+    <Folder Include="DTOs\MessageQueue\PublicReviewManagementDomain\" />
+    <Folder Include="DTOs\MessageQueue\ReportManagementDomain\" />
+    <Folder Include="DTOs\MessageQueue\SubscriptionManagementDomain\" />
+    <Folder Include="DTOs\MessageQueue\SystemConfigurationDomain\" />
+    <Folder Include="DTOs\MessageQueue\UserManagementDomain\" />
     <Folder Include="Exceptions\" />
     <Folder Include="Services\BackgroundServices\interfaces\" />
     <Folder Include="Services\DbServices\MiscServices\" />
@@ -21,6 +32,9 @@
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="3.7.416" />
+    <PackageReference Include="Cronos" Version="0.11.1" />
+    <PackageReference Include="itext7" Version="9.4.0" />
+    <PackageReference Include="itext7.bouncy-castle-adapter" Version="9.4.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.9" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

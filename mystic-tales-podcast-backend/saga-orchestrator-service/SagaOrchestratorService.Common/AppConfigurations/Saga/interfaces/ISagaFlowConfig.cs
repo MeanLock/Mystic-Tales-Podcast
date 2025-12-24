@@ -12,7 +12,9 @@ namespace SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces
     public class SagaFlowDefinitionModel
     {
         public string Topic { get; set; } = string.Empty;
+        public string HandleService { get; set; } = string.Empty;
         public string? Description { get; set; }
+        public string SaveFile { get; set; } = string.Empty;
         public List<SagaStepDefinitionModel> Steps { get; set; } = new();
     }
 
@@ -20,6 +22,11 @@ namespace SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces
     {
         public string Name { get; set; } = string.Empty;
         public string Topic { get; set; } = string.Empty;
+        public string HandleService { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        // public List<string> Parameters { get; set; } = new();
+        // public List<string> NextRequestData { get; set; } = new();
+        // public List<string> ResponseData { get; set; } = new();
         public SagaOutcomeDefinitionModel? OnSuccess { get; set; }
         public SagaOutcomeDefinitionModel? OnFailure { get; set; }
     }
@@ -28,18 +35,17 @@ namespace SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces
     {
         public string Emit { get; set; } = string.Empty;
         public string Topic { get; set; } = string.Empty;
+        public string HandleService { get; set; } = string.Empty;
         public List<SagaStepRefModel> NextSteps { get; set; } = new();
 
-        // Changed: single next flow path (string). YAML key remains "nextFlows".
-        public string? NextFlows { get; set; } // keep YAML alias name for compatibility
-
-        // Convenience accessor (single path only)
-        public string? NextFlow => string.IsNullOrWhiteSpace(NextFlows) ? null : NextFlows;
+        // Changed to support multiple flows like nextSteps
+        public List<SagaStepRefModel> NextFlows { get; set; } = new();
     }
 
     public class SagaStepRefModel
     {
         public string Name { get; set; } = string.Empty;
         public string Topic { get; set; } = string.Empty;
+        public string HandleService { get; set; } = string.Empty;
     }
 }

@@ -111,23 +111,45 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
         private void RegisterHandlersFromRegistry(KafkaConsumerService kafkaConsumerService)
         {
             var handlers = _handlerRegistry.GetAllHandlers();
-            var topicMessageTypes = _handlerRegistry.GetTopicMessageTypes();
+            var topicMessageNames = _handlerRegistry.GetTopicMessageNames();
+
+            //_logger.LogInformation("DEBUG: Total handlers from registry: {Count}", handlers.Count);
+            //_logger.LogInformation("DEBUG: Topics: {Topics}", string.Join(", ", topicMessageNames.Keys));
 
             foreach (var handler in handlers)
             {
-                var topic = topicMessageTypes.FirstOrDefault(t => t.Value.Contains(handler.Key)).Key;
+                var topic = topicMessageNames.FirstOrDefault(t => t.Value.Contains(handler.Key)).Key;
+
+                // Add detailed logging for the specific problematic message
+                //if (handler.Key.Contains("create-podcast-subscription-transaction"))
+                //{
+                //    _logger.LogError("DEBUG: Found handler key: {HandlerKey}, Topic: {Topic}", handler.Key, topic ?? "NULL");
+                //    foreach (var topicKvp in topicMessageNames)
+                //    {
+                //        _logger.LogInformation("DEBUG: Topic '{Topic}' contains messages: {Messages}",
+                //            topicKvp.Key, string.Join(", ", topicKvp.Value));
+                //    }
+                //}
+
                 if (!string.IsNullOrEmpty(topic))
                 {
-                    RegisterMessageTypeHandler(kafkaConsumerService, handler.Key, topic, handler.Value);
+                    RegisterMessageNameHandler(kafkaConsumerService, handler.Key, topic, handler.Value);
+
+                    // Log registration for the specific problematic message
+                    //if (handler.Key.Contains("create-podcast-subscription-transaction.success"))
+                    //{
+                    //    _logger.LogError("DEBUG: Successfully registered handler for {MessageName} on topic {Topic}",
+                    //        handler.Key, topic);
+                    //}
                 }
                 else
                 {
-                    _logger.LogWarning("No topic found for message type: {MessageType}", handler.Key);
+                    _logger.LogWarning("No topic found for message name: {MessageName}", handler.Key);
                 }
             }
 
             _logger.LogInformation("Registered {HandlerCount} handlers from {TopicCount} topics with KafkaConsumerService",
-                handlers.Count, topicMessageTypes.Count);
+                handlers.Count, topicMessageNames.Count);
         }
 
         private KafkaConsumerService? GetKafkaConsumerService()
@@ -169,15 +191,15 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
             }
         }
 
-        private void RegisterMessageTypeHandler(KafkaConsumerService kafkaConsumerService, string messageType, string topic, Func<string, string, Task> handler)
+        private void RegisterMessageNameHandler(KafkaConsumerService kafkaConsumerService, string messageName, string topic, Func<string, string, Task> handler)
         {
             try
             {
-                kafkaConsumerService.RegisterMessageTypeHandler(messageType, topic, handler);
+                kafkaConsumerService.RegisterMessageNameHandler(messageName, topic, handler);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error registering message type handler for {MessageType}", messageType);
+                _logger.LogError(ex, "Error registering message type handler for {MessageName}", messageName);
             }
         }
 

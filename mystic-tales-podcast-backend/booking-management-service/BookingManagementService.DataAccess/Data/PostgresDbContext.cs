@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using BookingManagementService.DataAccess.Entities.postgres;
+using BookingManagementService.DataAccess.Entities.Postgres;
 
 namespace BookingManagementService.DataAccess.Data;
 
