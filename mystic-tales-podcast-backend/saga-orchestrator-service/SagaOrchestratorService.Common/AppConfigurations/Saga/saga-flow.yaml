@@ -6522,7 +6522,10 @@ flows:
           emit: "complete-booking-transaction.success"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: []
+          nextSteps: 
+            - name: "complete-booking"
+              topic: "booking-management-domain"
+              handle-service: "BookingManagementService"
           nextFlows: []
         onFailure:
           emit: "complete-booking-transaction.failed"
