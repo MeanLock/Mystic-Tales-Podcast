@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems
 {
-    public class PodcastSubscriptionHoldingListItemResponseDTO
+    public class PodcastSubscriptionMoneyFlowListItemResponseDTO
     {
         public int Id { get; set; }
         public string Name { get; set; }
@@ -18,13 +18,6 @@ namespace SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems
         public DateTime? DeletedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public List<PodcastSubscriptionRegistrationHoldingListItemResponseDTO> PodcastSubscriptionRegistrationList { get; set; }
-        public decimal TotalHoldingAmount
-        {
-            get
-            {
-                return PodcastSubscriptionRegistrationList?.Sum(x => x.HoldingAmount) ?? 0;
-            }
-        }
+        public List<PodcastSubscriptionRegistrationMoneyFlowListItemResponseDTO> PodcastSubscriptionRegistrationList { get; set; }
     }
 }

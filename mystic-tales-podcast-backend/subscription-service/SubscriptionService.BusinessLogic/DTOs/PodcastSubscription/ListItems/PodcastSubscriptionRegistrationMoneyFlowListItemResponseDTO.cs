@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems
 {
-    public class PodcastSubscriptionRegistrationHoldingListItemResponseDTO
+    public class PodcastSubscriptionRegistrationMoneyFlowListItemResponseDTO
     {
         public Guid Id { get; set; }
         public AccountSnippetResponseDTO Account { get; set; }
@@ -22,5 +22,7 @@ namespace SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public decimal HoldingAmount { get; set; }
+        public decimal ProfitAmount { get; set; }
+        public List<PodcastSubscriptionTransactionListItemDTO> PodcastSubscriptionTransactionList { get; set; }
     }
 }

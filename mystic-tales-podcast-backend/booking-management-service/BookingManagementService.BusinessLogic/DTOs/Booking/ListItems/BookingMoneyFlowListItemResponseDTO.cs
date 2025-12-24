@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace BookingManagementService.BusinessLogic.DTOs.Booking.ListItems
 {
-    public class BookingHoldingListItemResponseDTO
+    public class BookingMoneyFlowListItemResponseDTO
     {
         public int Id { get; set; }
         public string Title { get; set; }
@@ -23,7 +23,8 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking.ListItems
         public string? BookingAutoCancelledReason { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public BookingStatusResponseDTO CurrentStatus { get; set; }
-        public decimal HoldingAmount { get; set; }
+        public MoneyFlowStatusDTO CurrentStatus { get; set; }
+        public decimal Amount { get; set; }
+        public List<BookingTransactionListItemDTO> BookingTransactionList { get; set; }
     }
 }
