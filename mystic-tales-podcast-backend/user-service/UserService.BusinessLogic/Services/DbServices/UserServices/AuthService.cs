@@ -652,6 +652,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                                 PasswordResetToken = NewGuid,
                                 ResetPasswordUrl = resetPasswordUrl,
                                 ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(1).ToString("dd/MM/yyyy HH:mm:ss"),
+                                ExpiredMinutes = _appConfig.RESET_PASSWORD.TokenExpiredInMinutes.ToString()
                             })
                         }
                     });

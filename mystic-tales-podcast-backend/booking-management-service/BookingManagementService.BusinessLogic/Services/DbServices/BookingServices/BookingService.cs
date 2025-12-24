@@ -3278,7 +3278,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                     BookingId = bookingId,
                                     TransactionStatusId = (int)TransactionStatusEnum.Success
                                 },
-                                include = "TransactionTypes, TransactionStatuses"
+                                include = "TransactionType, TransactionStatus"
                             })
                         }
                     }

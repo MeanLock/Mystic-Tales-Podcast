@@ -4807,7 +4807,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             }
             return totalIncome;
         }
-        public async Task<List<PodcastSubscriptionMoneyFlowListItemResponseDTO>> GetHoldingPodcastSubscriptionListAsync()
+        public async Task<List<PodcastSubscriptionMoneyFlowListItemResponseDTO>> GetMoneyFlowPodcastSubscriptionListAsync()
         {
             try
             {
@@ -4827,7 +4827,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     .ToListAsync();
                 foreach (var subscription in subscriptions)
                 {
-                    if(subscription.PodcastSubscriptionRegistrations == null || subscription.PodcastSubscriptionRegistrations.Empty())
+                    if(subscription.PodcastSubscriptionRegistrations == null || subscription.PodcastSubscriptionRegistrations.Count() == 0)
                     {
                         continue;
                     }
@@ -4860,18 +4860,19 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         PodcastSubscriptionRegistrationList = new List<PodcastSubscriptionRegistrationMoneyFlowListItemResponseDTO>()
                     };
 
-                    foreach (var registration in registrations.Where(r => r.PodcastSubscriptionId == subscriptionId))
+                    foreach (var registration in registrations.Where(r => r.PodcastSubscriptionId == subscription.Id))
                     {
                         var transactions = await GetMoneyFlowPodcastSubscriptionTransactionByRegistrationId(registration.Id);
-                        if (transactions == null || transactions.Empty())
+                        if (transactions == null || transactions.Count() == 0)
                             continue;
-                        var holdingAmount = 0;
-                        var profitAmount = 0;
+                        decimal holdingAmount = 0;
+                        decimal profitAmount = 0;
                         var current = transactions.OrderByDescending(transaction => transaction.CreatedAt).First();
-                        if(!current.IsIncomeTaken)
+                        if(!registration.IsIncomeTaken)
                         {
                             holdingAmount = current.Amount;
                         }
+                        Console.WriteLine(transactions.Count + " transactions found for registration ID: " + registration.Id);
                         profitAmount = transactions.Where(t => new[]
                         {
                             (int)TransactionTypeEnum.SystemSubscriptionIncome
@@ -5473,7 +5474,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     PodcastSubscriptionRegistrationId = registrationId,
                                     TransactionStatusId = (int)TransactionStatusEnum.Success
                                 },
-                                include = "TransactionTypes, TransactionStatuses"
+                                include = "TransactionType, TransactionStatus"
                             })
                         }
                     }
