@@ -11,7 +11,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; color: #1f2937; line-height: 1.6; padding: 20px; min-height: 100vh; }
         .email-container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; }
         .header { background: linear-gradient(135deg, #84cc16, #a3e635); padding: 40px 30px; text-align: center; }
-        .logo { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+        .logo { font-size: 28px; font-weight: 700; color: #fff; }
         .subtitle { color: rgba(255,255,255,0.95); font-size: 14px; margin-top: 8px; }
         .content { padding: 40px 30px; }
         .greeting { font-size: 24px; color: #111827; margin-bottom: 24px; font-weight: 600; }
@@ -26,9 +26,7 @@
         .info-label { color: #6b7280; font-weight: 500; }
         .info-value { color: #111827; font-weight: 600; word-break: break-word; }
         .info-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 18px; margin: 24px 0; border-radius: 0 8px 8px 0; color: #78350f; }
-        .info-box strong { color: #92400e; }
         .warning-box { background: #fee2e2; border-left: 4px solid #ef4444; padding: 18px; margin: 24px 0; border-radius: 0 8px 8px 0; color: #7f1d1d; }
-        .warning-box strong { color: #991b1b; }
         .attachment-section { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; margin: 24px 0; }
         .attachment-title { color: #111827; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
         .attachment-list { list-style: none; padding: 0; }
@@ -37,11 +35,7 @@
         .footer { background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb; }
         .signature { color: #6b7280; }
         .team-name { color: #84cc16; font-weight: 600; }
-        @@media (max-width: 600px) { 
-            .email-container { margin: 10px; } 
-            .content { padding: 30px 20px; } 
-            .info-row { flex-direction: column; gap: 4px; }
-        }
+        @@media (max-width: 600px) { .email-container { margin: 10px; } .content { padding: 30px 20px; } .info-row { flex-direction: column; gap: 4px; } }
     </style>
 </head>
 <body>
@@ -52,40 +46,21 @@
         </div>
         <div class="content">
             <div class="greeting">Hello <span class="user-name">@Model.PodcasterFullName</span>,</div>
-            <div class="status-box">
-                <strong>Counter-Notice Pending</strong><br />
-                Your counter-notice is currently being reviewed.
-            </div>
-            
-            <p class="message">
-                Our legal team is reviewing your counter-notice to ensure it meets all legal requirements.
-            </p>
-            
+            <div class="status-box"><strong>Counter-Notice Pending</strong><br />Your counter-notice is currently being reviewed.</div>
+            <p class="message">Our legal team is reviewing your counter-notice to ensure it meets all legal requirements.</p>
             <div class="info-section">
                 <div class="info-title">Review Details</div>
-                <div class="info-row">
-                    <span class="info-label">Submitted Date:</span>
-                    <span class="info-value">@Model.CreatedDate.ToString("MMMM dd, yyyy")</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Your Email:</span>
-                    <span class="info-value">@Model.PodcasterEmail</span>
-                </div>
+                <div class="info-row"><span class="info-label">Submitted Date:</span><span class="info-value">@Model.CreatedDate.ToString("MMMM dd, yyyy")</span></div>
+                @if (!string.IsNullOrEmpty(Model.PodcastShowName))
+                {<div class="info-row"><span class="info-label">Podcast Show:</span><span class="info-value">@Model.PodcastShowName</span></div>}
+                @if (!string.IsNullOrEmpty(Model.PodcastEpisodeName))
+                {<div class="info-row"><span class="info-label">Episode:</span><span class="info-value">@Model.PodcastEpisodeName</span></div>}
+                <div class="info-row"><span class="info-label">Your Email:</span><span class="info-value">@Model.PodcasterEmail</span></div>
             </div>
-            
-            <div class="info-box">
-                <strong>Review Timeline:</strong><br />
-                • Review typically takes 3-5 business days<br />
-                • Both parties will be notified of the decision<br />
-                • If valid, the accuser has 10-14 days to respond
-            </div>
-        
+            <div class="info-box"><strong>Review Timeline:</strong><br />• Review typically takes 3-5 business days<br />• Both parties will be notified of the decision<br />• If valid, the accuser has 10-14 days to respond</div>
         </div>
         <div class="footer">
-            <p class="signature">
-                Best regards,<br />
-                <span class="team-name">Mystic Tales Podcast Legal Team</span>
-            </p>
+            <p class="signature">Best regards,<br /><span class="team-name">Mystic Tales Podcast Legal Team</span></p>
         </div>
     </div>
 </body>
