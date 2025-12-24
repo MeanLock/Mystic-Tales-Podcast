@@ -10,5 +10,7 @@ namespace ModerationService.BusinessLogic.Models.Mail
     {
         public string AccuserEmail { get; set; } = null!;
         public string AccuserFullName { get; set; } = null!;
+        public string? PodcastShowName { get; set; }
+        public string? PodcastEpisodeName { get; set; }
     }
 }

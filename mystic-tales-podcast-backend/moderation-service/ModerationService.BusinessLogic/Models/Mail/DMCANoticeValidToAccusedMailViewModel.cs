@@ -13,5 +13,7 @@ namespace ModerationService.BusinessLogic.Models.Mail
         public DateTime ValidatedAt { get; set; }
         public int TimeToResponse { get; set; }
         public List<string> AttachmentFileUrls { get; set; } = new List<string>();
+        public string? PodcastShowName { get; set; }
+        public string? PodcastEpisodeName { get; set; }
     }
 }

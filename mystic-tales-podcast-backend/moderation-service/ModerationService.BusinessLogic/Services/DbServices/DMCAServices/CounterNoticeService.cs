@@ -257,6 +257,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 PodcasterEmail = podcaster.Email,
                                 PodcasterFullName = podcaster.FullName,
                                 CreatedDate = _dateHelper.GetNowByAppTimeZone(),
+                                PodcastShowName = show != null ? show.Name : null,
+                                PodcastEpisodeName = episode != null ? episode.Name : null,
                             }
                         }
                     });

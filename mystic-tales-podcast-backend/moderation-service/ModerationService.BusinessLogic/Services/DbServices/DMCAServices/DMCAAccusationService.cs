@@ -264,6 +264,17 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     };
                     var createdDmcaAccusation = await _dmcaAccusationGenericRepository.CreateAsync(newDmcaAccusation);
 
+                    PodcastShowDTO? show = null;
+                    PodcastEpisodeDTO? episode = null;
+                    if (parameter.PodcastShowId != null)
+                    {
+                        show = await GetPodcastShow(parameter.PodcastShowId.Value);                    
+                    }
+                    if (parameter.PodcastEpisodeId != null)
+                    {
+                        episode = await GetPodcastEpisode(parameter.PodcastEpisodeId.Value);
+                    }
+
                     var newDmcaNotice = new Dmcanotice
                     {
                         DmcaAccusationId = createdDmcaAccusation.Id,
@@ -335,6 +346,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 AccuserEmail = createdDmcaAccusation.AccuserEmail,
                                 AccuserFullName = createdDmcaAccusation.AccuserFullName,
                                 CreatedDate = _dateHelper.GetNowByAppTimeZone(),
+                                PodcastShowName = show != null ? show.Name : null,
+                                PodcastEpisodeName = episode != null ? episode.Name : null,
                             }
                         }
                     });
@@ -787,6 +800,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         AccuserEmail = dmcaAccusation.AccuserEmail,
                                         AccuserFullName = dmcaAccusation.AccuserFullName,
                                         ValidatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                        PodcastShowName = show != null ? show.Name : null,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null,
                                     }
                                 }
                             });
@@ -810,7 +825,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         PodcasterFullName = podcaster.FullName,
                                         TimeToResponse = 14,
                                         ValidatedAt = _dateHelper.GetNowByAppTimeZone(),
-                                        AttachmentFileUrls = attachmentFileUrls
+                                        AttachmentFileUrls = attachmentFileUrls,
+                                        PodcastShowName = show != null ? show.Name : null,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null,
                                     }
                                 }
                             });
@@ -909,7 +926,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         AccuserFullName = dmcaAccusation.AccuserFullName,
                                         ValidatedAt = _dateHelper.GetNowByAppTimeZone(),
                                         TimeToResponse = 14,
-                                        AttachmentFileUrls = attachmentFileUrls2
+                                        AttachmentFileUrls = attachmentFileUrls2,
+                                        PodcastShowName = show != null ? show.Name : null,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null
                                     }
                                 }
                             });
@@ -931,7 +950,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     {
                                         PodcasterEmail = podcaster.Email,
                                         PodcasterFullName = podcaster.FullName,
-                                        ValidatedAt = _dateHelper.GetNowByAppTimeZone()
+                                        ValidatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                        PodcastShowName = show != null ? show.Name : null,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null
                                     }
                                 }
                             });
@@ -1028,7 +1049,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     {
                                         AccuserEmail = dmcaAccusation.AccuserEmail,
                                         AccuserFullName = dmcaAccusation.AccuserFullName,
-                                        ValidatedAt = _dateHelper.GetNowByAppTimeZone()
+                                        ValidatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                        PodcastShowName = show != null ? show.Name : null,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null
                                     }
                                 }
                             });
@@ -1050,7 +1073,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     {
                                         PodcasterEmail = podcaster.Email,
                                         PodcasterFullName = podcaster.FullName,
-                                        AttachmentFileUrls = attachmentFileUrls3
+                                        AttachmentFileUrls = attachmentFileUrls3,
+                                        PodcastShowName = show != null ? show.Name : null,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null
                                     }
                                 }
                             });
@@ -1233,7 +1258,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                             AccuserEmail = dmcaAccusation.AccuserEmail,
                                             AccuserFullName = dmcaAccusation.AccuserFullName,
                                             InvalidReason = dmcaAccusationReport.InvalidReason,
-                                            CompletedAt = dmcaAccusationReport.CompletedAt.Value
+                                            CompletedAt = dmcaAccusationReport.CompletedAt.Value,
+                                            PodcastShowName = show != null ? show.Name : null,
+                                            PodcastEpisodeName = episode != null ? episode.Name : null,
                                         }
                                     }
                                 });
@@ -2319,7 +2346,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         MailObject = new DMCACounterNoticeValidNotResponseInTimeToAccusedMailViewModel
                                         {
                                             PodcasterEmail = podcaster.Email,
-                                            PodcasterFullName = podcaster.FullName
+                                            PodcasterFullName = podcaster.FullName,
+                                            PodcastShowName = show != null ? show.Name : null,
+                                            PodcastEpisodeName = episode != null ? episode.Name : null
                                         }
                                     }
                                 });
@@ -2340,7 +2369,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         MailObject = new DMCACounterNoticeValidNotResponseInTimeToAccuserMailViewModel
                                         {
                                             AccuserEmail = dmcaAccusation.AccuserEmail,
-                                            AccuserFullName = dmcaAccusation.AccuserFullName
+                                            AccuserFullName = dmcaAccusation.AccuserFullName,
+                                            PodcastShowName = show != null ? show.Name : null,
+                                            PodcastEpisodeName = episode != null ? episode.Name : null
                                         }
                                     }
                                 });
