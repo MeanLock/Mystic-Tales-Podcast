@@ -317,9 +317,12 @@ const EpisodeDetail: FC<EpisodeDetailViewProps> = () => {
                 console.log("SignalR connected successfully");
                 setSignalRConnection(connection);
             } catch (err) {
-                console.error("SignalR connection error:", err);
-                // Retry after 5 seconds
-                setTimeout(startConnection, 5000);
+              const retryTimer = setTimeout(() => {
+                if (connectionRef.current === connection) {
+                    startConnection();
+                }
+            }, 5000);
+            return () => clearTimeout(retryTimer);
             }
         };
 
@@ -328,7 +331,10 @@ const EpisodeDetail: FC<EpisodeDetailViewProps> = () => {
         // Cleanup
         return () => {
             console.log("Stopping SignalR connection...");
-            connection.stop();
+          if (connectionRef.current) {
+            connectionRef.current.stop();
+            connectionRef.current = null;
+        }
             setSignalRConnection(null);
         };
     }, [token, REST_API_BASE_URL]);
