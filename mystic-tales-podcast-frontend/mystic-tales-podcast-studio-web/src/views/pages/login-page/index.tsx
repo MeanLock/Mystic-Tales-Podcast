@@ -218,13 +218,14 @@ const LoginPage: FC<LoginPageProps> = (props) => {
                         }
 
                         dispatch(setAuthToken({ token }));
-                    const tempInstance = axios.create({
-                        ...loginRequiredAxiosInstance.defaults,
-                        headers: {
-                            ...loginRequiredAxiosInstance.defaults.headers,
-                            Authorization: `Bearer ${token}`
-                        }
-                    });
+                        const tempInstance = axios.create({
+                            ...loginRequiredAxiosInstance.defaults,
+                            headers: {
+                                ...loginRequiredAxiosInstance.defaults.headers,
+                                Authorization: `Bearer ${token}`
+                            }
+                        });
+                        
 
                         const res = await getAccountProfile(tempInstance);
 

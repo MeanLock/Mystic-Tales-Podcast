@@ -33,6 +33,7 @@ interface EpisodeDetailViewContextProps {
     episodeDetail: Episode | null;
     refreshEpisode: () => Promise<void>;
     authSlice?: RootState['auth'];
+    signalRConnection: signalR.HubConnection | null;
 }
 
 export const EpisodeDetailViewContext = createContext<EpisodeDetailViewContextProps | null>(null);
@@ -51,9 +52,10 @@ const EpisodeDetail: FC<EpisodeDetailViewProps> = () => {
     const [isRequestingPublish, setIsRequestingPublish] = useState<boolean>(false);
     const [isPublishing, setIsPublishing] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
+    const [signalRConnection, setSignalRConnection] = useState<signalR.HubConnection | null>(null);
     const navigate = useNavigate();
-const token = authSlice.token ;
- const connectionRef = useRef<signalR.HubConnection | null>(null);
+    const token = authSlice.token;
+    const connectionRef = useRef<signalR.HubConnection | null>(null);
 
     const REST_API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
     const { startPolling } = useSagaPolling({
@@ -255,43 +257,81 @@ const token = authSlice.token ;
             setIsPublishing(false);
         }
     };
-  useEffect(() => {
-console.log("Setting up SignalR connection...", token);
-        // Build connection
+    useEffect(() => {
+        if (!token) return;
+
+        console.log("Setting up SignalR connection...");
+        
+        // Build connection with better reconnection strategy
         const connection = new signalR.HubConnectionBuilder()
             .withUrl(`${REST_API_BASE_URL}/api/podcast-service/hubs/podcast-content-notification`, {
-                accessTokenFactory: () => {
-                    return token;
+                accessTokenFactory: () => token,
+                skipNegotiation: true,
+                transport: signalR.HttpTransportType.WebSockets,
+            })
+            .withAutomaticReconnect({
+                nextRetryDelayInMilliseconds: (retryContext) => {
+                    // Exponential backoff: 0s, 2s, 10s, 30s, then 60s
+                    if (retryContext.previousRetryCount === 0) return 0;
+                    if (retryContext.previousRetryCount === 1) return 2000;
+                    if (retryContext.previousRetryCount === 2) return 10000;
+                    if (retryContext.previousRetryCount === 3) return 30000;
+                    return 60000;
                 }
             })
-            .withAutomaticReconnect()
+            .configureLogging(signalR.LogLevel.Information)
             .build();
 
         connectionRef.current = connection;
 
+        // Connection event handlers
+        connection.onreconnecting((error) => {
+            console.warn("SignalR reconnecting...", error);
+        });
+
+        connection.onreconnected((connectionId) => {
+            console.log("SignalR reconnected:", connectionId);
+        });
+
+        connection.onclose((error) => {
+            console.error("SignalR connection closed:", error);
+            setSignalRConnection(null);
+        });
+
         // Register events
         connection.on("PodcastEpisodeAudioProcessingCompletedNotification", async (data) => {
-            console.log("Audio processing :", data);
+            console.log("Audio processing completed:", data);
 
             if (!data.IsSuccess) {
                 console.error("Audio processing failed:", data.ErrorMessage);
                 return;
             }
 
-            alert(`Audio processing completed for Podcast ID: ${data}`);
-            await fetchEpisodeDetail?.();
+            await fetchEpisodeDetail();
         });
 
         // Start connection
-        connection.start()
-            .then(() => console.log("SignalR connected"))
-            .catch(err => console.error("SignalR connection error:", err));
+        const startConnection = async () => {
+            try {
+                await connection.start();
+                console.log("SignalR connected successfully");
+                setSignalRConnection(connection);
+            } catch (err) {
+                console.error("SignalR connection error:", err);
+                // Retry after 5 seconds
+                setTimeout(startConnection, 5000);
+            }
+        };
+
+        startConnection();
 
         // Cleanup
         return () => {
+            console.log("Stopping SignalR connection...");
             connection.stop();
+            setSignalRConnection(null);
         };
-    }, []);
+    }, [token, REST_API_BASE_URL]);
 
 
     return (
@@ -306,6 +346,7 @@ console.log("Setting up SignalR connection...", token);
                         episodeDetail,
                         refreshEpisode: fetchEpisodeDetail,
                         authSlice,
+                        signalRConnection,
                     }}
                 >
                     <div className="episode-detail-page">

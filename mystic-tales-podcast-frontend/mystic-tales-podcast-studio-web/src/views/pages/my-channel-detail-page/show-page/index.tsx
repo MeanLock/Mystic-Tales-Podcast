@@ -217,19 +217,19 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                             color = '#9e9e9e'; bg = 'rgba(158,158,158,0.15)'; // xám trung tính sáng
                             break;
                         case 'Ready To Release':
-                            color = '#ffb300'; bg = 'rgba(255, 179, 0, 0.15)'; // vàng cam tươi
+                            color = '#2196f3'; bg = 'rgba(33, 150, 243, 0.2)'; // vàng cam tươi
                             break;
                         case 'Published':
                             color = '#AEE339'; bg = 'rgba(174, 227, 57, 0.2)'; // xanh primary của bạn
                             break;
                         case 'Taken Down':
-                            color = '#ef5350'; bg = 'rgba(255, 234, 237, 0.15)'; // đỏ dịu mắt
+                            color = '#f44336'; bg = 'rgba(244, 67, 54, 0.2)'; // đỏ dịu mắt
                             break;
                         case 'Removed':
-                            color = '#ef5350'; bg = 'rgba(255, 234, 237, 0.15)'; // đỏ dịu mắt
+                            color = '#f44336'; bg = 'rgba(244, 67, 54, 0.2)'; // đỏ dịu mắt
                             break;
                         default:
-                            color = '#ef5350'; bg = 'rgba(239, 83, 80, 0.15)'; // đỏ dịu mắt
+                            color = '#f44336'; bg = 'rgba(244, 67, 54, 0.2)'; // đỏ dịu mắt
                     }
 
                     return (

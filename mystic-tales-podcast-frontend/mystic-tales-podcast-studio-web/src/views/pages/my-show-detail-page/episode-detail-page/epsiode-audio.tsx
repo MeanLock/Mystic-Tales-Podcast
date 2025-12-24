@@ -253,10 +253,14 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     const progressBarRefSequencer = useRef<HTMLDivElement>(null)
     const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
     const rulerScrollRef = useRef<HTMLDivElement>(null)
+    const sequencerContainerRef = useRef<HTMLDivElement>(null)
 
     // Sequencer state
     const [clips, setClips] = useState<Clip[]>([])
     const [pixelsPerSecond, setPPS] = useState(30)
+    const [minPPS, setMinPPS] = useState(30)
+    const [maxPPS, setMaxPPS] = useState(100)
+    const [containerWidth, setContainerWidth] = useState(0)
 
     const [isPlayingSequencer, setIsPlayingSequencer] = useState(false)
     const [playhead, setPlayhead] = useState(0)
@@ -272,6 +276,89 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     const rowH = 120
 
     const [segmentPlayingClipId, setSegmentPlayingClipId] = useState<string | null>(null);
+    const signalRConnection = ctx?.signalRConnection;
+
+    // Tính toán minPPS dựa trên container width và audio duration
+    const calculateMinPPS = useCallback((audioDuration: number, availableWidth: number) => {
+        if (audioDuration <= 0 || availableWidth <= 0) return 30;
+        
+        // Chỉ fit width cho audio dưới 10 phút
+        // Với audio trên 10 phút, tính minPPS như thể duration là 10 phút
+        const MAX_FIT_DURATION = 600; // 10 phút
+        const effectiveDuration = Math.min(audioDuration, MAX_FIT_DURATION);
+        
+        // minPPS để fit effectiveDuration vào container width
+        return availableWidth / effectiveDuration;
+    }, []);
+
+    // Update container width và recalculate PPS
+    useLayoutEffect(() => {
+        const updateContainerWidth = () => {
+            if (sequencerContainerRef.current) {
+                const width = sequencerContainerRef.current.clientWidth;
+                setContainerWidth(width);
+                
+                // Tính minPPS dựa trên audio duration
+                const originalClip = clips.find(c => c.track === 0);
+                if (originalClip) {
+                    const newMinPPS = calculateMinPPS(originalClip.duration, width);
+                    setMinPPS(newMinPPS);
+                    
+                    // Nếu PPS hiện tại nhỏ hơn minPPS mới, update
+                    if (pixelsPerSecond < newMinPPS) {
+                        setPPS(newMinPPS);
+                    }
+                }
+            }
+        };
+
+        updateContainerWidth();
+        
+        // Listen to window resize
+        window.addEventListener('resize', updateContainerWidth);
+        
+        // ResizeObserver để detect navbar toggle
+        let resizeObserver: ResizeObserver | null = null;
+        if (sequencerContainerRef.current) {
+            resizeObserver = new ResizeObserver(() => {
+                updateContainerWidth();
+            });
+            resizeObserver.observe(sequencerContainerRef.current);
+        }
+        
+        // Cleanup
+        return () => {
+            window.removeEventListener('resize', updateContainerWidth);
+            if (resizeObserver) {
+                resizeObserver.disconnect();
+            }
+        };
+    }, [clips, calculateMinPPS, pixelsPerSecond]);
+
+    // Update PPS when showBgSoundSelector changes
+    useLayoutEffect(() => {
+        const originalClip = clips.find(c => c.track === 0);
+        if (originalClip) {
+            // Force measure containerWidth if not set yet
+            if (sequencerContainerRef.current && containerWidth === 0) {
+                const width = sequencerContainerRef.current.clientWidth;
+                if (width > 0) {
+                    setContainerWidth(width);
+                    const newMinPPS = calculateMinPPS(originalClip.duration, width);
+                    setMinPPS(newMinPPS);
+                    setPPS(newMinPPS);
+                    return;
+                }
+            }
+            
+            // Normal case: containerWidth already set
+            if (containerWidth > 0) {
+                const newMinPPS = calculateMinPPS(originalClip.duration, containerWidth);
+                setMinPPS(newMinPPS);
+                setPPS(newMinPPS);
+            }
+        }
+    }, [showBgSoundSelector, containerWidth, calculateMinPPS]);
 
 
 
@@ -1500,13 +1587,14 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                             <label className="text-sm">Zoom</label>
                             <input
                                 type="range"
-                                min="10"
-                                max="50"
+                                min={minPPS}
+                                max={maxPPS}
+                                step={0.1}
                                 value={pixelsPerSecond}
-                                onChange={(e) => setPPS(Number.parseInt(e.target.value))}
+                                onChange={(e) => setPPS(Number.parseFloat(e.target.value))}
                                 className="accent-emerald-600"
                             />
-                            <span className="text-xs text-slate-400">{pixelsPerSecond}px/s</span>
+                            <span className="text-xs text-slate-400">{pixelsPerSecond.toFixed(1)}px/s</span>
                             <button
                                 onClick={() => {
                                     console.log('=== SEQUENCER CLIP INFO ===')
@@ -1605,9 +1693,20 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                                 {/* Timeline body - với container có scroll để giới hạn chiều rộng */}
                                 <div
                                     className="max-w-full"
-                                    ref={timelineScrollRef}
+                                    ref={(el) => {
+                                        (timelineScrollRef as any).current = el;
+                                        (sequencerContainerRef as any).current = el;
+                                    }}
+                                    onScroll={(e) => {
+                                        // Sync scroll với ruler
+                                        if (rulerScrollRef.current) {
+                                            rulerScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                                        }
+                                    }}
                                     style={{
-                                        overflowX: 'hidden', // NEW: hide timeline scrollbar
+                                        overflowX: 'hidden',
+                                        scrollbarWidth: 'thin',
+                                        scrollbarColor: 'rgba(173, 227, 57, 0.71) rgba(23, 23, 23, 0.4)'
                                     }}
                                 >
                                     <SequencerTimeline
@@ -1632,9 +1731,15 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
 
                             {/* Ruler - với scroll tương tự */}
                             <div className="overflow-x-auto max-w-full"
-                                ref={rulerScrollRef}  // NEW
-
+                                ref={rulerScrollRef}
+                                onScroll={(e) => {
+                                    // Sync scroll với timeline
+                                    if (timelineScrollRef.current) {
+                                        timelineScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                                    }
+                                }}
                                 style={{
+                                    overflowX:  'auto' ,
                                     scrollbarWidth: 'thin',
                                     scrollbarColor: 'rgba(173, 227, 57, 0.71) rgba(23, 23, 23, 0.4)'
                                 }}

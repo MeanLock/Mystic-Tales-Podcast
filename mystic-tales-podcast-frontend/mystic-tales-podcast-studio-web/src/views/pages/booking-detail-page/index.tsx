@@ -471,7 +471,7 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
                             Requirements
                         </Typography>
                         <div className="booking-detail__requirements-grid">
-                            {Booking.BookingRequirementFileList.map((req, index) => (
+                            {[...Booking.BookingRequirementFileList].sort((a, b) => a.Order - b.Order).map((req, index) => (
                                 <Card key={req.Id} className="booking-detail__requirement-card">
                                     <CardContent className="booking-detail__card-content">
                                         <div className="booking-detail__requirement-header">

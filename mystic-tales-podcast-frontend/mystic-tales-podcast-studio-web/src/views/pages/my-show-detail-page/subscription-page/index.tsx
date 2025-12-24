@@ -168,7 +168,7 @@ const state_creator = (table: any[]) => {
                                 color: 'var(--white-75)',
                                 lineHeight: '1.2'
                             }}>
-                                Price: {annuallyPlan.Price.toLocaleString("vi-VN")} VND
+                                Price: {annuallyPlan.Price.toLocaleString("vi-VN")} 
                             </div>
                             <div style={{
                                 fontSize: '0.7rem',
@@ -425,7 +425,7 @@ const ShowSubscription: FC<ShowSubscriptionProps> = () => {
                                             </div>
                                             <div className="pricing-option__price">
                                                 <span className="pricing-option__amount">{monthlyPrice.toLocaleString("vi-VN")}</span>
-                                                <span className="pricing-option__currency">VND</span>
+                                                <span className="pricing-option__currency">Coins</span>
                                             </div>
                                             <div className="pricing-option__period">per month</div>
                                         </div>
@@ -442,9 +442,9 @@ const ShowSubscription: FC<ShowSubscriptionProps> = () => {
                                             </div>
                                             <div className="pricing-option__price">
                                                 <span className="pricing-option__amount">{annuallyPrice.toLocaleString("vi-VN")}</span>
-                                                <span className="pricing-option__currency">VND</span>
+                                                <span className="pricing-option__currency">Coins</span>
                                             </div>
-                                            <div className="pricing-option__period">{monthlyEquivalent.toLocaleString("vi-VN")} VND/month</div>
+                                            <div className="pricing-option__period">{monthlyEquivalent.toLocaleString("vi-VN")} Coins/month</div>
                                         </div>
                                     </div>
                                 </div>

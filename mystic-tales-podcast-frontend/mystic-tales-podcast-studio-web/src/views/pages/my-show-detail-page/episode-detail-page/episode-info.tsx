@@ -69,6 +69,7 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
     const [uploadImage, setUploadImage] = useState<string | null>(null);
     const [mainImageFile, setMainImageFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const signalRConnection = ctx?.signalRConnection;
     // const [loading, setLoading] = useState<boolean>(false);
     const [isSaving, setIsSaving] = useState<boolean>(false);
 
@@ -103,14 +104,6 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
         },
         placeholder: 'Add description...'
     });
-
-    const connectionRef = useRef<signalR.HubConnection | null>(null);
-    const authSlice2 = useSelector((state: RootState) => state.auth);
-
-    const token = authSlice2.token || "";
-    const REST_API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
-
-  
 
     const fetchReviewSession = async () => {
         setReviewSessionLoading(true);
@@ -590,15 +583,35 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                             value={episodeDetail.PodcastEpisodeSubscriptionType.Id ?? 1}
                             onChange={(e) => setEpisodeDetail({ ...episodeDetail, PodcastEpisodeSubscriptionType: { ...episodeDetail.PodcastEpisodeSubscriptionType, Id: e.target.value as unknown as number } })}
                             className="episode-info-page__select"
+                             SelectProps={{
+                                MenuProps: {
+                                    sx: {
+                                        '& .MuiPaper-root': {
+                                            backgroundColor: '#2a2a2a',
+                                            color: 'white',
+                                        },
+                                        '& .MuiMenuItem-root': {
+                                            color: 'white',
+                                            fontSize: '0.9rem',
+                                            padding: '8px 16px',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                color: 'var(--primary-green)',
+                                            },
+                                            '&.Mui-selected': {
+                                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                color: 'var(--primary-green)',
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
                         >
                             {mockSubscriptionTypes.map((type) => (
                                 <MenuItem
                                     key={type.Id}
                                     value={type.Id}
-                                    sx={{
-                                        '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
-
-                                    }}
+                                 
                                 >
                                     {type.Name}
                                 </MenuItem>
@@ -611,6 +624,29 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                             value={episodeDetail.ExplicitContent ?? ''}
                             onChange={(e) => setEpisodeDetail({ ...episodeDetail, ExplicitContent: e.target.value === 'true' })}
                             className="episode-info-page__select"
+                             SelectProps={{
+                                MenuProps: {
+                                    sx: {
+                                        '& .MuiPaper-root': {
+                                            backgroundColor: '#2a2a2a',
+                                            color: 'white',
+                                        },
+                                        '& .MuiMenuItem-root': {
+                                            color: 'white',
+                                            fontSize: '0.9rem',
+                                            padding: '8px 16px',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                color: 'var(--primary-green)',
+                                            },
+                                            '&.Mui-selected': {
+                                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                color: 'var(--primary-green)',
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
                         >
                             <MenuItem value="true">True</MenuItem>
                             <MenuItem value="false">False</MenuItem>

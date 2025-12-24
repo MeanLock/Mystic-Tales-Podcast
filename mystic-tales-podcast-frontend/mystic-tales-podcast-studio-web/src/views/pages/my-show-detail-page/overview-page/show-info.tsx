@@ -740,6 +740,29 @@ const ShowInfo = () => {
                                 value={showDetail.PodcastShowSubscriptionType?.Id || 1}
                                 onChange={(e) => setShowDetail({ ...showDetail, PodcastShowSubscriptionType: { ...showDetail.PodcastShowSubscriptionType, Id: e.target.value as unknown as number } })}
                                 className="show-info-page__select"
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {mockSubscriptionTypes.map((type) => (
                                     <MenuItem
@@ -762,6 +785,29 @@ const ShowInfo = () => {
                                 onChange={(e) => setShowDetail({ ...showDetail, Language: e.target.value })}
 
                                 className="show-info-page__select"
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {Language.map((l) => (
                                     <MenuItem
@@ -782,6 +828,29 @@ const ShowInfo = () => {
                                 value={showDetail.UploadFrequency}
                                 onChange={(e) => setShowDetail({ ...showDetail, UploadFrequency: e.target.value })}
                                 className="show-info-page__select"
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {UploadFrequencyList.map((freq) => (
                                     <MenuItem
@@ -807,6 +876,29 @@ const ShowInfo = () => {
                                 value={formData.PodcastCategoryId}
                                 onChange={(e) => handleCategoryChange(e.target.value as unknown as number)}
                                 className="show-info-page__select"
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {categoryList.map((category) => (
                                     <MenuItem
@@ -827,6 +919,29 @@ const ShowInfo = () => {
                                 value={formData.PodcastSubCategoryId}
                                 onChange={(e) => handleSubCategoryChange(e.target.value as unknown as number)}
                                 className="show-info-page__select"
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {getSubCategoriesForCategory(formData.PodcastCategoryId || showDetail.PodcastCategory.Id).map(sub => (
                                     <MenuItem key={sub.Id} value={sub.Id}>{sub.Name}</MenuItem>

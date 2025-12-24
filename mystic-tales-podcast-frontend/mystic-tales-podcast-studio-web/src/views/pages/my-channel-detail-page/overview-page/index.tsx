@@ -570,14 +570,35 @@ const ChannelOverview = () => {
                                 value={formData.PodcastCategoryId}
                                 onChange={(e) => handleCategoryChange(e.target.value as unknown as number)}
                                 className="channel-overview-page__select"
+                            SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {categoryList.map((category) => (
                                     <MenuItem
                                         key={category.Id}
                                         value={category.Id}
-                                        sx={{
-                                            '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
-                                        }}
+                                       
                                     >
                                         {category.Name}
                                     </MenuItem>
@@ -590,6 +611,29 @@ const ChannelOverview = () => {
                                 value={formData.PodcastSubCategoryId}
                                 onChange={(e) => handleSubCategoryChange(e.target.value as unknown as number)}
                                 className="channel-overview-page__select"
+                             SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {getSubCategoriesForCategory(formData.PodcastCategoryId || channelDetail.PodcastCategory.Id).map(sub => (
                                     <MenuItem key={sub.Id} value={sub.Id}>{sub.Name}</MenuItem>

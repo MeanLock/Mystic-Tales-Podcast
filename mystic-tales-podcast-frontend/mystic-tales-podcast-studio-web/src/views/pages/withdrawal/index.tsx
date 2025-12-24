@@ -1,13 +1,15 @@
 
 import { loginRequiredAxiosInstance } from "@/core/api/rest-api/config/instances/v2";
 import { useSagaPolling } from "@/core/hooks/useSagaPolling";
-import { getHistoryWithdrawal, withdrawalSubscription } from "@/core/services/transaction/transaction.service";
+import { getHistoryWithdrawal, getTransferBill, withdrawalSubscription } from "@/core/services/transaction/transaction.service";
 import { RootState } from "@/redux/rootReducer";
 import { Coin } from "phosphor-react";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import './styles.scss'
+import { IconButton, Dialog, DialogContent } from "@mui/material";
+import { Eye, X } from "lucide-react";
 const presetAmounts = [20000, 50000, 100000, 200000, 500000];
 
 const WithDrawPage = () => {
@@ -22,6 +24,8 @@ const WithDrawPage = () => {
   const [isCreatingWithdrawRequest, setIsCreatingWithdrawRequest] = useState<boolean>(false);
   const [isHistoryLoading, setIsHistoryLoading] = useState<boolean>(false);
   const [withdrawHistoryData, setWithdrawHistoryData] = useState<any>(null);
+  const [billUrl, setBillUrl] = useState<string>("");
+  const [isImagePopupOpen, setIsImagePopupOpen] = useState<boolean>(false);
   const { startPolling } = useSagaPolling({
     timeoutSeconds: 10,
     intervalSeconds: 0.5,
@@ -53,6 +57,21 @@ const WithDrawPage = () => {
       console.error('Lỗi khi fetch detail:', error);
     } finally {
       setIsHistoryLoading(false);
+    }
+  }
+  const fetchTransferBill = async (FileKey: string) => {
+    try {
+      const res = await getTransferBill(loginRequiredAxiosInstance, FileKey);
+      if (res.success && res.data) {
+        setBillUrl(res.data.FileUrl);
+        setIsImagePopupOpen(true);
+      } else {
+        console.error('API Error:', res.message);
+        toast.error('Cannot load transfer bill image');
+      }
+    } catch (error) {
+      console.error('Lỗi khi fetch detail:', error);
+      toast.error('Error loading image');
     }
   }
   useEffect(() => {
@@ -120,17 +139,17 @@ const WithDrawPage = () => {
 
   return (
     <div className="w-full h-full flex flex-col items-start mt-8 gap-5 font-poppins">
-      <div className="flex items-center justify-between  w-full pr-10"> 
-      <p className="text-5xl m-8 font-bold text-white">
-        <span className="text-[#ff9800]">Withdraw</span> Money
-      </p>
-      <div className="flex items-center gap-2">
-        <Coin className="w-6 h-6 text-[#ff9800]" />
-        <span className="text-3xl font-bold text-white">
-          {currentBalance.toLocaleString()}
-        </span>
+      <div className="flex items-center justify-between  w-full pr-10">
+        <p className="text-5xl m-8 font-bold text-white">
+          <span className="text-[#ff9800]">Withdraw</span> Money
+        </p>
+        <div className="flex items-center gap-2">
+          <Coin className="w-6 h-6 text-[#ff9800]" />
+          <span className="text-3xl font-bold text-white">
+            {currentBalance.toLocaleString()}
+          </span>
+        </div>
       </div>
-</div>
 
       <div className="w-full px-8 py-2 flex items-center gap-5">
         <div
@@ -252,10 +271,21 @@ const WithDrawPage = () => {
                           <div className="flex items-center gap-3 mb-2">
                             <Coin className="w-5 h-5 text-[#ff9800]" />
                             <p className="text-white font-bold text-lg">
-                              -{transaction.Amount.toLocaleString()} VND
+                              -{transaction.Amount.toLocaleString()} Coins
                             </p>
+                            {transaction.TransferReceiptImageFileKey !== null && transaction.IsRejected === false && (
+                              <IconButton
+                                onClick={() => fetchTransferBill(transaction.TransferReceiptImageFileKey)}
+                              >
+                                <Eye className="w-5 h-5 text-[#aee339]" />
+                              </IconButton>
+                            )}
+                            {transaction.RejectReason !== null && transaction.IsRejected === true && (
+                              <p className="text-sm text-[#ff9800]">Reason: {transaction.RejectReason}</p>
+                            )}
+
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-white/60">  
+                          <div className="flex items-center gap-4 text-sm text-white/60">
                             <p>
                               Status:{" "}
                               {(() => {
@@ -264,13 +294,13 @@ const WithDrawPage = () => {
                                 const statusText = isRejected
                                   ? "Rejected"
                                   : isCompleted
-                                  ? "Completed"
-                                  : "Pending";
+                                    ? "Completed"
+                                    : "Pending";
                                 const statusColor = isRejected
                                   ? "text-[#ff9800]" // orange for rejected
                                   : isCompleted
-                                  ? "text-[#aee339]" // green for completed
-                                  : "text-yellow-400"; // yellow for pending
+                                    ? "text-[#aee339]" // green for completed
+                                    : "text-yellow-400"; // yellow for pending
                                 return (
                                   <span className={`font-semibold ${statusColor}`}>
                                     {statusText}
@@ -316,6 +346,42 @@ const WithDrawPage = () => {
           </div>
         )}
       </div>
+
+      {/* Image Popup Dialog */}
+      <Dialog
+        open={isImagePopupOpen}
+        onClose={() => setIsImagePopupOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          style: {
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '16px',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+          },
+        }}
+      >
+        <DialogContent className="relative p-6">
+          <button
+            onClick={() => setIsImagePopupOpen(false)}
+            className="absolute top-4 right-4 z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+          {billUrl ? (
+            <img
+              src={billUrl}
+              alt="Transfer Bill"
+              className="w-full max-h-200 rounded-lg"
+            />
+          ) : (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-12 h-12 border-4 border-[#ff9800] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

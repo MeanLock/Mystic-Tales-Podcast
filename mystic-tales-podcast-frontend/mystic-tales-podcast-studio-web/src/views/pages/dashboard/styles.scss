@@ -2,11 +2,11 @@
     font-family: 'Poppins', sans-serif;
 
     .MuiTabs-root {
-        border-bottom: none;
-        display: flex;
-        gap: 16px;
-        justify-content: flex-end;
-        min-height: auto;
+        border-bottom: none !important;
+        display: flex !important;
+        gap: 16px !important;
+        justify-content: flex-end !important;
+        min-height: auto !important;
     }
 
     .MuiTabs-indicator {
@@ -81,9 +81,4 @@
 
 .progress-bar {
     background-color: #3E5DAB;
-}
-.css-hzcega-MuiTabs-list {
-    display: flex;
-    justify-content: flex-end;
-    gap: 16px;
 }

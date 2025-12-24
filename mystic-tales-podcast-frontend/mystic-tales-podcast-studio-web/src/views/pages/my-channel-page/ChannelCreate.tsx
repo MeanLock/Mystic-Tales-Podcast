@@ -360,6 +360,29 @@ const ChannelCreate = ({ onClose }: { onClose?: () => void }) => {
                             onChange={(e) => handleCategoryChange(e.target.value as unknown as number)}
                             className="channel-overview-page__select"
                             required
+                            SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                         >
                             <MenuItem value={0} disabled>
                                 Select Category
@@ -368,9 +391,7 @@ const ChannelCreate = ({ onClose }: { onClose?: () => void }) => {
                                 <MenuItem
                                     key={category.Id}
                                     value={category.Id}
-                                    sx={{
-                                        '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
-                                    }}
+                                  
                                 >
                                     {category.Name}
                                 </MenuItem>
@@ -384,6 +405,29 @@ const ChannelCreate = ({ onClose }: { onClose?: () => void }) => {
                             onChange={(e) => handleSubCategoryChange(e.target.value as unknown as number)}
                             className="channel-overview-page__select"
                             required
+                            SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                         >
                             <MenuItem value={0} disabled>
                                 Select Subcategory

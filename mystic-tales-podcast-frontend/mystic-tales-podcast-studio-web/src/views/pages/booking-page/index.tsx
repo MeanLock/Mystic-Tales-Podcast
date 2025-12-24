@@ -62,7 +62,7 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
                     }
                     return (
                         <span>
-                            {params.data.Price} Coin
+                            {params.data.Price.toLocaleString()} 
                         </span>
                     );
                 }
@@ -79,7 +79,7 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
                 field: "UpdatedAt",
                 cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 valueGetter: (params: any) => formatDate(params.data.UpdatedAt),
-   comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
                     const dateA = new Date(nodeA.data.UpdatedAt).getTime();
                     const dateB = new Date(nodeB.data.UpdatedAt).getTime();
                     return dateA - dateB;
@@ -91,7 +91,7 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
                 cellClass: 'd-flex align-items-center justify-content-center',
                 cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 flex: 1.1,
-                  valueGetter: (params: any) => {
+                valueGetter: (params: any) => {
                     return params.data?.CurrentStatus?.Name?.trim() || '';
                 },
                 cellRenderer: (params: any) => {
@@ -125,14 +125,16 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
 
                         case 'Customer Cancel Request':
                         case 'Podcast Buddy Cancel Request':
-                        case 'Quotation Rejected':
                         case 'Cancelled Automatically':
                         case 'Cancelled Manually':
-                        case 'Quotation Cancelled':
                             color = '#ef5350';
                             bg = 'rgba(239, 83, 80, 0.15)'; // đỏ
                             break;
-
+                        case 'Quotation Rejected':
+                        case 'Quotation Cancelled':
+                            color = '#f2545b';
+                            bg = 'rgba(242, 84, 91, 0.15)'; // đỏ
+                            break;
                         default:
                             color = '#9e9e9e';
                             bg = 'rgba(158, 158, 158, 0.15)'; // xám nếu không khớp

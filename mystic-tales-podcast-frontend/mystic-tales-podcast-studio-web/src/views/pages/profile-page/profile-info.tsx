@@ -430,7 +430,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
                            onChange={(e) => {
                                 let val = e.target.value;
                                 if (val === '' || Number(val) < 1000) {
-                                    setDisplayPrice(1000); // Min 1000 VND
+                                    setDisplayPrice(1000); // Min 1000 Coins
                                 } else {
                                     setDisplayPrice(Number(val));
                                 }
