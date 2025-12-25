@@ -207,6 +207,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         : null,
                     CreatedAt = pbrrs.CreatedAt,
                     UpdatedAt = pbrrs.UpdatedAt,
+                    ResolvedAt = pbrrs.ResolvedAt,
                     CurrentStatus = new DMCAAccusationStatusDTO()
                     {
                         Id = pbrrs.DmcaaccusationStatusTrackings
@@ -593,6 +594,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     : null,
                 CreatedAt = da.CreatedAt,
                 UpdatedAt = da.UpdatedAt,
+                ResolvedAt = da.ResolvedAt,
                 CurrentStatus = new DMCAAccusationStatusDTO()
                 {
                     Id = da.DmcaaccusationStatusTrackings
