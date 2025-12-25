@@ -461,6 +461,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
+                    if (parameter.AccountId == parameter.PodcastBuddyId)
+                    {
+                        throw new HttpRequestException("AccountId and PodcastBuddyId can not be the same");
+                    }
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(parameter.PodcastBuddyId);
                     if (podcaster == null)
                     {
@@ -2664,17 +2668,28 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 throw new HttpRequestException($"Retrieving Booking failed. Error: {ex.Message}");
             }
         }
-        public async Task<List<PodcastBuddySnippetResponseDTO>> GetPodcastersByBookingToneIdAsync(Guid podcastBookingToneId)
+        public async Task<List<PodcastBuddySnippetResponseDTO>> GetPodcastersByBookingToneIdAsync(Guid podcastBookingToneId, int? accountId = null)
         {
             try
             {
                 var result = new List<PodcastBuddySnippetResponseDTO>();
-                var podcastBuddyBookingTones = await _podcastBuddyBookingToneGenericRepository.FindAll(
+                var query = _podcastBuddyBookingToneGenericRepository.FindAll(
                     predicate: pbbt => pbbt.PodcastBookingToneId == podcastBookingToneId
-                    )
+                    );
+                if(accountId.HasValue)
+                {
+                    query = query.Where(pbbt => pbbt.PodcasterId != accountId.Value);
+                }
+                var podcastBuddyBookingTones = await query
                     .Select(pbbt => pbbt.PodcasterId)
                     .Distinct()
                     .ToListAsync();
+                // var podcastBuddyBookingTones = await _podcastBuddyBookingToneGenericRepository.FindAll(
+                //     predicate: pbbt => pbbt.PodcastBookingToneId == podcastBookingToneId
+                //     )
+                //     .Select(pbbt => pbbt.PodcasterId)
+                //     .Distinct()
+                //     .ToListAsync();
                 foreach (var podcasterId in podcastBuddyBookingTones)
                 {
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(podcasterId);

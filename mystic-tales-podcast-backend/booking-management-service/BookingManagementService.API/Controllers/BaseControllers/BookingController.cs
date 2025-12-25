@@ -252,7 +252,9 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         [HttpGet("podcast-booking-tone/{PodcastBookingToneId}/podcast-buddy")]
         public async Task<IActionResult> GetPodcasterByBookingToneId([FromRoute] Guid PodcastBookingToneId)
         {
-            var result = await _bookingService.GetPodcastersByBookingToneIdAsync(PodcastBookingToneId);
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account?.Id;
+            var result = await _bookingService.GetPodcastersByBookingToneIdAsync(PodcastBookingToneId, accountId);
             //if (result == null || !result.Any())
             //{
             //    return NotFound("No podcast booking tones found.");
