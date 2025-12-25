@@ -13,18 +13,27 @@ namespace ModerationService.Common.AppConfigurations.BusinessSetting
         public int DMCANoticeResponseTime { get; set; }
         public int DMCACounterNoticeResponseTime { get; set; }
         public decimal DismissStaticViolationPoint { get; set; }
+        public decimal InvalidDMCACounterNoticePenaltyPoint { get; set; }
+        public decimal TakenDownPenaltyPoint { get; set; }
+        public decimal LawsuitLosePenaltyPoint { get; set; }
     }
     public class DMCAAccusationConfig : IDMCAAccusationConfig
     {
         public int DMCANoticeResponseTime { get; set; }
         public int DMCACounterNoticeResponseTime { get; set; }
         public decimal DismissStaticViolationPoint { get; set; }
+        public decimal InvalidDMCACounterNoticePenaltyPoint { get; set; }
+        public decimal TakenDownPenaltyPoint { get; set; }
+        public decimal LawsuitLosePenaltyPoint { get; set; }
         public DMCAAccusationConfig(IConfiguration configuration)
         {
             var dmcaAccusationConfig = configuration.GetSection("BusinessSettings:DMCAAccusation").Get<DMCAAccusationConfigModel>();
             DMCANoticeResponseTime = dmcaAccusationConfig?.DMCANoticeResponseTime ?? 14;
             DMCACounterNoticeResponseTime = dmcaAccusationConfig?.DMCACounterNoticeResponseTime ?? 14;
-            DismissStaticViolationPoint = dmcaAccusationConfig?.DismissStaticViolationPoint ?? 49;
+            DismissStaticViolationPoint = dmcaAccusationConfig?.DismissStaticViolationPoint ?? 50;
+            InvalidDMCACounterNoticePenaltyPoint = dmcaAccusationConfig?.InvalidDMCACounterNoticePenaltyPoint ?? 10;
+            TakenDownPenaltyPoint = dmcaAccusationConfig?.TakenDownPenaltyPoint ?? 200;
+            LawsuitLosePenaltyPoint = dmcaAccusationConfig?.LawsuitLosePenaltyPoint ?? 500;
         }
     }
 }
