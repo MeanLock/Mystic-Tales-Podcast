@@ -759,8 +759,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             {
                                 { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
                                 { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
-                                { "TakenDownReason", Enum.GetName((DMCATakeDownReasonEnum)parameter.DMCAAccusationTakenDownReasonEnum) }
+                                { "TakenDownReason", ((DMCATakeDownReasonEnum)parameter.DMCAAccusationTakenDownReasonEnum).GetDescription() }
                             };
+                            
                             var takeDownMessageName = "content-dmca-takedown-flow";
                             var sagaTakeDownStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.ContentManagementDomain,

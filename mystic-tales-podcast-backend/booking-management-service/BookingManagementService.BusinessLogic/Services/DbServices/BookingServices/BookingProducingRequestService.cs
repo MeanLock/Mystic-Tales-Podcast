@@ -1167,6 +1167,26 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             var booking = bookingPodcastTrack.BookingProducingRequest.Booking;
             return booking.PodcastBuddyId == account.Id || booking.AssignedStaffId == account.Id;
         }
+        public async Task<bool> IsAudioFileCompletedAsync(string audioFileKey, AccountStatusCache account)
+        {
+            var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindAll(
+                includeFunc: include => include
+                .Include(bpt => bpt.BookingProducingRequest)
+                .ThenInclude(bpr => bpr.Booking)
+                .ThenInclude(b => b.BookingStatusTrackings)
+            )
+                .Where(bpt => bpt.AudioFileKey == audioFileKey && bpt.Booking.BookingStatusTrackings
+                    .OrderByDescending(bst => bst.CreatedAt)
+                    .FirstOrDefault()
+                    .BookingStatusId == (int)BookingStatusEnum.Completed)
+                .FirstOrDefaultAsync();
+            if (bookingPodcastTrack == null)
+            {
+                return false;
+            }
+            var booking = bookingPodcastTrack.BookingProducingRequest.Booking;
+            return booking.PodcastBuddyId == account.Id || booking.AssignedStaffId == account.Id;
+        }
         public async Task<bool> ValidateBookingAccountOrPodcasterAsync(int bookingId, int accountId)
         {
             return await ValidateBookingAccountAsync(bookingId, accountId) || await ValidateBookingPodcasterAsync(bookingId, accountId);
