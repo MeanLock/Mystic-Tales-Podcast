@@ -4364,7 +4364,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .FirstOrDefault().BookingStatusId;
                     var moneyFlowStatus = 0;
                     if(currentStatus != (int)BookingStatusEnum.Completed &&
-                        currentStatus != (int)BookingStatusEnum.CancelledAutomatically &&
+                        currentStatus != (int)BookingStatusEnum.CancelledManually &&
                         currentStatus != (int)BookingStatusEnum.CancelledAutomatically)
                     {
                         moneyFlowStatus = (int)MoneyFlowStatusEnum.Holding;
