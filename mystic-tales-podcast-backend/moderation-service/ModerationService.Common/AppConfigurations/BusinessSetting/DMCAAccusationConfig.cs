@@ -30,7 +30,7 @@ namespace ModerationService.Common.AppConfigurations.BusinessSetting
             var dmcaAccusationConfig = configuration.GetSection("BusinessSettings:DMCAAccusation").Get<DMCAAccusationConfigModel>();
             DMCANoticeResponseTime = dmcaAccusationConfig?.DMCANoticeResponseTime ?? 14;
             DMCACounterNoticeResponseTime = dmcaAccusationConfig?.DMCACounterNoticeResponseTime ?? 14;
-            DismissStaticViolationPoint = dmcaAccusationConfig?.DismissStaticViolationPoint ?? 50;
+            DismissStaticViolationPoint = dmcaAccusationConfig?.DismissStaticViolationPoint ?? 200;
             InvalidDMCACounterNoticePenaltyPoint = dmcaAccusationConfig?.InvalidDMCACounterNoticePenaltyPoint ?? 10;
             TakenDownPenaltyPoint = dmcaAccusationConfig?.TakenDownPenaltyPoint ?? 200;
             LawsuitLosePenaltyPoint = dmcaAccusationConfig?.LawsuitLosePenaltyPoint ?? 500;

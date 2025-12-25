@@ -1009,8 +1009,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll(
                         includeFunc: function => function
                         .Include(ps => ps.PodcastSubscriptionCycleTypePrices))
-                        .OrderByDescending(ps => ps.CurrentVersion)
                         .FirstOrDefaultAsync(ps => ps.Id == parameter.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive);
+                    Console.WriteLine("Podcast Subscription Retrieved: " + podcastSubscription.CurrentVersion);
                     if (podcastSubscription == null)
                     {
                         throw new Exception($"No Active Podcast Subscription exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId}");
@@ -1169,7 +1169,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
 
                     var cycleTypePrice = await _podcastSubscriptionCycleTypePriceGenericRepository.FindAll()
                         .FirstOrDefaultAsync(ptcp => ptcp.PodcastSubscriptionId == parameter.PodcastSubscriptionId
-                            && ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId);
+                            && ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId
+                            && ptcp.Version == podcastSubscription.CurrentVersion);
                     if(cycleTypePrice == null)
                     {
                         throw new Exception($"No Podcast Subscription Cycle Type Price exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId} and SubscriptionCycleType Id: {parameter.SubscriptionCycleTypeId}");
@@ -1181,7 +1182,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     }
 
                     var originalPrice2 = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId)
+                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId && ptcp.Version == podcastSubscription.CurrentVersion)
                         .Select(ptcp => ptcp.Price)
                         .FirstOrDefault();
 
