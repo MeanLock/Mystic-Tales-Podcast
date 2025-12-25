@@ -1,4 +1,4 @@
-import { Chip } from '@mui/material';
+import { Chip, Typography } from '@mui/material';
 import { FC } from 'react';
 
 interface StatusChipProps {
@@ -57,7 +57,7 @@ const STATUS_COLORS = {
             color: '#2196f3'
         },
         5: { // Published
-          bg: 'rgba(174, 227, 57, 0.2)',
+            bg: 'rgba(174, 227, 57, 0.2)',
             border: 'var(--primary-green)',
             color: 'var(--primary-green)'
         },
@@ -67,12 +67,12 @@ const STATUS_COLORS = {
             color: '#f44336'
         },
         7: { // Removed
-          bg: 'rgba(244, 67, 54, 0.2)',
+            bg: 'rgba(244, 67, 54, 0.2)',
             border: '#f44336',
             color: '#f44336'
         },
         8: { // Audio Processing
-          bg: 'rgba(33, 150, 243, 0.2)',
+            bg: 'rgba(33, 150, 243, 0.2)',
             border: '#2196f3',
             color: '#2196f3'
         }
@@ -90,46 +90,43 @@ const StatusChip: FC<StatusChipProps> = ({ statusId, statusName, type }) => {
 
     return (
         <>
-            <Chip
-                label={
-                    isAudioProcessing ? (
-                        <span>
-                            {statusName}
-                            <span style={{ 
-                                animation: 'blink 1.5s infinite',
-                                marginLeft: '2px'
-                            }}>.</span>
-                            <span style={{ 
-                                animation: 'blink 1.5s infinite',
-                                animationDelay: '0.3s',
-                                marginLeft: '2px'
-                            }}>.</span>
-                            <span style={{ 
-                                animation: 'blink 1.5s infinite',
-                                animationDelay: '0.6s',
-                                marginLeft: '2px'
-                            }}>.</span>
-                        </span>
-                    ) : statusName
-                }
-                sx={{
-                    background: style.bg,
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    minWidth: 150,
-                    padding: '0 10px',
-                    borderRadius: 50,
+            <div className="flex items-center gap-2 h-full"
+            >
+                <Typography sx={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '1.2rem' }}>
+                    |
+                </Typography>
+                <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', fontWeight: 600, fontSize: '0.95rem' }}>
+                    Status :
+                </Typography>
+
+                <Typography sx={{
                     fontWeight: 700,
-                    fontSize: '0.9rem',
-                    border: `1.5px solid ${style.border}`,
+                    fontSize: '1.08 rem',
                     color: style.color,
-                    height: '44px',
-                    '& .MuiChip-label': {
-                        padding: '0 12px',
-                        textShadow: '0 2px 6px rgba(0, 0, 0, 0.3)',
-                    },
-                }}
-            />
+                }}>
+                    {
+                        isAudioProcessing ? (
+                            <span>
+                                {statusName}
+                                <span style={{
+                                    animation: 'blink 1.5s infinite',
+                                    marginLeft: '2px'
+                                }}>.</span>
+                                <span style={{
+                                    animation: 'blink 1.5s infinite',
+                                    animationDelay: '0.3s',
+                                    marginLeft: '2px'
+                                }}>.</span>
+                                <span style={{
+                                    animation: 'blink 1.5s infinite',
+                                    animationDelay: '0.6s',
+                                    marginLeft: '2px'
+                                }}>.</span>
+                            </span>
+                        ) : statusName
+                    }
+                </Typography>
+            </div>
             {isAudioProcessing && (
                 <style>
                     {`

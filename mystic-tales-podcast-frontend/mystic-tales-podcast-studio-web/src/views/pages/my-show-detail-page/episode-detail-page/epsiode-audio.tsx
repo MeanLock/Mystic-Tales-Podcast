@@ -102,6 +102,11 @@ const presets: Record<string, Record<string, number>> = {
 const MOOD_OPTIONS = [
     { value: 'Mysterious', label: 'Mysterious' },
     { value: 'Eerie', label: ' Eerie' },
+    { value: 'Dark', label: 'Dark' },
+    { value: 'Haunting', label: 'Haunting' },
+    { value: 'Balance', label: 'Balance' },
+    { value: 'Warm', label: 'Warm' },
+    { value: 'Cool', label: 'Cool' },
 ]
 
 interface Clip {
@@ -1380,7 +1385,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
             return;
         }
         if (episodeDetail && episodeDetail.CurrentStatus.Id === 5) {
-            toast.error("Cannot change audio for Published episodes, please Unpublish first");
+            toast.warning("Cannot change audio for Published episodes, please Unpublish first");
             return;
         }
         if (episodeDetail && episodeDetail.CurrentStatus.Id === 4) {
@@ -1388,7 +1393,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
             if (!alert.isConfirmed) return;
         }
         if (episodeDetail && episodeDetail.CurrentStatus.Id === 2) {
-            toast.error("This episode is Pending Review, please Discard Publish Request first");
+            toast.warning("This episode is Pending Review, please Discard Publish Request first");
             return;
         }
 
@@ -1595,7 +1600,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                                 className="accent-emerald-600"
                             />
                             <span className="text-xs text-slate-400">{pixelsPerSecond.toFixed(1)}px/s</span>
-                            <button
+                            {/* <button
                                 onClick={() => {
                                     console.log('=== SEQUENCER CLIP INFO ===')
                                     const originalClip = clips.find(c => c.track === 0)
@@ -1641,7 +1646,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                                     <line x1="12" y1="8" x2="12.01" y2="8" />
                                 </svg>
                                 Info
-                            </button>
+                            </button> */}
                         </div>
                         {/* Sequencer Controls */}
                         <div className="w-full text-slate-100 p-4 flex flex-col gap-3 select-none bg-slate-900 rounded">
@@ -2224,6 +2229,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--primary-green)' },
                                         '& .MuiSelect-icon': { color: 'var(--primary-green)' },
                                     }}
+                                    
                                 >
                                     {MOOD_OPTIONS.map(m => (
                                         <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>

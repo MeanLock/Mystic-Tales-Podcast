@@ -70,7 +70,15 @@ const state_creator = (table: Podcaster[], handleDataChange: () => void) => {
               color: 'var(--secondary-green)',
               bg: 'rgba(173, 227, 57, 0.06)'
             };
-          } else {
+            
+          }  else if (params.data.PodcasterProfile.IsVerified === false) {
+            status = {
+              title: 'Rejected',
+              color: '#ef5350',
+              bg: 'rgba(251, 222, 227, 0.2)'
+            };
+            
+          }else {
             status = {
               title: 'Pending',
               color: '#ffb300',
@@ -101,10 +109,10 @@ const state_creator = (table: Podcaster[], handleDataChange: () => void) => {
             update_button_color: 'white'
           }
           return (
-
+       
             <CButtonGroup style={{ width: '100%', height: "100%" }} role="group" aria-label="Basic mixed styles example">
               <Modal_Button
-                disabled={false}
+                disabled={params.data.PodcasterProfile.IsVerified === false}
                 title={Modal_props.title}
                 content={Modal_props.button}
                 color={Modal_props.update_button_color} >

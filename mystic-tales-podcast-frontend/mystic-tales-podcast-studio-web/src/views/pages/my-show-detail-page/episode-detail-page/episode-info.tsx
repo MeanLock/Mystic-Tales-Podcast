@@ -536,6 +536,13 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                     >
                         {isSaving ? 'Saving...' : 'Save'}
                     </Button>
+                    <div className="  flex justify-center items-center h-full">
+                        <StatusChip
+                            statusId={episodeDetail.CurrentStatus.Id}
+                            statusName={episodeDetail.CurrentStatus.Name}
+                            type="episode"
+                        />
+                    </div>
                 </div>
             )}
 
@@ -569,11 +576,7 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                             }}
                         />
 
-                        <StatusChip
-                            statusId={episodeDetail.CurrentStatus.Id}
-                            statusName={episodeDetail.CurrentStatus.Name}
-                            type="episode"
-                        />
+
                     </div>
                     <div className="episode-info-page__row">
                         <TextField
@@ -583,7 +586,7 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                             value={episodeDetail.PodcastEpisodeSubscriptionType.Id ?? 1}
                             onChange={(e) => setEpisodeDetail({ ...episodeDetail, PodcastEpisodeSubscriptionType: { ...episodeDetail.PodcastEpisodeSubscriptionType, Id: e.target.value as unknown as number } })}
                             className="episode-info-page__select"
-                             SelectProps={{
+                            SelectProps={{
                                 MenuProps: {
                                     sx: {
                                         '& .MuiPaper-root': {
@@ -611,7 +614,7 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                                 <MenuItem
                                     key={type.Id}
                                     value={type.Id}
-                                 
+
                                 >
                                     {type.Name}
                                 </MenuItem>
@@ -624,7 +627,7 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                             value={episodeDetail.ExplicitContent ?? ''}
                             onChange={(e) => setEpisodeDetail({ ...episodeDetail, ExplicitContent: e.target.value === 'true' })}
                             className="episode-info-page__select"
-                             SelectProps={{
+                            SelectProps={{
                                 MenuProps: {
                                     sx: {
                                         '& .MuiPaper-root': {

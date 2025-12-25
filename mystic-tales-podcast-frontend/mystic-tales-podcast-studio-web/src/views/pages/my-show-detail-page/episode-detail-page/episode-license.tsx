@@ -174,18 +174,18 @@ const EpisodeLicense = () => {
     };
 
     const handleUploadLicenses = async () => {
-               if (authSlice.user?.ViolationLevel > 0) {
-                    toast.error('Your account is currently under violation !!');
-                    return;
-                }
-                if(episodeDetail.CurrentStatus.Id === 7){
-                    toast.error("This episode is removed. You can't upload license.");
-                    return;
-                }
-              if(episodeDetail.CurrentStatus.Id === 6){
-                    toast.error("This episode is taken down. You can't upload license.");
-                    return;
-                }
+        if (authSlice.user?.ViolationLevel > 0) {
+            toast.error('Your account is currently under violation !!');
+            return;
+        }
+        if (episodeDetail.CurrentStatus.Id === 7) {
+            toast.error("This episode is removed. You can't upload license.");
+            return;
+        }
+        if (episodeDetail.CurrentStatus.Id === 6) {
+            toast.error("This episode is taken down. You can't upload license.");
+            return;
+        }
         try {
             setUploading(true);
             const filesToUpload = prepareLicenseFilesForUpload();
@@ -225,14 +225,14 @@ const EpisodeLicense = () => {
         }
     };
     const handleRemoveLicense = async (licenseId: string) => {
-         if(episodeDetail.CurrentStatus.Id === 7){
-                    toast.error("This episode is removed. You can't upload license.");
-                    return;
-                }
-              if(episodeDetail.CurrentStatus.Id === 6){
-                    toast.error("This episode is taken down. You can't upload license.");
-                    return;
-                }
+        if (episodeDetail.CurrentStatus.Id === 7) {
+            toast.error("This episode is removed. You can't upload license.");
+            return;
+        }
+        if (episodeDetail.CurrentStatus.Id === 6) {
+            toast.error("This episode is taken down. You can't upload license.");
+            return;
+        }
         const alert = await confirmAlert("Are you sure to DELETE this license?");
         if (!alert.isConfirmed) return;
         setLoading(true);
@@ -314,6 +314,30 @@ const EpisodeLicense = () => {
                                                     '& .MuiInputLabel-root': { color: 'var(--primary-green)' },
                                                     '& .MuiSelect-icon': { color: 'rgba(255, 255, 255, 0.5)' }
                                                 }}
+                                                SelectProps={{
+                                                    MenuProps: {
+                                                        sx: {
+                                                            '& .MuiPaper-root': {
+                                                                backgroundColor: '#2a2a2a',
+                                                                color: 'white',
+                                                            },
+                                                            '& .MuiMenuItem-root': {
+                                                                color: 'white',
+                                                                fontSize: '0.9rem',
+                                                                padding: '8px 16px',
+                                                                '&:hover': {
+                                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                                    color: 'var(--primary-green)',
+                                                                },
+                                                                '&.Mui-selected': {
+                                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                                    color: 'var(--primary-green)',
+                                                                },
+                                                            },
+                                                        },
+                                                    },
+                                                }}
+
                                             >
                                                 {licenseTypes.map((type) => (
                                                     <MenuItem key={type.Id} value={type.Id}>
@@ -444,8 +468,9 @@ const EpisodeLicense = () => {
                                                 size="small"
                                                 fullWidth
                                                 variant="standard"
-                                                sx={{
+                                                  sx={{
                                                     '& .MuiInputBase-root': {
+                                                        marginTop: '1.475rem',
                                                         color: 'white',
                                                         '&:before': { borderColor: 'rgba(255, 255, 255, 0.1)' },
                                                         '&:hover:not(.Mui-disabled):before': { borderColor: 'rgba(255, 255, 255, 0.2)' },
@@ -453,6 +478,29 @@ const EpisodeLicense = () => {
                                                     },
                                                     '& .MuiInputLabel-root': { color: 'var(--primary-green)' },
                                                     '& .MuiSelect-icon': { color: 'rgba(255, 255, 255, 0.5)' }
+                                                }}
+                                                SelectProps={{
+                                                    MenuProps: {
+                                                        sx: {
+                                                            '& .MuiPaper-root': {
+                                                                backgroundColor: '#2a2a2a',
+                                                                color: 'white',
+                                                            },
+                                                            '& .MuiMenuItem-root': {
+                                                                color: 'white',
+                                                                fontSize: '0.9rem',
+                                                                padding: '8px 16px',
+                                                                '&:hover': {
+                                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                                    color: 'var(--primary-green)',
+                                                                },
+                                                                '&.Mui-selected': {
+                                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                                    color: 'var(--primary-green)',
+                                                                },
+                                                            },
+                                                        },
+                                                    },
                                                 }}
                                             >
                                                 {licenseTypes.map((type) => (

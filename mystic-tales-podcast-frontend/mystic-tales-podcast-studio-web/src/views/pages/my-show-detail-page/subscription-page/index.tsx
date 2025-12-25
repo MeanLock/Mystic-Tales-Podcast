@@ -340,7 +340,7 @@ const ShowSubscription: FC<ShowSubscriptionProps> = () => {
         return (
             <ShowSubscriptionContext.Provider value={{ handleDataChange: fetchSubscriptionList }}>
                 <div className="pt-30">
-                    <EmptyComponent item="Subscription" subtitle="Try adjusting your search terms or filters" />
+                    <EmptyComponent item="Subscription" subtitle="You don't have any subscription" />
                     <Modal_Button
                         className=" show-subscription__btn h-1/2 text-black font-bold rounded-lg normal-case "
                         content="Add Subscription"

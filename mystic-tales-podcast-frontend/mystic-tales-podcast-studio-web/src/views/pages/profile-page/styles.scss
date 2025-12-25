@@ -173,20 +173,28 @@
 
         &--email {
             flex: 2;
-            background-color: #99999912;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+            min-width: 300px;
 
             .MuiInputLabel-root {
                 color: var(--third-grey);
-                font-size: 0.9rem;
             }
 
             .MuiInputBase-root {
-                color: var(--white-75);
+                color: var(--third-grey);
+                font-family: 'inter', sans-serif !important;
+
+                &::before {
+                    border-bottom: 1px solid var(--third-grey);
+                }
+
+                &:hover:not(.Mui-disabled):before {
+                    border-bottom: 1px solid var(--third-grey);
+                }
 
                 &::after {
-                    border-bottom: none;
+                    border-bottom: 1px solid var(--third-grey);
                 }
+
             }
 
         }
@@ -537,7 +545,16 @@
         font-size: 0.875rem !important;
         opacity: 0.8;
     }
-
+ &__metadata-section {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        padding: 18px 30px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.05));
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+    }
     // Responsive Design
     @media (max-width: 1200px) {
         &__content {
