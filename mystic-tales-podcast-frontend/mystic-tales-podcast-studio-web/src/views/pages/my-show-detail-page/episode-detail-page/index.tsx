@@ -261,7 +261,7 @@ const EpisodeDetail: FC<EpisodeDetailViewProps> = () => {
         if (!token) return;
 
         console.log("Setting up SignalR connection...");
-        
+
         // Build connection with better reconnection strategy
         const connection = new signalR.HubConnectionBuilder()
             .withUrl(`${REST_API_BASE_URL}/api/podcast-service/hubs/podcast-content-notification`, {
@@ -317,12 +317,12 @@ const EpisodeDetail: FC<EpisodeDetailViewProps> = () => {
                 console.log("SignalR connected successfully");
                 setSignalRConnection(connection);
             } catch (err) {
-              const retryTimer = setTimeout(() => {
-                if (connectionRef.current === connection) {
-                    startConnection();
-                }
-            }, 5000);
-            return () => clearTimeout(retryTimer);
+                const retryTimer = setTimeout(() => {
+                    if (connectionRef.current === connection) {
+                        startConnection();
+                    }
+                }, 5000);
+                return () => clearTimeout(retryTimer);
             }
         };
 
@@ -331,10 +331,10 @@ const EpisodeDetail: FC<EpisodeDetailViewProps> = () => {
         // Cleanup
         return () => {
             console.log("Stopping SignalR connection...");
-          if (connectionRef.current) {
-            connectionRef.current.stop();
-            connectionRef.current = null;
-        }
+            if (connectionRef.current) {
+                connectionRef.current.stop();
+                connectionRef.current = null;
+            }
             setSignalRConnection(null);
         };
     }, [token, REST_API_BASE_URL]);
@@ -413,10 +413,22 @@ const EpisodeDetail: FC<EpisodeDetailViewProps> = () => {
                                                                         min: new Date().toISOString().split('T')[0]
                                                                     }}
                                                                     sx={{
-                                                                        '& .MuiOutlinedInput-root': {
-                                                                            '& fieldset': { borderColor: '#999999 !important' },
-                                                                            '&:hover fieldset': { borderColor: '#999999 !important' },
-                                                                            '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
+                                                                        '& .MuiPaper-root': {
+                                                                            backgroundColor: '#2a2a2a',
+                                                                            color: 'white',
+                                                                        },
+                                                                        '& .MuiMenuItem-root': {
+                                                                            color: 'white',
+                                                                            fontSize: '0.9rem',
+                                                                            padding: '8px 16px',
+                                                                            '&:hover': {
+                                                                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                                                color: 'var(--primary-green)',
+                                                                            },
+                                                                            '&.Mui-selected': {
+                                                                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                                                color: 'var(--primary-green)',
+                                                                            },
                                                                         },
                                                                     }}
                                                                 />

@@ -20,8 +20,9 @@ export const DefaultLayoutHeader: FC = () => {
 
   const handleLogout = () => {
     setAnchorEl(null);
-    dispatch(clearAuthToken())
-    navigate("/login")
+    dispatch(clearAuthToken());
+    dispatch({ type: 'navigation/clearContext' });
+    navigate("/login");
   }
   const handleOpenProfileMenu = (e: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(e.currentTarget);
