@@ -23,7 +23,7 @@ const DetailForm: React.FC<EpisodeReportDetailProps> = ({ podcastEpisodeReportRe
   const [EpisodeReportDetail, setEpisodeReportDetail] = useState<any | null>(null)
   const [loading, setLoading] = useState(false)
   const { startPolling } = useSagaPolling({
-    timeoutSeconds: 120,
+    timeoutSeconds: 300,
     intervalSeconds: 0.5,
   })
   const fetchDetail = async (id: string) => {

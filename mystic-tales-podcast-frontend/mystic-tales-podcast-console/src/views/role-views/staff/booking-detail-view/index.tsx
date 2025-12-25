@@ -180,7 +180,7 @@ const BookingDetailView: FC<BookingDetailViewProps> = () => {
     const [depositRefundRate, setDepositRefundRate] = useState<number>(0);
     const navigate = useNavigate();
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 60,
+        timeoutSeconds: 300,
         intervalSeconds: 2,
     })
     const fetchBookingDetail = async () => {

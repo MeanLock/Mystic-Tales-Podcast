@@ -34,7 +34,7 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
     const [loading, setLoading] = useState(true)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 10,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const [viewingNoticeFile, setViewingNoticeFile] = useState<{ id: number, url: string } | null>(null)

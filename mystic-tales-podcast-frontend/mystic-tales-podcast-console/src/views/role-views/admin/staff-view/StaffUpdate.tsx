@@ -35,7 +35,7 @@ const StaffForm: React.FC<StaffUpdateProps> = ({ account, onClose }) => {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     const { startPolling } = useSagaPolling({
-      timeoutSeconds: 5,
+      timeoutSeconds: 300,
       intervalSeconds: 0.5,
     })
   

@@ -35,7 +35,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ transaction, onClos
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [showPopup, setShowPopup] = useState(false);
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 60,
+        timeoutSeconds: 300,
         intervalSeconds: 2,
     })
     const isCompleted = transaction.CompletedAt !== null;

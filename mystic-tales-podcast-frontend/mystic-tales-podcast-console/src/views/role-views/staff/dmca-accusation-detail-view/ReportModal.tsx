@@ -28,7 +28,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ onClose, DmcaAccusationConclu
         InvalidReason: ''
     });
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const handleSubmit = async (e: React.FormEvent) => {

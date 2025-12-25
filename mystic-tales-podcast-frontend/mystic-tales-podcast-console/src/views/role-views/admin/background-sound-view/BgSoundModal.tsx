@@ -28,7 +28,7 @@ const BgSoundModal: FC<BgSoundModalProps> = ({ soundData, onClose }) => {
     const [mainImageUrl, setMainImageUrl] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const isUpdateMode = !!soundData
