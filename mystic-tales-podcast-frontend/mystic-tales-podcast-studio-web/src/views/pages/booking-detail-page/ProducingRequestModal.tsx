@@ -169,9 +169,9 @@ const ProducingRequestModal: React.FC<ProducingRequestModalProps> = ({ bookingPr
                 return
             }
             await startPolling(sagaId, loginRequiredAxiosInstance, {
-                onSuccess: () => {
+                onSuccess: async () => {
                     onClose();
-                    context?.handleDataChange();
+                    await context?.handleDataChange();
                     toast.success(`Submit successfully!`);
                 },
                 onFailure: (err) => toast.error(err || "Saga failed!"),
