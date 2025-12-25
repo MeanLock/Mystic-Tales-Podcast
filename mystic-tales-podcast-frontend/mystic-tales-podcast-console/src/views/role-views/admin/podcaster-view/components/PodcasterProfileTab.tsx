@@ -277,7 +277,7 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
 
       </div>
 
-      {podcasterProfile.IsVerified === null ? (
+      {podcasterProfile.IsVerified === null || podcasterProfile.IsVerified === true ? (
         <div className="mt-6 ">
           <div className="podcaster-profile__verification-actions flex gap-4">
             <button

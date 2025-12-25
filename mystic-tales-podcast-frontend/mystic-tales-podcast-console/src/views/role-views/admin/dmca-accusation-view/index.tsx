@@ -92,7 +92,7 @@ const show_state = (table: DMCAAccusation[], navigate: (path: string) => void) =
       { headerName: "Podcast Show", field: "PodcastShow.Name" },
       {
         headerName: "Assigned Staff",
-        valueGetter: (params: { data: DMCAAccusation }) => (params.data.AssignedStaff ? params.data.AssignedStaff.FullName : "---"),
+        valueGetter: (params: { data: DMCAAccusation }) => (params.data.AssignedStaff ? params.data.AssignedStaff.Email : "---"),
       },
       {
         headerName: "Created At",
@@ -193,7 +193,7 @@ const episode_state = (table: DMCAAccusation[], navigate: (path: string) => void
       { headerName: "Podcast Episode", field: "PodcastEpisode.Name" },
       {
         headerName: "Assigned Staff",
-        valueGetter: (params: { data: DMCAAccusation }) => (params.data.AssignedStaff ? params.data.AssignedStaff.FullName : "---"),
+        valueGetter: (params: { data: DMCAAccusation }) => (params.data.AssignedStaff ? params.data.AssignedStaff.Email : "---"),
       },
       {
         headerName: "Created At",
