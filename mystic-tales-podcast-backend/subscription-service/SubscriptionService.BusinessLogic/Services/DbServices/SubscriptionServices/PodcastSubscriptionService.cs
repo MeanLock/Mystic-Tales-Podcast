@@ -913,7 +913,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         if (!registration.IsIncomeTaken)
                         {
                             var amount = existPodcastSubscription.PodcastSubscriptionCycleTypePrices
-                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == existPodcastSubscription.CurrentVersion)
                                 .Select(ptcp => ptcp.Price)
                                 .FirstOrDefault();
                             refundAmount = amount;
@@ -1510,7 +1510,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 if (!registration.IsIncomeTaken)
                                 {
                                     var amount = existingSubscription.PodcastSubscriptionCycleTypePrices
-                                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                         .Select(ptcp => ptcp.Price)
                                         .FirstOrDefault();
                                     refundAmount = amount;
@@ -1657,7 +1657,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         if (!registration.IsIncomeTaken)
                         {
                             var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                 .Select(ptcp => ptcp.Price)
                                 .FirstOrDefault();
                             refundAmount = amount;
@@ -1949,7 +1949,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         if (!registration.IsIncomeTaken)
                         {
                             var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                 .Select(ptcp => ptcp.Price)
                                 .FirstOrDefault();
                             refundAmount = amount;
@@ -2231,7 +2231,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
                                 refundAmount = amount;
@@ -2347,7 +2347,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
                                 refundAmount = amount;
@@ -2464,7 +2464,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
                                 refundAmount = amount;
@@ -2580,7 +2580,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
                                 refundAmount = amount;
@@ -2696,7 +2696,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
                                 refundAmount = amount;
@@ -2817,7 +2817,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     if (!registration.IsIncomeTaken)
                                     {
                                         var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                             .Select(ptcp => ptcp.Price)
                                             .FirstOrDefault();
                                         refundAmount = amount;
@@ -3280,7 +3280,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     if (!registration.IsIncomeTaken)
                                     {
                                         var amount = showPodcastSubscription.PodcastSubscriptionCycleTypePrices
-                                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                             .Select(ptcp => ptcp.Price)
                                             .FirstOrDefault();
                                         refundAmount = amount;
