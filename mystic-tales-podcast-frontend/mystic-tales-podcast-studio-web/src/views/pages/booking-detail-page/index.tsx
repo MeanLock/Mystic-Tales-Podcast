@@ -257,8 +257,7 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
             const response = await cancelQuotation(loginRequiredAxiosInstance, id);
             if (response && response.success) {
                 toast.success(`Canceled booking successfully`);
-                await new Promise((r) => setTimeout(r, 100));
-                navigate(0);
+                await fetchBookingDetail();
             }
         } catch {
             toast.error('Error canceling booking')
@@ -279,9 +278,9 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
                 return
             }
             await startPolling(sagaId, loginRequiredAxiosInstance, {
-                onSuccess: () => {
+                onSuccess: async () => {
                     toast.success(`Cancel Successfully, please wait Staff to review`);
-                    //navigate(0);
+                    await fetchBookingDetail();
                 },
                 onFailure: (err) => toast.error(err || "Saga failed!"),
                 onTimeout: () => toast.error("System not responding, please try again."),
