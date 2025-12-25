@@ -8227,7 +8227,10 @@ flows:
           emit: "add-account-balance-amount.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: []
+          nextSteps: 
+            - name: "complete-podcast-subscription-transaction"
+              topic: "payment-processing-domain"
+              handle-service: "TransactionService"
           nextFlows: []
         onFailure:
           emit: "add-account-balance-amount.failed"

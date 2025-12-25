@@ -556,31 +556,31 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                                 ChangedAt = a.TransactionStatusId == (int)TransactionStatusEnum.Success || a.TransactionStatusId == (int)TransactionStatusEnum.Error || a.TransactionStatus.Id == (int)TransactionStatusEnum.Cancelled ? a.UpdatedAt : null
                             })
                             .ToListAsync();
-                    case AccountBalanceTypeEnum.MoneyOut:
-                        return await _accountBalanceTransactionGenericRepository.FindAll(
-                            includeFunc: function => function
-                            .Include(a => a.TransactionType)
-                            .Include(a => a.TransactionStatus))
-                            .Where(abt => abt.AccountId == accountId && abt.TransactionTypeId == (int)TransactionTypeEnum.AccountBalanceWithdrawal)
-                            .OrderByDescending(abt => abt.CreatedAt)
-                            .Select(a => new AccountBalanceTransactionListItemResponseDTO
-                            {
-                                Id = a.Id,
-                                Amount = a.Amount,
-                                TransactionType = new TransactionTypeResponseDTO
-                                {
-                                    Id = a.TransactionType.Id,
-                                    Name = a.TransactionType.Name
-                                },
-                                TransactionStatus = new TransactionStatusResponseDTO
-                                {
-                                    Id = a.TransactionStatus.Id,
-                                    Name = a.TransactionStatus.Name
-                                },
-                                CreatedAt = a.CreatedAt,
-                                ChangedAt = a.TransactionStatusId == (int)TransactionStatusEnum.Success || a.TransactionStatusId == (int)TransactionStatusEnum.Error || a.TransactionStatus.Id == (int)TransactionStatusEnum.Cancelled ? a.UpdatedAt : null
-                            })
-                            .ToListAsync();
+                    // case AccountBalanceTypeEnum.MoneyOut:
+                    //     return await _accountBalanceTransactionGenericRepository.FindAll(
+                    //         includeFunc: function => function
+                    //         .Include(a => a.TransactionType)
+                    //         .Include(a => a.TransactionStatus))
+                    //         .Where(abt => abt.AccountId == accountId && abt.TransactionTypeId == (int)TransactionTypeEnum.AccountBalanceWithdrawal)
+                    //         .OrderByDescending(abt => abt.CreatedAt)
+                    //         .Select(a => new AccountBalanceTransactionListItemResponseDTO
+                    //         {
+                    //             Id = a.Id,
+                    //             Amount = a.Amount,
+                    //             TransactionType = new TransactionTypeResponseDTO
+                    //             {
+                    //                 Id = a.TransactionType.Id,
+                    //                 Name = a.TransactionType.Name
+                    //             },
+                    //             TransactionStatus = new TransactionStatusResponseDTO
+                    //             {
+                    //                 Id = a.TransactionStatus.Id,
+                    //                 Name = a.TransactionStatus.Name
+                    //             },
+                    //             CreatedAt = a.CreatedAt,
+                    //             ChangedAt = a.TransactionStatusId == (int)TransactionStatusEnum.Success || a.TransactionStatusId == (int)TransactionStatusEnum.Error || a.TransactionStatus.Id == (int)TransactionStatusEnum.Cancelled ? a.UpdatedAt : null
+                    //         })
+                    //         .ToListAsync();
                     default:
                         return null;
                 }
@@ -900,7 +900,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                                 Id = pst.TransactionStatus.Id,
                                 Name = pst.TransactionStatus.Name
                             },
-                            IsReceived = pst.TransactionTypeId == (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment ? true : false,
+                            IsReceived = pst.TransactionTypeId != (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment ? true : false,
                             CompletedAt = pst.UpdatedAt
                         })
                         .ToListAsync();

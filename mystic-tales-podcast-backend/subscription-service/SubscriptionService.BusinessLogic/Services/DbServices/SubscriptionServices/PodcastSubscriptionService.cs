@@ -1787,8 +1787,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         .FirstOrDefault();
 
                     decimal refundAmount = 0;
-                    if (podcastSubscriptionRegistration.LastPaidAt.AddDays((double)incomeTakenDelayDays) < _dateHelper.GetNowByAppTimeZone())
-                    {
+                    // if (podcastSubscriptionRegistration.LastPaidAt.AddDays((double)incomeTakenDelayDays) < _dateHelper.GetNowByAppTimeZone())
+                    // {
                         podcastSubscriptionRegistration.IsIncomeTaken = true;
                         await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(podcastSubscriptionRegistration.Id, podcastSubscriptionRegistration);
 
@@ -1814,29 +1814,29 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             sagaInstanceId: null,
                             messageName: "podcaster-subscription-income-release-flow");
                         await _messagingService.SendSagaMessageAsync(transactionMessage, null);
-                    }
-                    else
-                    {
-                        var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
-                            .Select(ptcp => ptcp.Price)
-                            .FirstOrDefault();
-                        refundAmount = originalPrice;
-                        var transactionRequestData = new JObject
-                        {
-                            { "PodcastSubscriptionRegistrationId", podcastSubscriptionRegistration.Id },
-                            { "Profit", null },
-                            { "AccountId", podcastSubscriptionRegistration.AccountId },
-                            { "Amount", originalPrice },
-                            { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
-                        };
-                        var transactionMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            topic: KafkaTopicEnum.PaymentProcessingDomain,
-                            requestData: transactionRequestData,
-                            sagaInstanceId: null,
-                            messageName: "podcast-subscription-refund-flow");
-                        await _messagingService.SendSagaMessageAsync(transactionMessage, null);
-                    }
+                    // }
+                    // else
+                    // {
+                    //     var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                    //         .Where(ptcp => ptcp.SubscriptionCycleTypeId == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
+                    //         .Select(ptcp => ptcp.Price)
+                    //         .FirstOrDefault();
+                    //     refundAmount = originalPrice;
+                    //     var transactionRequestData = new JObject
+                    //     {
+                    //         { "PodcastSubscriptionRegistrationId", podcastSubscriptionRegistration.Id },
+                    //         { "Profit", null },
+                    //         { "AccountId", podcastSubscriptionRegistration.AccountId },
+                    //         { "Amount", originalPrice },
+                    //         { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
+                    //     };
+                    //     var transactionMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                    //         topic: KafkaTopicEnum.PaymentProcessingDomain,
+                    //         requestData: transactionRequestData,
+                    //         sagaInstanceId: null,
+                    //         messageName: "podcast-subscription-refund-flow");
+                    //     await _messagingService.SendSagaMessageAsync(transactionMessage, null);
+                    // }
 
                     podcastSubscriptionRegistration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
                     var registrationResult = await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(podcastSubscriptionRegistration.Id, podcastSubscriptionRegistration);
