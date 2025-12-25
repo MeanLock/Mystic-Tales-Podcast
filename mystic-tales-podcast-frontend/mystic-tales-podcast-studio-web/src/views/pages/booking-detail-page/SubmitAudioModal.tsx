@@ -55,7 +55,7 @@ const SubmitAudioModal: FC<SubmitAudioModalProps> = ({ booking, onClose }) => {
   );
 
   const { startPolling } = useSagaPolling({
-    timeoutSeconds: 60,
+    timeoutSeconds: 300,
     intervalSeconds: 2,
   })
 

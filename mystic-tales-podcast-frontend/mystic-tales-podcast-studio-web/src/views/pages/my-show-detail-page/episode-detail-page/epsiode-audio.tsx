@@ -195,7 +195,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     const [saveChoiceOpen, setSaveChoiceOpen] = useState(false);
 
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 200,
+        timeoutSeconds: 300,
         intervalSeconds: 5,
     })
 

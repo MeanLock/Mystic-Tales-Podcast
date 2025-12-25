@@ -49,7 +49,7 @@ const DealingModal: FC<DealingModalProps> = ({ booking, onClose }) => {
         }))
     );
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
 

@@ -125,7 +125,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
 
 
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const { quill, quillRef } = useQuill({

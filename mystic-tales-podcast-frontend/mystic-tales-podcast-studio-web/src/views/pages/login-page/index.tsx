@@ -50,7 +50,7 @@ const LoginPage: FC<LoginPageProps> = (props) => {
     const [email, setMembername] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 120,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const deviceInfo = getCapacitorDevice();

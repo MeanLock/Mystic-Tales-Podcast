@@ -77,7 +77,7 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
     const [reviewSessionLoading, setReviewSessionLoading] = useState<boolean>(false);
 
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
 
@@ -556,8 +556,6 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                             <MetadataField label="Release Date" value={formatDate(episodeDetail.ReleaseDate)} />
                             <MetadataField label="Created At" value={formatDate(episodeDetail.CreatedAt)} />
                             <MetadataField label="Updated At" value={formatDate(episodeDetail.UpdatedAt)} />
-
-
                         </div>
                     </div>
                     <div className="episode-info-page__row">
@@ -575,8 +573,6 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                                 },
                             }}
                         />
-
-
                     </div>
                     <div className="episode-info-page__row">
                         <TextField

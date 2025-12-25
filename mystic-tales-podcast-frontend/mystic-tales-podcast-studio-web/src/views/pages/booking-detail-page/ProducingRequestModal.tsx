@@ -33,7 +33,7 @@ const ProducingRequestModal: React.FC<ProducingRequestModalProps> = ({ bookingPr
 
     // Removed manual lifetime constants; SmartAudio handles expiry refresh (default 5s)
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 60,
+        timeoutSeconds: 300,
         intervalSeconds: 2,
     })
 

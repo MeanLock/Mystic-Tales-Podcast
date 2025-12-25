@@ -175,7 +175,7 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
     const [Booking, setBooking] = useState<any | null>(null);
     const navigate = useNavigate();
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 60,
+        timeoutSeconds: 300,
         intervalSeconds: 2,
     })
     const fetchBookingDetail = async () => {
@@ -326,7 +326,7 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
                         </div>
                     )}
 
-                    {isProducing && (
+                    {isProducing || Booking.CurrentStatus?.Name === "Track Previewing" && (
                         <div className="flex gap-6">
                             <Modal_Button
                                 className="booking-detail__reject-btn warning-button"

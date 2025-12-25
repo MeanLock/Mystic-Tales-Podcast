@@ -56,7 +56,7 @@ const ShowTrailer: React.FC<ShowTrailerProps> = ({
     const [uploading, setUploading] = useState(false);
 
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 160,
+        timeoutSeconds: 300,
         intervalSeconds: 2,
     })
     const fetchTrailerAudio = async () => {

@@ -80,7 +80,7 @@ const EpisodeCreate = ({ onClose }: { onClose?: () => void }) => {
     });
 
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 60,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
 
