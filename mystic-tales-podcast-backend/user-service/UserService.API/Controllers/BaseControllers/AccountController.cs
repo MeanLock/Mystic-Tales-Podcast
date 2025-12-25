@@ -182,6 +182,13 @@ namespace UserService.API.Controllers.BaseControllers
             [FromForm][Required] IFormFile SignatureImageFile
             )
         {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var myAccount = await _accountService.GetAccountMe(account.Id);
+            if(myAccount.IsPodcasterApplying == true || myAccount.IsPodcaster == true)
+            {
+                return BadRequest("You have already applied or have a podcaster profile.");
+            }
+
 
             // Validate string fields are not empty
             if (string.IsNullOrWhiteSpace(Fullname) || string.IsNullOrWhiteSpace(Phone) ||
@@ -197,8 +204,6 @@ namespace UserService.API.Controllers.BaseControllers
             {
                 return BadRequest("All image files (Signature, IdentityCardFront, IdentityCardBack) are required.");
             }
-            
-            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
             // bắt buộc phải có file chữ kí
             if (SignatureImageFile == null || SignatureImageFile.Length == 0)
@@ -366,10 +371,10 @@ namespace UserService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             Console.WriteLine($"Logged in account from HttpContext.Items: Id={account?.Id}, RoleId={account?.RoleId}, IsVerified={account?.IsVerified}, DeactivatedAt={account?.DeactivatedAt}");
-            if (account != null && account.Id == AccountId)
-            {
-                return StatusCode(403, "You cannot view your own podcaster profile as a customer");
-            }
+            // if (account != null && account.Id == AccountId)
+            // {
+            //     return StatusCode(403, "You cannot view your own podcaster profile as a customer");
+            // }
             var podcasterProfile = await _accountService.GetPodcasterProfileForCustomerByAccountId(AccountId, account?.Id);
 
             return Ok(podcasterProfile);
