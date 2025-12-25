@@ -1464,7 +1464,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         if (!uploadedFile) return true; // rule 1
         if (currentFileSource === 'server') {
             // Chỉ được save khi đã render preview hợp lệ
-            if (!previewReady) return true;
+            //  if (!previewReady) return true;
             if (!previewFile) return true;
             if (hasUnsavedPreview) return true;
             return false; // có preview hợp lệ
