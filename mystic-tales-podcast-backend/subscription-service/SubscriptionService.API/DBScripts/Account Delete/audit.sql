@@ -2,7 +2,7 @@
 -- SUBSCRIPTION SERVICE DATA
 -- =====================================================
 PRINT '--- SUBSCRIPTION SERVICE ---';
-DECLARE @accountId INT = 4010; -- REPLACE WITH ACTUAL ACCOUNT ID
+DECLARE @accountId INT = 6010; -- REPLACE WITH ACTUAL ACCOUNT ID
 -- Active Subscriptions
 SELECT 
     'Podcast Subscriptions' AS Type,

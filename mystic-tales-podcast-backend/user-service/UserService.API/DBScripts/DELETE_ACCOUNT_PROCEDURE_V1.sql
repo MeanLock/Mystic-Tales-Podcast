@@ -451,62 +451,109 @@ GO
 -- =====================================================
 -- Usage: EXEC DeleteAccountFromTransactionService @accountId = <account_id>
 -- =====================================================
-
 CREATE OR ALTER PROCEDURE DeleteAccountFromTransactionService
-    @accountId INT
+    @accountId INT,
+    @podcastSubscriptionRegistrationIds NVARCHAR(MAX) = NULL, -- Comma-separated GUIDs
+    @bookingIds NVARCHAR(MAX) = NULL                         -- Comma-separated INTs
 AS
 BEGIN
     SET NOCOUNT ON;
     
+    DECLARE @DeletedRecords TABLE (
+        TableName NVARCHAR(100),
+        RecordCount INT
+    );
+    
     BEGIN TRANSACTION;
     
     BEGIN TRY
+        -- Create temp tables for IDs
+        CREATE TABLE #PodcastSubscriptionRegIds (RegistrationId UNIQUEIDENTIFIER);
+        CREATE TABLE #BookingIds (BookingId INT);
+        
+        -- Parse podcast subscription registration IDs (GUIDs)
+        IF @podcastSubscriptionRegistrationIds IS NOT NULL AND @podcastSubscriptionRegistrationIds != ''
+        BEGIN
+            INSERT INTO #PodcastSubscriptionRegIds (RegistrationId)
+            SELECT CAST(LTRIM(RTRIM(value)) AS UNIQUEIDENTIFIER)
+            FROM STRING_SPLIT(@podcastSubscriptionRegistrationIds, ',')
+            WHERE LTRIM(RTRIM(value)) != '';
+        END
+        
+        
+        -- Parse booking IDs (INTs)
+        IF @bookingIds IS NOT NULL AND @bookingIds != ''
+        BEGIN
+            INSERT INTO #BookingIds (BookingId)
+            SELECT CAST(LTRIM(RTRIM(value)) AS INT)
+            FROM STRING_SPLIT(@bookingIds, ',')
+            WHERE LTRIM(RTRIM(value)) != '';
+        END
+        
         -- Delete AccountBalanceTransaction
         DELETE FROM AccountBalanceTransaction
         WHERE accountId = @accountId;
+        INSERT INTO @DeletedRecords VALUES ('AccountBalanceTransaction', @@ROWCOUNT);
         
         -- Delete AccountBalanceWithdrawalRequest
         DELETE FROM AccountBalanceWithdrawalRequest
         WHERE accountId = @accountId;
+        INSERT INTO @DeletedRecords VALUES ('AccountBalanceWithdrawalRequest', @@ROWCOUNT);
         
-        -- Delete PodcastSubscriptionTransaction for subscriptions owned by this account
-        DELETE pst
-        FROM PodcastSubscriptionTransaction pst
-        INNER JOIN PodcastSubscriptionRegistration psr ON pst.podcastSubscriptionRegistrationId = psr.id
-        WHERE psr.accountId = @accountId;
+        -- Delete PodcastSubscriptionTransaction using provided registration IDs
+        DELETE FROM PodcastSubscriptionTransaction
+        WHERE podcastSubscriptionRegistrationId IN (
+            SELECT RegistrationId FROM #PodcastSubscriptionRegIds
+        );
+        INSERT INTO @DeletedRecords VALUES ('PodcastSubscriptionTransaction', @@ROWCOUNT);
         
-        -- Delete MemberSubscriptionTransaction for subscriptions owned by this account
-        DELETE mst
-        FROM MemberSubscriptionTransaction mst
-        INNER JOIN MemberSubscriptionRegistration msr ON mst.memberSubscriptionRegistrationId = msr.id
-        WHERE msr.accountId = @accountId;
         
-        -- Delete BookingTransaction for bookings owned by this account
-        -- Note: This assumes bookings are identified by accountId in a related service
-        -- You may need to pass booking IDs if they're not directly linked to accountId
+        -- Delete BookingTransaction using provided booking IDs
         DELETE FROM BookingTransaction
         WHERE bookingId IN (
-            -- This subquery would need to be adjusted based on how you identify 
-            -- bookings belonging to this account in the Transaction Service
-            -- If bookingId is stored directly, you might need to handle this differently
-            SELECT id FROM Booking WHERE accountId = @accountId OR podcastBuddyId = @accountId
+            SELECT BookingId FROM #BookingIds
         );
+        INSERT INTO @DeletedRecords VALUES ('BookingTransaction', @@ROWCOUNT);
         
         -- Delete BookingStorageTransaction
         DELETE FROM BookingStorageTransaction
         WHERE accountId = @accountId;
+        INSERT INTO @DeletedRecords VALUES ('BookingStorageTransaction', @@ROWCOUNT);
+        
+        -- Clean up temp tables
+        DROP TABLE #PodcastSubscriptionRegIds;
+        DROP TABLE #BookingIds;
         
         COMMIT TRANSACTION;
         
-        PRINT 'Account ' + CAST(@accountId AS NVARCHAR(10)) + ' successfully deleted from Transaction Service.';
+        -- Print summary
+        PRINT '========================================';
+        PRINT 'Transaction Service Deletion Summary';
+        PRINT 'Account ID: ' + CAST(@accountId AS NVARCHAR(10));
+        PRINT '========================================';
+        
+        SELECT TableName, RecordCount 
+        FROM @DeletedRecords
+        WHERE RecordCount > 0
+        ORDER BY TableName;
+        
+        PRINT 'Deletion completed successfully.';
+        
     END TRY
     BEGIN CATCH
         ROLLBACK TRANSACTION;
+        
+        -- Clean up temp tables if they exist
+        IF OBJECT_ID('tempdb..#PodcastSubscriptionRegIds') IS NOT NULL
+            DROP TABLE #PodcastSubscriptionRegIds;
+        IF OBJECT_ID('tempdb..#BookingIds') IS NOT NULL
+            DROP TABLE #BookingIds;
         
         DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
         DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
         DECLARE @ErrorState INT = ERROR_STATE();
         
+        PRINT 'ERROR: Transaction Service deletion failed for Account ID: ' + CAST(@accountId AS NVARCHAR(10));
         RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
     END CATCH
 END;

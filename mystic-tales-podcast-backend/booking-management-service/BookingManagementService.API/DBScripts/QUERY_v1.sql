@@ -17,4 +17,4 @@ ADD deadlineDays INT NULL;
 ALTER TABLE BookingProducingRequest
 ALTER COLUMN deadline DATETIME NULL;
 
-select * from booking
+select * from booking where podcastBuddyId =17 order by accountId

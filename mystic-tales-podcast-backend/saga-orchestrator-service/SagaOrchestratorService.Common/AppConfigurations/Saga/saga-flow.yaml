@@ -5098,7 +5098,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps:
             - name: "delete-buddy-review-terminate-podcaster-force"
-              topic: "user-management-domain"
+              topic: "public-review-management-domain"
               handle-service: "UserService"
           nextFlows: []
         onFailure:

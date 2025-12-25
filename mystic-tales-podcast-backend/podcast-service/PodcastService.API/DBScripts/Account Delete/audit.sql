@@ -2,7 +2,7 @@
 -- PODCAST SERVICE DATA
 -- =====================================================
 PRINT '--- PODCAST SERVICE ---';
-DECLARE @accountId INT = 4010; -- REPLACE WITH ACTUAL ACCOUNT ID
+DECLARE @accountId INT = 6010; -- REPLACE WITH ACTUAL ACCOUNT ID
 -- Content Summary
 SELECT 
     'Channels Created' AS Type,
@@ -24,8 +24,7 @@ WHERE podcasterId = @accountId;
 SELECT 
     'Episodes Created' AS Type,
     COUNT(*) AS Count,
-    SUM(totalSave) AS TotalSaves,
-    SUM(listenCount) AS TotalListens
+    SUM(totalSave) AS TotalSaves
 FROM PodcastEpisode pe
 INNER JOIN PodcastShow ps ON pe.podcastShowId = ps.id
 WHERE ps.podcasterId = @accountId;
