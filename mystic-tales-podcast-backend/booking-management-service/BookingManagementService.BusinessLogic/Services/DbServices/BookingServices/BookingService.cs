@@ -2415,14 +2415,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     .ThenInclude(bst => bst.BookingStatus)
                     .Include(b => b.BookingProducingRequests)
                     .ThenInclude(bpr => bpr.BookingPodcastTracks));
-                if (isPodcaster)
-                {
-                    query = query.Where(b => b.PodcastBuddyId == accountId);
-                }
-                else
-                {
-                    query = query.Where(b => b.AccountId == accountId);
-                }
+                // if (isPodcaster)
+                // {
+                //     query = query.Where(b => b.PodcastBuddyId == accountId);
+                // }
+                // else
+                // {
+                query = query.Where(b => b.AccountId == accountId);
+                // }
 
                 query = query.Where(b => b.BookingStatusTrackings
                     .OrderByDescending(bst => bst.CreatedAt)
