@@ -4870,7 +4870,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         decimal holdingAmount = 0;
                         decimal profitAmount = 0;
                         var current = transactions.OrderByDescending(transaction => transaction.CreatedAt).First();
-                        if(!registration.IsIncomeTaken)
+                        if(!registration.IsIncomeTaken && registration.CancelledAt != null)
                         {
                             holdingAmount = current.Amount;
                         }
