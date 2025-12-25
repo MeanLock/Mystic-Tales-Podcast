@@ -1009,6 +1009,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll(
                         includeFunc: function => function
                         .Include(ps => ps.PodcastSubscriptionCycleTypePrices))
+                        .OrderByDescending(ps => ps.CurrentVersion)
                         .FirstOrDefaultAsync(ps => ps.Id == parameter.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive);
                     if (podcastSubscription == null)
                     {
