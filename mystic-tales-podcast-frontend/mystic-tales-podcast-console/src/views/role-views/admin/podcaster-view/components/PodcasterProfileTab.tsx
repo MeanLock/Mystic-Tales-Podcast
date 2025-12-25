@@ -30,7 +30,7 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
   const [loading, setLoading] = React.useState(false)
   const [loadingPdf, setLoadingPdf] = React.useState(false)
   const { startPolling } = useSagaPolling({
-    timeoutSeconds: 15,
+    timeoutSeconds: 300,
     intervalSeconds: 0.5,
   })
 

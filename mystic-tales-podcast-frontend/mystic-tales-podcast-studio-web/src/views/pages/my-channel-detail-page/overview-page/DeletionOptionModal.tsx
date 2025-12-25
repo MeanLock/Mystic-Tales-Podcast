@@ -26,7 +26,7 @@ const DeletionOptionModal: React.FC<Props> = ({ showList }) => {
     const [selectedShowIds, setSelectedShowIds] = useState<string[]>([]);
     const navigate = useNavigate();
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 30,
+        timeoutSeconds: 300,
         intervalSeconds: 1,
     })
 

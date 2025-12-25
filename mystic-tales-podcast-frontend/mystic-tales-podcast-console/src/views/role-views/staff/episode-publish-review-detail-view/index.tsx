@@ -56,7 +56,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
 
     const navigate = useNavigate();
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 20,
+        timeoutSeconds: 300,
         intervalSeconds: 1,
     })
     const fetchDetail = async () => {

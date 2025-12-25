@@ -1,7 +1,7 @@
 
 import type { DMCAAccusationDetail } from "@/core/types"
 import { createContext, type FC, useEffect, useState } from "react"
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import "./styles.scss"
 import Loading from "@/views/components/common/loading"
 import { assignStaff, cancelReport, createReport, getCounterNoticeFile, getDMCADetail, getDMCANoticeFile, getDMCAReport, getLawsuitProofFile, updateStatus } from "@/core/services/dmca/dmca.service"
@@ -34,13 +34,13 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
     const [loading, setLoading] = useState(true)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 10,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const [viewingNoticeFile, setViewingNoticeFile] = useState<{ id: number, url: string } | null>(null)
     const [viewingCounterFile, setViewingCounterFile] = useState<{ id: number, url: string } | null>(null)
     const [viewingLawsuitFile, setViewingLawsuitFile] = useState<{ id: number, url: string } | null>(null)
-
+    const navigate = useNavigate();
 
     const fetchDMCAAccusation = async () => {
         if (id) {
@@ -295,7 +295,7 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                         <div>
                             <h2 className="dmca-detail__section-title">Accused Content</h2>
                             {type === "show" && DMCAAccusation.PodcastShow && (
-                                <div className="content-card">
+                                <div className="content-card cursor-pointer" onClick={() => navigate(`/show/${DMCAAccusation.PodcastShow.Id}`)}>
                                     <Image
                                         mainImageFileKey={DMCAAccusation.PodcastShow.MainImageFileKey}
                                         alt={DMCAAccusation.PodcastShow.Name}
@@ -304,6 +304,8 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                     <div className="content-card__body">
                                         <span className="content-card__type">Show</span>
                                         <h3 className="content-card__title">{DMCAAccusation.PodcastShow.Name}</h3>
+                                        <p className="content-card__description">Podcaster: {DMCAAccusation.PodcastShow.PodcasterName}</p>
+
                                     </div>
                                 </div>
                             )}
@@ -570,8 +572,8 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                 {((DMCAAccusation.CounterNotice.IsValid === null && reportList.length <= 0) || (DMCAAccusation.CounterNotice.IsValid === null && reportList.length > 0 && reportList[0].DmcaAccusationConclusionReportType.Id !== 2) || (reportList.length > 0 && reportList[0].CancelledAt !== null && reportList[0].DmcaAccusationConclusionReportType.Id === 2)) && DMCAAccusation.CurrentStatus.Id !== 10 && DMCAAccusation.CurrentStatus.Id !== 11 ? (
                                     <div className="w-full flex flex-col gap-4 justify-center items-center border-t border-[#f0f0f0] pt-4 mt-3">
                                         <span className="notice_value">Please verify Counter Notice</span>
-                                        <div className="flex gap-4">                                          
-                                               <Modal_Button
+                                        <div className="flex gap-4">
+                                            <Modal_Button
                                                 disabled={isSubmitting}
                                                 size="sm"
                                                 content="Valid"
@@ -621,14 +623,14 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                             <div className="w-full flex flex-col gap-4 justify-center items-center border-t border-[#f0f0f0] pt-4 mt-3">
                                                 <span className="notice_value">Report Rejected, Please verify Counter Notice Again</span>
                                                 <div className="flex gap-4">
-                                                       <Modal_Button
-                                                disabled={isSubmitting}
-                                                size="sm"
-                                                content="Valid"
-                                                className="dmca-detail__document-btn flex items-center dmca-detail__document-btn--download font-medium"
-                                            >
-                                                <ValidModal onClose={() => { }} status="VALID_DMCA_COUNTER_NOTICE" />
-                                            </Modal_Button>
+                                                    <Modal_Button
+                                                        disabled={isSubmitting}
+                                                        size="sm"
+                                                        content="Valid"
+                                                        className="dmca-detail__document-btn flex items-center dmca-detail__document-btn--download font-medium"
+                                                    >
+                                                        <ValidModal onClose={() => { }} status="VALID_DMCA_COUNTER_NOTICE" />
+                                                    </Modal_Button>
                                                     <Modal_Button
                                                         size="lg"
                                                         content="Invalid"
@@ -742,7 +744,7 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                     <div className="w-full flex flex-col gap-4 justify-center items-center border-t border-[#f0f0f0] pt-4 mt-3">
                                         <span className="notice_value">Please verify Lawsuit Proof</span>
                                         <div className="flex gap-4">
-                                                   <Modal_Button
+                                            <Modal_Button
                                                 disabled={isSubmitting}
                                                 size="sm"
                                                 content="Valid"
@@ -793,13 +795,13 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                                 <span className="notice_value">Report Rejected, Please verify Lawsuit Proof Again</span>
                                                 <div className="flex gap-4">
                                                     <Modal_Button
-                                                disabled={isSubmitting}
-                                                size="sm"
-                                                content="Valid"
-                                                className="dmca-detail__document-btn flex items-center dmca-detail__document-btn--download font-medium"
-                                            >
-                                                <ValidModal onClose={() => { }} status="VALID_LAWSUIT_PROOF" />
-                                            </Modal_Button>
+                                                        disabled={isSubmitting}
+                                                        size="sm"
+                                                        content="Valid"
+                                                        className="dmca-detail__document-btn flex items-center dmca-detail__document-btn--download font-medium"
+                                                    >
+                                                        <ValidModal onClose={() => { }} status="VALID_LAWSUIT_PROOF" />
+                                                    </Modal_Button>
                                                     <Modal_Button
                                                         size="lg"
                                                         content="Invalid"

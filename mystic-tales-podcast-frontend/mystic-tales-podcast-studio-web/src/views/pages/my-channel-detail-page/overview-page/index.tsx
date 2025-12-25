@@ -81,7 +81,7 @@ const ChannelOverview = () => {
     const [backgroundImageFile, setBackgroundImageFile] = useState<File | null>(null);
     const backgroundFileInputRef = useRef<HTMLInputElement>(null);
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 20,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const [formData, setFormData] = useState<ChannelUpdateInfo>({

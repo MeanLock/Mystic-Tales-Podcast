@@ -25,7 +25,7 @@ const Login = () => {
 
 
   const { startPolling } = useSagaPolling({
-    timeoutSeconds: 10, // Chờ tối đa 120 giây (2 phút)
+    timeoutSeconds: 300, // Chờ tối đa 120 giây (2 phút)
     intervalSeconds: 0.5, // Gọi lại mỗi 0.5 giây
     onSuccess: (data) => {
       const token = data?.AccessToken

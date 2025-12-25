@@ -95,7 +95,7 @@ const DetailForm: React.FC<BuddyReportDetailProps> = ({ podcastBuddyReportReview
   const [showResolvePopup, setShowResolvePopup] = useState(false)
   const [violationPoint, setViolationPoint] = useState("")
   const { startPolling } = useSagaPolling({
-    timeoutSeconds: 120,
+    timeoutSeconds: 300,
     intervalSeconds: 0.5,
   })
   const fetchDetail = async (id: string) => {

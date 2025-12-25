@@ -1,7 +1,7 @@
 
 import type { Account, DMCAAccusationDetail } from "@/core/types"
 import { createContext, type FC, useEffect, useState } from "react"
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import "./styles.scss"
 import Loading from "@/views/components/common/loading"
 import { assignStaff, getCounterNoticeFile, getDMCADetail, getDMCANoticeFile, getDMCAReport, getLawsuitProofFile, validateReport } from "@/core/services/dmca/dmca.service"
@@ -39,13 +39,13 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null)
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const [viewingNoticeFile, setViewingNoticeFile] = useState<{ id: number, url: string } | null>(null)
     const [viewingCounterFile, setViewingCounterFile] = useState<{ id: number, url: string } | null>(null)
     const [viewingLawsuitFile, setViewingLawsuitFile] = useState<{ id: number, url: string } | null>(null)
-
+    const navigate = useNavigate();
     const fetchDMCAAccusation = async () => {
         if (id) {
             setLoading(true)
@@ -368,7 +368,7 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                         <div>
                             <h2 className="dmca-detail__section-title">Accused Content</h2>
                             {type === "show" && DMCAAccusation.PodcastShow && (
-                                <div className="content-card">
+                                <div className="content-card cursor-pointer" onClick={() => navigate(`/show/${DMCAAccusation.PodcastShow.Id}`)}>
                                     <Image
                                         mainImageFileKey={DMCAAccusation.PodcastShow.MainImageFileKey}
                                         alt={DMCAAccusation.PodcastShow.Name}
@@ -377,6 +377,7 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                     <div className="content-card__body">
                                         <span className="content-card__type">Show</span>
                                         <h3 className="content-card__title">{DMCAAccusation.PodcastShow.Name}</h3>
+                                           <p className="content-card__description">Podcaster: {DMCAAccusation.PodcastShow.PodcasterName}</p>
                                         {/* <div className="content-card__description"
                                         dangerouslySetInnerHTML={
                                             { __html: get(DMCAAccusation.PodcastShow.Description) }

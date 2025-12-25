@@ -106,7 +106,7 @@ const ShowInfo = () => {
         return today.toISOString().split('T')[0];
     });
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const [formData, setFormData] = useState({

@@ -34,7 +34,7 @@ const CustomForm: React.FC<CustomerUpdateProps> = ({ account, onClose }) => {
   const [mainImageFile, setMainImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { startPolling } = useSagaPolling({
-    timeoutSeconds: 5,
+    timeoutSeconds: 300,
     intervalSeconds: 0.5,
   })
 

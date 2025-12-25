@@ -59,7 +59,7 @@ const EpisodeDetail: FC<EpisodeDetailViewProps> = () => {
 
     const REST_API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 120,
+        timeoutSeconds: 300,
         intervalSeconds: 1,
     })
 

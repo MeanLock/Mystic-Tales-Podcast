@@ -25,7 +25,7 @@ const parseSagaResultData = (raw: any) => {
 export async function pollSagaResult({
   sagaId,
   axiosInstance,
-  timeoutSeconds = 5, // Mặc định gọi trong 5 giây
+  timeoutSeconds = 300, // Mặc định gọi trong 5 giây
   intervalSeconds = 0.5, // Mặc định 0.5 giây mỗi lần gọi
   abortRef,
 }: {

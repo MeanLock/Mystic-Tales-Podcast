@@ -85,6 +85,7 @@ export type PodcastShow = {
   Id: string;
   Name: string;
   MainImageFileKey: string;
+  PodcasterName: string;
 };
 export type DMCAAccusation = {
   Id: number;

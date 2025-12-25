@@ -82,7 +82,7 @@ const ShowCreate = ({ onClose }: { onClose?: () => void }) => {
 
     });
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 10,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
 
