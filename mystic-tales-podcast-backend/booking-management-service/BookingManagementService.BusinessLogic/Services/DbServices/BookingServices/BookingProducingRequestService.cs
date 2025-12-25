@@ -1185,7 +1185,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 return false;
             }
             var booking = bookingPodcastTrack.BookingProducingRequest.Booking;
-            return booking.PodcastBuddyId == account.Id || booking.AssignedStaffId == account.Id;
+            return booking.AccountId == account.Id;
         }
         public async Task<bool> ValidateBookingAccountOrPodcasterAsync(int bookingId, int accountId)
         {

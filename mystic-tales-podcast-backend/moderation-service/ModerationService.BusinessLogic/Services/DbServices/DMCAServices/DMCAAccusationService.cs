@@ -4445,10 +4445,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             {
                 return (false, $"Podcast episode with Id: {podcastEpisodeId} is pending edit required");
             }
-            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown)
-            {
-                return (false, $"Podcast episode with Id: {podcastEpisodeId} has been taken down");
-            }
+            // if (episodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown)
+            // {
+            //     return (false, $"Podcast episode with Id: {podcastEpisodeId} has been taken down");
+            // }
             if (episodeStatusId == (int)PodcastEpisodeStatusEnum.Removed)
             {
                 return (false, $"Podcast episode with Id: {podcastEpisodeId} has been removed");
@@ -4480,10 +4480,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             {
                 return (false, $"Podcast show with Id: {podcastShowId} is in Draft status {insideMessage}");
             }
-            if (showStatusId == (int)PodcastShowStatusEnum.TakenDown)
-            {
-                return (false, $"Podcast show with Id: {podcastShowId} has been taken down {insideMessage}");
-            }
+            // if (showStatusId == (int)PodcastShowStatusEnum.TakenDown)
+            // {
+            //     return (false, $"Podcast show with Id: {podcastShowId} has been taken down {insideMessage}");
+            // }
             if (showStatusId == (int)PodcastShowStatusEnum.Removed)
             {
                 return (false, $"Podcast show with Id: {podcastShowId} has been removed {insideMessage}");
