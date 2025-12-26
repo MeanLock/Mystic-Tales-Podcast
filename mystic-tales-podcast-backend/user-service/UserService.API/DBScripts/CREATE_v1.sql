@@ -1109,6 +1109,9 @@ CREATE TABLE AccountBalanceWithdrawalRequest
     accountId INT NOT NULL, -- Không có FK vì Account nằm trong UserService
     amount DECIMAL(18,2) NOT NULL,
     transferReceiptImageFileKey NVARCHAR(MAX) NULL,
+    bankCode NVARCHAR(MAX) NOT NULL DEFAULT '',
+    bankNumber NVARCHAR(MAX) NOT NULL DEFAULT '',
+    bankName NVARCHAR(MAX) NOT NULL DEFAULT '',
     rejectReason NVARCHAR(MAX) NULL,
     isRejected BIT NULL, -- NULL: đang chờ, 1: rejected, 0: approved
     completedAt DATETIME NULL,
