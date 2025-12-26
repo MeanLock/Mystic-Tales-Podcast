@@ -27,9 +27,9 @@ const Login = () => {
   const { startPolling } = useSagaPolling({
     timeoutSeconds: 300, // Chờ tối đa 120 giây (2 phút)
     intervalSeconds: 0.5, // Gọi lại mỗi 0.5 giây
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       const token = data?.AccessToken
-      if (!token) return toast.error("Không nhận được token từ Saga")
+      if (!token) return toast.error("Something went wrong, please try again.");
       const user = JwtUtil.decodeToken(token)
       console.log("Logged in user:", user)
       dispatch(setAuthToken({ token, user }))
@@ -37,7 +37,7 @@ const Login = () => {
         navigate("/dashboard")
       } else if (user.role_id == 2) {
         navigate("/staff/publish-review-sessions")
-      }else {
+      } else {
         toast.error("You do not have permission to access the system.")
         dispatch(clearAuthToken())
         return

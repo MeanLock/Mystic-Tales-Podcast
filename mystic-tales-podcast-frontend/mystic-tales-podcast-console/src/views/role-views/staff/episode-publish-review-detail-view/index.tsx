@@ -1,7 +1,6 @@
-"use client"
 
 import type React from "react"
-import { useCallback, useContext, useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { CBadge } from "@coreui/react"
 import { toast } from "react-toastify"
 import { formatDate } from "../../../../core/utils/date.util"
@@ -12,14 +11,11 @@ import { PublishReview } from "@/core/types/publish-review"
 import { useNavigate, useParams } from "react-router-dom"
 import "./publish-review-detail.scss"
 import Image from "@/views/components/common/image"
-import { getPublicSource } from "@/core/services/file/file.service"
 import { getAudioEpisode } from "@/core/services/episode/episode.service"
-import { s } from "node_modules/graphql-ws/dist/common-DY-PBNYy"
 import Loading from "@/views/components/common/loading"
 import { confirmAlert } from "@/core/utils/alert.util"
 import { useSagaPolling } from "@/hooks/useSagaPolling"
-import { set } from "lodash"
-import { getTruncatedDescription, renderDescriptionHTML } from "@/core/utils/htmlRender.utils"
+import { getTruncatedDescription } from "@/core/utils/htmlRender.utils"
 import { SmartAudioPlayer } from "@/views/components/common/audio"
 
 export const PodcastIllegalContentTypes = [
@@ -64,13 +60,14 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
         try {
             const res = await getEpisodePublishDetail(staffAxiosInstance, Number(id));
             console.log('Episode Publish Review Detail:', res.data);
-            if (res.success) {
+            if (res.success && res.data?.ReviewSession) {
                 setPublishDetail(res.data.ReviewSession);
-                const fileurl = await getAudioEpisode(staffAxiosInstance, res.data.ReviewSession.PodcastEpisode.AudioFileKey);
-                if (fileurl.success && fileurl.data.FileUrl) {
-                    setAudioUrl(fileurl.data.FileUrl);
+                if (res.data.ReviewSession?.PodcastEpisode?.AudioFileKey) {
+                    const fileurl = await getAudioEpisode(staffAxiosInstance, res.data.ReviewSession.PodcastEpisode.AudioFileKey);
+                    if (fileurl.success && fileurl.data?.FileUrl) {
+                        setAudioUrl(fileurl.data.FileUrl);
+                    }
                 }
-
             } else {
                 console.error('API Error:', res.message);
             }
@@ -243,7 +240,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                 <div className="publish-review-detail__title-section flex items-center justify-between mb-4">
                     <h2 className="publish-review-detail__title mt-1">{PublishDetail?.PodcastEpisode?.Name || 'Episode'}</h2>
                     <div className="flex items-center flex-row gap-3">
-                        {(PublishDetail?.CurrentStatus?.Id === 1 && PublishDetail?.EpisodeCurrentStatus.Id !== 3) && (
+                        {(PublishDetail?.CurrentStatus?.Id === 1 && PublishDetail?.EpisodeCurrentStatus?.Id !== 3) && (
                             <>
                                 <button
                                     type="button"
@@ -314,7 +311,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                 </div>
             </div>
 
-            <div className="publish-review-detail__content-cards">
+               <div className="publish-review-detail__content-cards">
                 {PublishDetail.Podcaster && (
                     <div className="content-card">
                         <Image
@@ -334,7 +331,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                         </div>
                     </div>
                 )}
-                {PublishDetail.PodcastEpisode && PublishDetail.PodcastEpisode.DeletedAt === null && (
+                {PublishDetail.PodcastEpisode && (
                     <div className="content-card" onClick={() => navigate(`/episode/${PublishDetail.PodcastEpisode.Id}`)}>
                         <Image
                             mainImageFileKey={PublishDetail.PodcastEpisode.MainImageFileKey}
@@ -352,8 +349,9 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                 </div>
                                 <h3 className="content-card__title mb-0">{PublishDetail.PodcastEpisode.Name}</h3>
                                 <p className="content-card__description">Explicit Content: {PublishDetail.PodcastEpisode.ExplicitContent ? 'Yes' : 'No'}</p>
-
                             </div>
+
+                            {/* Audio player full width */}
                             <div className="px-3 pb-3 w-full">
                                 <SmartAudioPlayer
                                     audioId={PublishDetail.PodcastEpisode.AudioFileKey}
@@ -368,7 +366,8 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                     }}
                                 />
                             </div>
-                            <div className="flex-1 flex items-end mb-2 mx-4">
+
+                            <div className="flex-1 flex items-end mb-1 mx-4">
                                 <div
                                     className={`content-card__badge content-card__badge--${['Published'].includes(PublishDetail.EpisodeCurrentStatus.Name)
                                         ? 'verified'
@@ -384,14 +383,11 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                     <span className="content-card__badge-dot"></span>
                                     {PublishDetail.EpisodeCurrentStatus.Name}
                                 </div>
-
                             </div>
-
                         </div>
                     </div>
                 )}
-
-                {PublishDetail.PodcastChannel && PublishDetail.PodcastChannel.DeletedAt === null && (
+                {PublishDetail.PodcastChannel && (
                     <div className="content-card" onClick={() => navigate(`/channel/${PublishDetail.PodcastChannel.Id}`)}>
                         <Image
                             mainImageFileKey={PublishDetail.PodcastChannel.MainImageFileKey}
@@ -406,7 +402,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                     dangerouslySetInnerHTML={{
                                         __html: getTruncatedDescription(PublishDetail?.PodcastChannel.Description || "", 100),
                                     }}
-                                > </div>
+                                />
                             </div>
                             <div className="flex-1 flex items-end mb-3 mx-3">
                                 <div
@@ -422,7 +418,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                         </div>
                     </div>
                 )}
-                {PublishDetail.PodcastShow && PublishDetail.PodcastShow.DeletedAt === null && (
+                {PublishDetail.PodcastShow && (
                     <div className="content-card" onClick={() => navigate(`/show/${PublishDetail.PodcastShow.Id}`)}>
                         <Image
                             mainImageFileKey={PublishDetail.PodcastShow.MainImageFileKey}
@@ -521,10 +517,11 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                                 src={audioSources[episode.Id]?.url}
                                                 style={{ flex: 1 }}
                                                 onError={() => fetchAudioUrl(episode.Id, episode.AudioFileKey)}
+
                                             /> */}
                                             <SmartAudioPlayer
                                                 audioId={episode.AudioFileKey}
-                                                className="w-full mt-4"
+                                                className="w-full mt-4 "
                                                 fetchUrlFunction={async (fileKey) => {
                                                     const result = await getAudioEpisode(staffAxiosInstance, fileKey);
                                                     return {
@@ -542,7 +539,6 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                                 __html: renderDescriptionHTML(episode?.Description || ""),
                                             }}
                                         >
-
                                         </div>
                                     )} */}
                                 </div>
@@ -577,31 +573,31 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                     )}
                 </div>
             </div>
-
             {/* Summary Panel */}
-     {transcriptContent && (
-                <div className="transcript-modal-overlay" onClick={() => setTranscriptContent(null)}>
-                    <div className="transcript-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="transcript-modal__header">
-                            <h4 className="transcript-modal__title">
-                                <FileText size={20} className="me-2" />
-                                Audio Transcript
-                            </h4>
-                            <button
-                                className="transcript-modal__close-btn"
-                                onClick={() => setTranscriptContent(null)}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        <div className="transcript-modal__body">
-                            <div className="transcript-modal__content">
-                                {transcriptContent}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+           {transcriptContent && (
+                         <div className="transcript-modal-overlay" onClick={() => setTranscriptContent(null)}>
+                             <div className="transcript-modal" onClick={(e) => e.stopPropagation()}>
+                                 <div className="transcript-modal__header">
+                                     <h4 className="transcript-modal__title">
+                                         <FileText size={20} className="me-2" />
+                                         Audio Transcript
+                                     </h4>
+                                     <button
+                                         className="transcript-modal__close-btn"
+                                         onClick={() => setTranscriptContent(null)}
+                                     >
+                                         ×
+                                     </button>
+                                 </div>
+                                 <div className="transcript-modal__body">
+                                     <div className="transcript-modal__content">
+                                         {transcriptContent}
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                     )}
+         
 
 
             {/* Edit Requirements Modal */}

@@ -72,9 +72,9 @@ const LawsuitModal: FC<LawsuitModalProps> = ({ onClose }) => {
                 return
             }
             await startPolling(sagaId, adminAxiosInstance, {
-                onSuccess: () => {
+                onSuccess: async() => {
                     toast.success('Lawsuit added successfully')
-                    context?.handleDataChange()
+                    await context?.handleDataChange()
                     onClose()
                 },
                 onFailure: (err: any) => toast.error(err || "Saga failed!"),

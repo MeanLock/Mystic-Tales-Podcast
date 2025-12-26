@@ -226,17 +226,7 @@ export const createReport = async (
         };
     }
 ) => {
-    if (payload.DMCAAccusationConclusationReportInfo.Description === '' || payload.DMCAAccusationConclusationReportInfo.Description === undefined || payload.DMCAAccusationConclusationReportInfo.InvalidReason === '' || payload.DMCAAccusationConclusationReportInfo.InvalidReason === undefined) {
-        const newPayload = {
-            ...payload,
-            DMCAAccusationConclusationReportInfo: {
-                ...payload.DMCAAccusationConclusationReportInfo,
-                Description: null,
-                InvalidReason: null
-            }
-        };
-        payload = newPayload;
-    }
+   
     const response = await callAxiosRestApi({
         instance: instance,
         method: "post",
