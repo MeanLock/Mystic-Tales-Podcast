@@ -3,7 +3,7 @@
 -- =====================================================
 
 PRINT '--- BOOKING SERVICE ---';
-DECLARE @accountId INT = 4010; -- REPLACE WITH ACTUAL ACCOUNT ID
+DECLARE @accountId INT = 6010; -- REPLACE WITH ACTUAL ACCOUNT ID
 -- Bookings Summary
 SELECT 
     'Bookings as Customer' AS Type,

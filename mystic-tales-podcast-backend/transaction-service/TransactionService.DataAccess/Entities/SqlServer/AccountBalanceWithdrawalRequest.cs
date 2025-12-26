@@ -22,4 +22,10 @@ public partial class AccountBalanceWithdrawalRequest
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
+
+    public string BankCode { get; set; } = null!;
+
+    public string BankNumber { get; set; } = null!;
+
+    public string BankName { get; set; } = null!;
 }

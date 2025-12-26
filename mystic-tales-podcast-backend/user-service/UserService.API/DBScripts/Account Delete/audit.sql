@@ -2,7 +2,7 @@
 -- USER SERVICE DATA
 -- =====================================================
 PRINT '--- USER SERVICE ---';
-DECLARE @accountId INT = 4010;
+DECLARE @accountId INT = 6010;
 -- Account Details
 SELECT 
     'Account Info' AS Category,

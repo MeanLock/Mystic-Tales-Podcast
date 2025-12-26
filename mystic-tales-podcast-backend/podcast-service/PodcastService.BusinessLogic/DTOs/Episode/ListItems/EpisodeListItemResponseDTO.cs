@@ -49,6 +49,7 @@ namespace PodcastService.BusinessLogic.DTOs.Episode.ListItems
 
         public DateTime UpdatedAt { get; set; }
         public required PodcastEpisodeStatusDTO CurrentStatus { get; set; } = null!;
+        public int? PodcasterId { get; set; }
 
     }
 }

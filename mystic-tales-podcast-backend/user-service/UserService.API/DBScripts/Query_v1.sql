@@ -5,9 +5,12 @@ select * from AccountFollowedPodcaster
 select * from AccountFavoritedPodcastChannel
 select * from AccountFollowedPodcastShow
 select * from AccountSavedPodcastEpisode
+select * from PasswordResetToken
 
-Delete from Account where id = 6006
-Delete from PodcasterProfile where accountId = 6009
+Delete from Account where id = 8011
+Delete from PodcasterProfile where accountId = 8008
+
+Delete from PodcastBuddyReview where accountId = 1012
 
 ALTER TABLE PodcasterProfile
 ADD listenCount INT NOT NULL DEFAULT 0;

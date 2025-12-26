@@ -79,6 +79,15 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Amount)
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("amount");
+            entity.Property(e => e.BankCode)
+                .HasDefaultValue("")
+                .HasColumnName("bankCode");
+            entity.Property(e => e.BankName)
+                .HasDefaultValue("")
+                .HasColumnName("bankName");
+            entity.Property(e => e.BankNumber)
+                .HasDefaultValue("")
+                .HasColumnName("bankNumber");
             entity.Property(e => e.CompletedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("completedAt");

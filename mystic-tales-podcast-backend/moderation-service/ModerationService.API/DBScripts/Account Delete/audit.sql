@@ -1,5 +1,5 @@
 PRINT '--- MODERATION SERVICE ---';
-DECLARE @accountId INT = 4010; -- REPLACE WITH ACTUAL ACCOUNT ID
+DECLARE @accountId INT = 6010; -- REPLACE WITH ACTUAL ACCOUNT ID
 -- Reports Filed
 SELECT 
     'Buddy Reports Filed' AS Type,
