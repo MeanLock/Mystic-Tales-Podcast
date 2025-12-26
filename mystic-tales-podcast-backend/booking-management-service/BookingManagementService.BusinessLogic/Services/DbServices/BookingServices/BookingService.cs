@@ -4363,9 +4363,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .OrderByDescending(bst => bst.CreatedAt)
                         .FirstOrDefault().BookingStatusId;
                     var moneyFlowStatus = 0;
-                    if(currentStatus != (int)BookingStatusEnum.Completed &&
-                        currentStatus != (int)BookingStatusEnum.CancelledManually &&
-                        currentStatus != (int)BookingStatusEnum.CancelledAutomatically)
+
+                    if (!new[]
+                    {
+                        (int)BookingStatusEnum.Completed,
+                        (int)BookingStatusEnum.CancelledManually,
+                        (int)BookingStatusEnum.CancelledAutomatically 
+                    }.Contains(currentStatus))
                     {
                         moneyFlowStatus = (int)MoneyFlowStatusEnum.Holding;
                     }
@@ -4385,6 +4389,21 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         assignedStaff = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
                     }
+
+                    var amount = moneyFlowStatus == (int)MoneyFlowStatusEnum.Holding
+                            ? transactions.Where(t => new[]
+                            {
+                                (int)TransactionTypeEnum.BookingDeposit,
+                            }.Contains(t.TransactionType.Id)).Sum(t => t.Amount)
+                            : transactions.Where(t => new[]
+                            {
+                                (int)TransactionTypeEnum.SystemBookingIncome,
+                            }.Contains(t.TransactionType.Id)).Sum(t => t.Amount);
+                    if (amount == 0)
+                    {
+                        continue;
+                    }
+
                     result.Add(new BookingMoneyFlowListItemResponseDTO
                     {
                         Id = booking.Id,
@@ -4424,15 +4443,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             Id = moneyFlowStatus,
                             Name = ((MoneyFlowStatusEnum)moneyFlowStatus).ToString()
                         },
-                        Amount = moneyFlowStatus == (int)MoneyFlowStatusEnum.Holding
-                            ? transactions.Where(t => new[]
-                            {
-                                (int)TransactionTypeEnum.BookingDeposit,
-                            }.Contains(t.TransactionType.Id)).Sum(t => t.Amount)
-                            : transactions.Where(t => new[]
-                            {
-                                (int)TransactionTypeEnum.SystemBookingIncome,
-                            }.Contains(t.TransactionType.Id)).Sum(t => t.Amount),
+                        Amount = amount,
                         BookingTransactionList = transactions
                     });
                 }

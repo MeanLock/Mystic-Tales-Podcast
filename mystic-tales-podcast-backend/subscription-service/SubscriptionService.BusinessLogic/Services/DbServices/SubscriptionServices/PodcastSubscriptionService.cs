@@ -2439,13 +2439,29 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
-                    var podcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll(
+                    var shows = await GetPodcastShowByPodcastChannelId(parameter.PodcastChannelId);
+                    var showIds = shows?.Select(s => s.Id).ToList();
+                    var query =  _podcastSubscriptionGenericRepository.FindAll(
                         includeFunc: function => function
                         .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                        .Include(ps => ps.PodcastSubscriptionRegistrations))
-                        .Where(ps => ps.PodcastChannelId == parameter.PodcastChannelId
-                        && ps.IsActive)
-                        .ToListAsync();
+                        .Include(ps => ps.PodcastSubscriptionRegistrations));
+
+                    if (showIds != null && showIds.Any())
+                    {
+                        query = query.Where(ps =>
+                            ps.IsActive &&
+                            (
+                                (ps.PodcastShowId.HasValue && showIds.Contains(ps.PodcastShowId.Value))
+                                || ps.PodcastChannelId.HasValue && ps.PodcastChannelId == parameter.PodcastChannelId
+                            ));
+                    }
+                    else
+                    {
+                        query = query.Where(ps =>
+                            ps.PodcastChannelId.HasValue && ps.PodcastChannelId == parameter.PodcastChannelId &&
+                            ps.IsActive);
+                    }
+                    var podcastSubscriptions = await query.ToListAsync();
 
                     foreach (var podcastSubscription in podcastSubscriptions)
                     {
@@ -2671,14 +2687,29 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
-                    var podcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll(
+                    var shows = await GetPodcastShowByPodcastChannelId(parameter.PodcastChannelId);
+                    var showIds = shows?.Select(s => s.Id).ToList();
+                    var query =  _podcastSubscriptionGenericRepository.FindAll(
                         includeFunc: function => function
                         .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                        .Include(ps => ps.PodcastSubscriptionRegistrations))
-                        .Where(ps => ps.PodcastChannelId == parameter.PodcastChannelId
-                        && ps.IsActive)
-                        .ToListAsync();
+                        .Include(ps => ps.PodcastSubscriptionRegistrations));
 
+                    if (showIds != null && showIds.Any())
+                    {
+                        query = query.Where(ps =>
+                            ps.IsActive &&
+                            (
+                                (ps.PodcastShowId.HasValue && showIds.Contains(ps.PodcastShowId.Value))
+                                || ps.PodcastChannelId.HasValue && ps.PodcastChannelId == parameter.PodcastChannelId
+                            ));
+                    }
+                    else
+                    {
+                        query = query.Where(ps =>
+                            ps.PodcastChannelId.HasValue && ps.PodcastChannelId == parameter.PodcastChannelId &&
+                            ps.IsActive);
+                    }
+                    var podcastSubscriptions = await query.ToListAsync();
                     foreach (var podcastSubscription in podcastSubscriptions)
                     {
                         var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
@@ -2792,14 +2823,29 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     {
                         foreach (var channel in channelList)
                         {
-                            var podcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll(
-                            includeFunc: function => function
-                            .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                            .Include(ps => ps.PodcastSubscriptionRegistrations))
-                            .Where(ps => ps.PodcastChannelId == channel.Id
-                            && ps.IsActive)
-                            .ToListAsync();
+                            var shows = await GetPodcastShowByPodcastChannelId(channel.Id);
+                            var showIds = shows?.Select(s => s.Id).ToList();
+                            var query =  _podcastSubscriptionGenericRepository.FindAll(
+                                includeFunc: function => function
+                                .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                                .Include(ps => ps.PodcastSubscriptionRegistrations));
 
+                            if (showIds != null && showIds.Any())
+                            {
+                                query = query.Where(ps =>
+                                    ps.IsActive &&
+                                    (
+                                        (ps.PodcastShowId.HasValue && showIds.Contains(ps.PodcastShowId.Value))
+                                        || (ps.PodcastChannelId.HasValue && ps.PodcastChannelId == channel.Id)
+                                    ));
+                            }
+                            else
+                            {
+                                query = query.Where(ps =>
+                                    ps.PodcastChannelId.HasValue && ps.PodcastChannelId == channel.Id &&
+                                    ps.IsActive);
+                            }
+                            var podcastSubscriptions = await query.ToListAsync();
                             foreach (var podcastSubscription in podcastSubscriptions)
                             {
                                 var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
@@ -4870,7 +4916,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         decimal holdingAmount = 0;
                         decimal profitAmount = 0;
                         var current = transactions.OrderByDescending(transaction => transaction.CreatedAt).First();
-                        if(!registration.IsIncomeTaken && registration.CancelledAt != null)
+                        if(!registration.IsIncomeTaken && registration.CancelledAt == null)
                         {
                             holdingAmount = current.Amount;
                         }
@@ -4881,6 +4927,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         }.Contains(t.TransactionType.Id)).Sum(t => t.Amount);
                         var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
 
+                        if(holdingAmount == 0 && profitAmount == 0)
+                        {
+                            continue;
+                        }
+                        
                         var registrationHoldingItem = new PodcastSubscriptionRegistrationMoneyFlowListItemResponseDTO
                         {
                             Id = registration.Id,
