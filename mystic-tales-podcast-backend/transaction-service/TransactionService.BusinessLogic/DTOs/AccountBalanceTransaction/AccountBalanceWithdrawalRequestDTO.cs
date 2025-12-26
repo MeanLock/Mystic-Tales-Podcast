@@ -9,5 +9,8 @@ namespace TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction
     public class AccountBalanceWithdrawalRequestDTO
     {
         public decimal Amount { get; set; }
+        public string BankCode { get; set; }
+        public string BankNumber { get; set; }
+        public string BankName { get; set; }
     }
 }

@@ -2466,8 +2466,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     foreach (var podcastSubscription in podcastSubscriptions)
                     {
                         var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
-                                .Where(sr => sr.PodcastSubscriptionId == podcastSubscription.Id && sr.CancelledAt == null)
-                                .ToListAsync();
+                            .Where(sr => sr.PodcastSubscriptionId == podcastSubscription.Id && sr.CancelledAt == null)
+                            .ToListAsync();
                         foreach (var registration in subscriptionRegistrations)
                         {
                             decimal refundAmount = 0;
@@ -3005,8 +3005,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 }
                                 podcasterId = temp.PodcasterId;
                             }
-                            //int incomeTakenDelayDays = config.IncomeTakenDelayDays;
-                            int incomeTakenDelayDays = 0;
+                            int incomeTakenDelayDays = config.IncomeTakenDelayDays;
+                            // int incomeTakenDelayDays = 0;
                             decimal profitRate = (decimal)config.ProfitRate;
                             var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                         .Where(psct => psct.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)

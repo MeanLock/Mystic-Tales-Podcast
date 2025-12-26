@@ -392,6 +392,9 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     {
                         AccountId = parameter.AccountId,
                         Amount = parameter.Amount,
+                        BankCode = parameter.BankCode,
+                        BankNumber = parameter.BankNumber,
+                        BankName = parameter.BankName,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                         UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
@@ -648,6 +651,9 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                         Amount = ab.Amount,
                         TransferReceiptImageFileKey = ab.TransferReceiptImageFileKey,
                         RejectReason = ab.RejectReason,
+                        BankCode = ab.BankCode,
+                        BankNumber = ab.BankNumber,
+                        BankName = ab.BankName,
                         IsRejected = ab.IsRejected,
                         CompletedAt = ab.CompletedAt,
                         CreatedAt = ab.CreatedAt,
