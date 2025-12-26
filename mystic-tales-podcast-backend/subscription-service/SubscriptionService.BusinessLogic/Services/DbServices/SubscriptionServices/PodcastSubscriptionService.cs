@@ -4908,11 +4908,14 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         PodcastSubscriptionRegistrationList = new List<PodcastSubscriptionRegistrationMoneyFlowListItemResponseDTO>()
                     };
 
+                    var isShown = false;
                     foreach (var registration in registrations.Where(r => r.PodcastSubscriptionId == subscription.Id))
                     {
                         var transactions = await GetMoneyFlowPodcastSubscriptionTransactionByRegistrationId(registration.Id);
                         if (transactions == null || transactions.Count() == 0)
                             continue;
+                        else 
+                            isShown = true;
                         decimal holdingAmount = 0;
                         decimal profitAmount = 0;
                         var current = transactions.OrderByDescending(transaction => transaction.CreatedAt).First();
@@ -4962,8 +4965,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
 
                         holdingListItem.PodcastSubscriptionRegistrationList.Add(registrationHoldingItem);
                     }
-
-                    holdingList.Add(holdingListItem);
+                    if (isShown)
+                        holdingList.Add(holdingListItem);
                 }
 
                 return holdingList;
