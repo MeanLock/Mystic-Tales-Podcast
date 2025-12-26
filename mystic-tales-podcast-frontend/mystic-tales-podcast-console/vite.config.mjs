@@ -8,7 +8,7 @@ dotenv.config()
 
 export default defineConfig(() => {
   return {
-    base: './',
+    base: '/',
     build: {
       outDir: 'build',
     },
