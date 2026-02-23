@@ -26,7 +26,7 @@ const AssignChannelModal = ({ onclose }: { onclose: () => void }) => {
     const [channels, setChannels] = useState<ShowAssignableChannel[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
 
@@ -86,14 +86,14 @@ const AssignChannelModal = ({ onclose }: { onclose: () => void }) => {
     useEffect(() => {
         fetchShowAssignableChannels();
     }, [id]);
-if(context.channel===null){
-     return (
-                <div className="flex justify-center items-center h-100">
-                    <Loading />
-                </div>
-            );
+    // if (context.channel === null) {
+    //     return (
+    //         <div className="flex justify-center items-center h-100">
+    //             <Loading />
+    //         </div>
+    //     );
 
-}
+    // }
     return (
         <div className="assign-channel-modal">
             <div className="assign-channel-modal__header">

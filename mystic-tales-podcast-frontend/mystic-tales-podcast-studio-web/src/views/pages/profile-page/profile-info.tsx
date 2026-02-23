@@ -41,6 +41,7 @@ import { setAuthToken } from '@/redux/auth/authSlice';
 import { RootState } from '@/redux/rootReducer';
 import { getBookingTone, getBookingToneList, updateBookingTone } from '@/core/services/booking/booking.service';
 import { BookingTone } from '@/core/types';
+import { MetadataField } from '@/views/components/common/metadata';
 
 
 interface ProfileInfoProps {
@@ -119,12 +120,12 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
     const [showAllCategory, setShowAllCategory] = useState<Record<string, boolean>>({});
     const displayLimit = 10;
 
-        const [displayPrice, setDisplayPrice] = useState<number>(0);
+    const [displayPrice, setDisplayPrice] = useState<number>(0);
 
 
 
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const { quill, quillRef } = useQuill({
@@ -181,7 +182,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
         if (!profile) return;
         setProfileData(profile);
         setOriginalProfile(prev => prev ?? profile);
-                setDisplayPrice(profile.PodcasterProfile.PricePerBookingWord * 1000);
+        setDisplayPrice(profile.PodcasterProfile.PricePerBookingWord * 100);
         fetchBookingToneList();
         fetchPodcasterBookingTone();
     }, [profile]);
@@ -225,8 +226,8 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
 
     const priceChanged = useMemo(() => {
         if (!originalProfile || !profileData) return false;
-        // So sánh với giá trị gốc (đã nhân 1000)
-        return (originalProfile.PodcasterProfile.PricePerBookingWord * 1000) !== displayPrice;
+        // So sánh với giá trị gốc (đã nhân 100)
+        return (originalProfile.PodcasterProfile.PricePerBookingWord * 100) !== displayPrice;
     }, [originalProfile, displayPrice]);
 
     const descriptionChanged = useMemo(() => {
@@ -304,6 +305,10 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
             toast.error("As a Buddy, you must select at least one booking tone.");
             return;
         }
+        if (profileData.PodcasterProfile.IsBuddy && ((displayPrice / 100) < 1)) {
+            toast.error("As a Buddy, your price per booking word must be at least 100.");
+            return;
+        }
         if (isDirtyTone) {
             await handleSaveTones();
         }
@@ -314,7 +319,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
                     PodcasterProfileUpdateInfo: {
                         Name: profileData.PodcasterProfile.Name,
                         Description: profileData.PodcasterProfile.Description || '',
-                        PricePerBookingWord: displayPrice / 1000,
+                        PricePerBookingWord: displayPrice / 100,
                         IsBuddy: profileData.PodcasterProfile.IsBuddy,
                     },
                     BuddyAudioFile: null
@@ -333,10 +338,10 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
                             ...(prev || profileData),
                             Name: profileData.PodcasterProfile.Name,
                             Description: profileData.PodcasterProfile.Description,
-                            PricePerBookingWord: displayPrice / 1000,
+                            PricePerBookingWord: displayPrice / 100,
                             IsBuddy: profileData.PodcasterProfile.IsBuddy,
                         }));
-                        dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, IsBuddy: profileData.PodcasterProfile.IsBuddy, PricePerBookingWord: (displayPrice/1000) } }));
+                        dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, IsBuddy: profileData.PodcasterProfile.IsBuddy, PricePerBookingWord: (displayPrice / 100) } }));
 
                         await refreshProfile?.();
 
@@ -388,9 +393,23 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
 
             <div className="profile-info-page__content">
                 <div className="profile-info-page__form">
+                    <div className="profile-info-page__metadata-section mb-6 rounded-xl">
+                        <div className="flex flex-wrap w-full justify-between  items-center gap-6 md:gap-8">
+                            <MetadataField label="Total Follow" value={profileData.TotalFollow ? profileData.TotalFollow.toString() : "0"} />
+                            <MetadataField label="Listen Count" value={profileData.ListenCount ? profileData.ListenCount.toString() : "0"} />
+                            <MetadataField label="Rating Average" value={profileData.AverageRating ? profileData.AverageRating.toFixed(2) : "0"} />
+                            <MetadataField label="Balance" value={profileData.Balance ? profileData.Balance.toString() : "0"} />
+                            <MetadataField label="Violation Level" value={profileData.ViolationLevel ? profileData.ViolationLevel.toString() : "0"} />
+                            <MetadataField label="Updated At" value={formatDate(profileData.UpdatedAt)} />
+
+
+                        </div>
+                    </div>
+
+
                     <div className="profile-info-page__row">
                         <TextField
-                            label="Name"
+                            label="Podcaster Name"
                             value={profileData.PodcasterProfile.Name}
                             variant="standard"
                             onChange={(e) => setProfileData({ ...profileData, PodcasterProfile: { ...profileData.PodcasterProfile, Name: e.target.value } })}
@@ -404,16 +423,9 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
                             }}
                         />
 
-                        <TextField
-                            id="filled-read-only-input"
-                            variant="filled"
-                            slotProps={{ input: { readOnly: true } }}
-                            label="Email"
-                            value={profileData.Email}
-                            className="profile-info-page__input profile-info-page__input--email"
-                        />
-                    </div>
 
+
+                    </div>
                     <div className="profile-info-page__row">
                         <TextField
                             label="Price Per Booking Word "
@@ -422,15 +434,15 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
                             InputProps={{
                                 endAdornment: (
                                     <InputAdornment position="end" sx={{ whiteSpace: 'nowrap' }}>
-                                        <Typography variant="body2" sx={{ color: '#999999' }}>/ 1000 Words</Typography>
+                                        <Typography variant="body2" sx={{ color: '#999999' }}>/ 100 Words</Typography>
                                     </InputAdornment>
                                 ),
                             }}
                             type="number"
-                           onChange={(e) => {
+                            onChange={(e) => {
                                 let val = e.target.value;
-                                if (val === '' || Number(val) < 1000) {
-                                    setDisplayPrice(1000); // Min 1000 VND
+                                if (val === '' || Number(val) < 100) {
+                                    setDisplayPrice(100); // Min 100 Coins
                                 } else {
                                     setDisplayPrice(Number(val));
                                 }
@@ -444,13 +456,16 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
                                 },
                             }}
                         />
-                        <TextField
-                            variant="filled"
-                            slotProps={{ input: { readOnly: true } }}
-                            label="Balance"
-                            value={profileData.Balance}
-                            className="profile-info-page__input-small"
-                        />
+
+                            <TextField
+                                id="filled-read-only-input"
+                                variant="filled"
+                                slotProps={{ input: { readOnly: true } }}
+                                label="Email"
+                                value={profileData.Email}
+                                className="profile-info-page__input profile-info-page__input--email"
+                            />
+
                         <div>
 
                             <FormControlLabel
@@ -489,74 +504,8 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
                             />
                         </div>
                     </div>
-                    <div className="profile-info-page__row">
-                        <TextField
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Violation Level"
-                            value={profileData.ViolationLevel ? profileData.ViolationLevel : '0'}
-                            className="profile-info-page__input-small"
 
-                        />
-                        <TextField
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Violation Point"
-                            value={profileData.ViolationPoint ? profileData.ViolationPoint : '0'}
-                            className="profile-info-page__input-small"
 
-                        />
-                        <TextField
-                            id="filled-helperText"
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Updated At"
-                            value={formatDate(profileData.PodcasterProfile.UpdatedAt)}
-                            className="profile-info-page__input-small"
-
-                        />
-                        <TextField
-                            id="filled-helperText"
-                            variant="filled"
-                            slotProps={{ input: { readOnly: true } }}
-                            label="Total Followers"
-                            value={profileData.PodcasterProfile.TotalFollow}
-                            className="profile-info-page__input-small"
-                        />
-                        <TextField
-                            id="filled-helperText"
-                            variant="filled"
-                            slotProps={{ input: { readOnly: true } }}
-                            label="Listen Count"
-                            value={profileData.PodcasterProfile.ListenCount}
-                            className="profile-info-page__input-small"
-                        />
-                        <TextField
-                            id="filled-helperText"
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Rating Average"
-                            value={`${profileData.PodcasterProfile.AverageRating} ⭐ (${profileData.PodcasterProfile.RatingCount})`}
-                            className="profile-info-page__input-small"
-
-                        />
-                    </div>
                     <div className='flex mb-0'>
                         <Button
                             size="small"

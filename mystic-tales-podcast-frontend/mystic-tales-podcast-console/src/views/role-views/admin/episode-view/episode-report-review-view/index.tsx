@@ -36,7 +36,7 @@ const state_creator = (table: any[]) => {
                 sortable: false,
                 filter: false
             },
-            { headerName: "Assigned Staff", field: "AssignedStaff.FullName", flex: 0.8 },
+            { headerName: "Assigned Staff", field: "AssignedStaff.Email", flex: 0.8 },
             { headerName: "Episode", field: "PodcastEpisode.Name", flex: 0.8 },
             {
                 headerName: "Created At",

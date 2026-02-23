@@ -9,32 +9,128 @@ interface SequencerRulerProps {
 export default function SequencerRuler({ totalLengthSec, pixelsPerSecond, playhead }: SequencerRulerProps) {
     const totalWidth = Math.max(Math.ceil(totalLengthSec * pixelsPerSecond), 1)
 
-    // Tính tickInterval dựa vào pixelsPerSecond để ruler rõ hơn khi zoom
-    // Mục tiêu: mỗi tick cách nhau ít nhất ~40-80px
-    const MIN_TICK_PX = 50; // khoảng cách tối thiểu giữa 2 tick (px)
-    const MAX_TICK_PX = 150; // khoảng cách tối đa
+    // Xác định interval dựa theo mức độ zoom (pixelsPerSecond)
+    // Tính khoảng thời gian hiển thị trên ~1200px (ước lượng container width)
+    const ESTIMATED_CONTAINER_WIDTH = 1200;
+    const visibleSeconds = ESTIMATED_CONTAINER_WIDTH / pixelsPerSecond;
+    const visibleMinutes = visibleSeconds / 60;
 
-    // Các bước thời gian có thể dùng (giây)
-    const intervals = [1, 2, 5, 10, 15, 20, 30, 60, 120, 300, 600]; // 1s, 2s, 5s, 10s, 15s, 20s, 30s, 1m, 2m, 5m, 10m
+    let tickInterval = 60; // mặc định 1 phút
+    let majorStep = 5;
 
-    // Chọn interval sao cho khoảng cách px nằm trong khoảng hợp lý
-    let tickInterval = 5; // fallback
-    for (const interval of intervals) {
-        const tickPx = interval * pixelsPerSecond;
-        if (tickPx >= MIN_TICK_PX && tickPx <= MAX_TICK_PX) {
-            tickInterval = interval;
-            break;
+    // Khoảng cách tối thiểu và tối đa giữa các tick (pixels)
+    const MIN_TICK_PX = 40;
+    const MAX_TICK_PX = 120;
+
+    if (visibleMinutes < 0.5) {
+        // Zoom cực to (xem < 30 giây): 1s, 2s, 5s
+        const intervals = [1, 2, 5];
+        tickInterval = 1; // fallback
+        majorStep = 5;
+        
+        for (const interval of intervals) {
+            const tickPx = interval * pixelsPerSecond;
+            if (tickPx >= MIN_TICK_PX) {
+                tickInterval = interval;
+                majorStep = interval === 1 ? 10 : (interval === 2 ? 5 : 4);
+                break;
+            }
         }
-        if (tickPx > MAX_TICK_PX) break; // đã quá dày
-        tickInterval = interval; // chưa đủ dày, nhưng đây là tốt nhất cho đến giờ
+    } else if (visibleMinutes < 1.5) {
+        // Zoom rất to (xem < 1.5 phút): 5s, 10s, 15s
+        const intervals = [5, 10, 15];
+        tickInterval = 5; // fallback
+        majorStep = 4;
+        
+        for (const interval of intervals) {
+            const tickPx = interval * pixelsPerSecond;
+            if (tickPx >= MIN_TICK_PX) {
+                tickInterval = interval;
+                majorStep = interval === 5 ? 6 : (interval === 10 ? 3 : 4);
+                break;
+            }
+        }
+    } else if (visibleMinutes < 3) {
+        // Khi zoom to (xem < 3 phút trên màn hình): 10s, 20s, 30s
+        const intervals = [10, 20, 30];
+        tickInterval = 10; // fallback
+        majorStep = 3;
+        
+        for (const interval of intervals) {
+            const tickPx = interval * pixelsPerSecond;
+            if (tickPx >= MIN_TICK_PX) {
+                tickInterval = interval;
+                majorStep = interval === 10 ? 3 : (interval === 20 ? 3 : 2);
+                break;
+            }
+        }
+    } else if (visibleMinutes < 5) {
+        // Xem < 5 phút trên màn hình: 20s, 40s, 60s
+        const intervals = [20, 40, 60];
+        tickInterval = 20; // fallback
+        majorStep = 3;
+        
+        for (const interval of intervals) {
+            const tickPx = interval * pixelsPerSecond;
+            if (tickPx >= MIN_TICK_PX) {
+                tickInterval = interval;
+                majorStep = interval === 20 ? 3 : (interval === 40 ? 3 : 2);
+                break;
+            }
+        }
+    } else if (visibleMinutes < 8) {
+        // Xem < 8 phút trên màn hình: 30s, 60s
+        const intervals = [30, 60];
+        tickInterval = 30; // fallback
+        majorStep = 2;
+        
+        for (const interval of intervals) {
+            const tickPx = interval * pixelsPerSecond;
+            if (tickPx >= MIN_TICK_PX) {
+                tickInterval = interval;
+                majorStep = 2;
+                break;
+            }
+        }
+    } else if (visibleMinutes < 10) {
+        // Xem < 10 phút trên màn hình: 60s
+        tickInterval = 60;
+        majorStep = 5;
+        
+        const tickPx = 60 * pixelsPerSecond;
+        if (tickPx < MIN_TICK_PX) {
+            // Nếu 60s quá nhỏ, dùng 120s hoặc 300s
+            const intervals = [120, 300];
+            for (const interval of intervals) {
+                if (interval * pixelsPerSecond >= MIN_TICK_PX) {
+                    tickInterval = interval;
+                    majorStep = interval === 120 ? 3 : 2;
+                    break;
+                }
+            }
+        }
+    } else {
+        // Xem >= 10 phút trên màn hình: 60s, 120s, 300s
+        const intervals = [60, 120, 300];
+        tickInterval = 60; // fallback
+        majorStep = 5;
+        
+        for (const interval of intervals) {
+            const tickPx = interval * pixelsPerSecond;
+            if (tickPx >= MIN_TICK_PX && tickPx <= MAX_TICK_PX) {
+                tickInterval = interval;
+                majorStep = interval === 60 ? 5 : (interval === 120 ? 3 : 2);
+                break;
+            }
+            // Nếu tickPx quá lớn, dùng interval nhỏ hơn
+            if (tickPx > MAX_TICK_PX) {
+                break;
+            }
+            tickInterval = interval; // chọn interval lớn nhất mà vẫn < MAX_TICK_PX
+        }
     }
 
     const numTicks = Math.ceil(totalLengthSec / tickInterval) + 1;
-
-    // Major tick: mỗi 5 lần tickInterval hoặc điều chỉnh theo interval
-    // VD: nếu tickInterval=1s thì major ở 0,5,10,... (mỗi 5s)
-    //     nếu tickInterval=60s thì major ở 0,5*60,10*60,... (mỗi 5 phút)
-    const majorStep = tickInterval < 10 ? 5 : (tickInterval < 60 ? 3 : 5);
 
     return (
         <div className="relative border border-slate-800 rounded bg-slate-900 h-[44px]" style={{ width: totalWidth }}>

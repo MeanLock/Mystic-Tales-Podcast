@@ -5098,7 +5098,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps:
             - name: "delete-buddy-review-terminate-podcaster-force"
-              topic: "user-management-domain"
+              topic: "public-review-management-domain"
               handle-service: "UserService"
           nextFlows: []
         onFailure:
@@ -6522,7 +6522,10 @@ flows:
           emit: "complete-booking-transaction.success"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: []
+          nextSteps: 
+            - name: "complete-booking"
+              topic: "booking-management-domain"
+              handle-service: "BookingManagementService"
           nextFlows: []
         onFailure:
           emit: "complete-booking-transaction.failed"
@@ -7238,9 +7241,15 @@ flows:
         description: "Tạo record withdrawal transaction"
         parameters:
           - AccountId
+          - BankCode
+          - BankNumber
+          - BankName
           - Amount
         next-request-data:
           - AccountId
+          - BankCode
+          - BankNumber
+          - BankName
           - Amount
         response-data:
           - AccountBalanceTransactionId
@@ -7270,6 +7279,9 @@ flows:
           - Amount
         next-request-data:
           - AccountId
+          - BankCode
+          - BankNumber
+          - BankName
           - Amount
         response-data:
           - AccountId
@@ -8224,7 +8236,10 @@ flows:
           emit: "add-account-balance-amount.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: []
+          nextSteps: 
+            - name: "complete-podcast-subscription-transaction"
+              topic: "payment-processing-domain"
+              handle-service: "TransactionService"
           nextFlows: []
         onFailure:
           emit: "add-account-balance-amount.failed"

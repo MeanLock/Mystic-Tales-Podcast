@@ -493,24 +493,60 @@ async def transcribe(
     # ============================================
     # ACQUIRE LOCK - Wait for our turn
     # ============================================
+    # if file_ext not in {'.wav', '.flac'}:
+    #     logger.info(f"Converting {file_ext} to WAV...")
+    #     try:
+    #         content = await converter.convert_async(
+    #             content, 
+    #             file_ext[1:],  # 'mp3', 'm4a', etc.
+    #             method='pydub'
+    #         )   
+            
+    #         logger.info(f"✓ Converted to WAV: {len(content)} bytes")
+            
+    #     except Exception as conv_error:
+    #         logger.error(f"Conversion failed: {conv_error}")
+    #         raise HTTPException(
+    #             status_code=400,
+    #             detail=f"Cannot convert {file_ext} to WAV. Ensure ffmpeg is installed."
+    #         )
+    
     if file_ext not in {'.wav', '.flac'}:
         logger.info(f"Converting {file_ext} to WAV...")
         try:
             content = await converter.convert_async(
                 content, 
-                file_ext[1:],  # 'mp3', 'm4a', etc.
+                file_ext[1:],
                 method='pydub'
             )   
-            
-            logger.info(f"✓ Converted to WAV: {len(content)} bytes")
+            logger.info(f"✓ Standard conversion successful: {len(content)} bytes")
             
         except Exception as conv_error:
-            logger.error(f"Conversion failed: {conv_error}")
-            raise HTTPException(
-                status_code=400,
-                detail=f"Cannot convert {file_ext} to WAV. Ensure ffmpeg is installed."
-            )
-    
+            logger.warning(f"Standard conversion failed: {conv_error}")
+            
+            # Method 2: Try permissive ffmpeg
+            try:
+                logger.info("Attempting permissive ffmpeg conversion...")
+                content = await converter.convert_async(
+                    content,
+                    file_ext[1:],
+                    method='ffmpeg_permissive',  # Add this to AudioConverter
+                    extra_args=[
+                        '-analyzeduration', '100000000',
+                        '-probesize', '100000000', 
+                        '-err_detect', 'ignore_err',
+                        '-fflags', '+discardcorrupt+genpts'
+                    ]
+                )
+                logger.info(f"✓ Permissive conversion successful: {len(content)} bytes")
+                
+            except Exception as permissive_error:
+                logger.error(f"All conversion methods failed: {permissive_error}")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"File appears corrupted. Try re-encoding with: ffmpeg -i input.mp3 -acodec libmp3lame -ar 16000 output.mp3"
+                )
+        
     await transcription_queue.acquire(job_id, AudioFile.filename)
     
     try:

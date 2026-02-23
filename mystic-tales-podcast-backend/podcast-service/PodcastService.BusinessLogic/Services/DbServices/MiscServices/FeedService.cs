@@ -411,7 +411,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             MainImageFileKey = ls.PodcastEpisode.MainImageFileKey,
                             IsReleased = ls.PodcastEpisode.IsReleased,
                             ReleaseDate = ls.PodcastEpisode.ReleaseDate,
-                            AudioLength = ls.PodcastEpisode.AudioLength
+                            AudioLength = ls.PodcastEpisode.AudioLength,
                         },
                         Podcaster = podcasterAccount != null ? new AccountSnippetResponseDTO
                         {
@@ -2742,7 +2742,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     MainImageFileKey = ep.MainImageFileKey,
                     IsReleased = ep.IsReleased,
                     ReleaseDate = ep.ReleaseDate,
-                    AudioLength = ep.AudioLength
+                    AudioLength = ep.AudioLength,
+                    PodcasterId = ep.PodcastShow.PodcasterId
                 }).ToList();
 
                 Console.WriteLine($"[TrendingNewEpisodes] Built with {episodeListItems.Count} episodes");
@@ -2835,7 +2836,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     MainImageFileKey = ep.MainImageFileKey,
                     IsReleased = ep.IsReleased,
                     ReleaseDate = ep.ReleaseDate,
-                    AudioLength = ep.AudioLength
+                    AudioLength = ep.AudioLength,
+                    PodcasterId = ep.PodcastShow.PodcasterId
                 }).ToList();
 
                 Console.WriteLine($"[TrendingPopularEpisodes] Built with {episodeListItems.Count} episodes (A:{partAEpisodes.Count}, B:{partBEpisodes.Count})");
@@ -3238,7 +3240,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
 
                 // Save back to cache (no expiration)
-                await _redisSharedCacheService.KeySetAsync(cacheKey, cache, expiry: null);
+                await _redisSharedCacheService.KeySetAsync(cacheKey, cache, expiry: null, isNoExpiryForce: true);
 
                 Console.WriteLine($"[KeywordSearch] Recorded keyword '{keyword}' (count: {existingItem?.SearchCount ?? 1})");
 
@@ -4047,7 +4049,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 MainImageFileKey = episode.MainImageFileKey,
                                 IsReleased = episode.IsReleased,
                                 ReleaseDate = episode.ReleaseDate,
-                                AudioLength = episode.AudioLength
+                                AudioLength = episode.AudioLength,
+                                PodcasterId = episode.PodcastShow.PodcasterId
                             }
                         };
                     }
@@ -4105,7 +4108,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     ReleaseDate = episode.ReleaseDate,
                     CreatedAt = episode.CreatedAt,
                     UpdatedAt = episode.UpdatedAt,
-
+                    PodcasterId = episode.PodcastShow.PodcasterId,
 
                     PodcastEpisodeSubscriptionType = new PodcastEpisodeSubscriptionTypeDTO
                     {

@@ -28,7 +28,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ onClose, DmcaAccusationConclu
         InvalidReason: ''
     });
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const handleSubmit = async (e: React.FormEvent) => {
@@ -41,7 +41,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ onClose, DmcaAccusationConclu
         const payload = {
             DMCAAccusationConclusationReportInfo: {
                 DmcaAccusationConclusionReportTypeId: formData.DmcaAccusationConclusionReportTypeId,
-                Description: formData.Description || undefined,
+                Description: formData.Description ,
                 InvalidReason: formData.InvalidReason
             }
         };
@@ -54,9 +54,9 @@ const ReportModal: React.FC<ReportModalProps> = ({ onClose, DmcaAccusationConclu
                 return
             }
             await startPolling(sagaId, staffAxiosInstance, {
-                onSuccess: () => {
+                onSuccess: async() => {
                     toast.success('Submit successfully')
-                    context?.handleDataChange();
+                    await context?.handleDataChange();
                     onClose();
                 },
                 onFailure: (err: any) => toast.error(err || "Saga failed!"),

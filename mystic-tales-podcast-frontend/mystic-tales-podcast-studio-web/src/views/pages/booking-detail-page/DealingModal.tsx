@@ -49,7 +49,7 @@ const DealingModal: FC<DealingModalProps> = ({ booking, onClose }) => {
         }))
     );
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
 
@@ -149,7 +149,7 @@ const DealingModal: FC<DealingModalProps> = ({ booking, onClose }) => {
                 </div>
 
                 {/* Requirements Word Count */}
-                {Booking.BookingRequirementFileList.map((req, index) => {
+                {[...Booking.BookingRequirementFileList].sort((a, b) => a.Order - b.Order).map((req, index) => {
                     const requirementInfo = requirementInfoList.find(item => item.Id === req.Id);
                     const price = calcPrice(requirementInfo?.WordCount || 0);
 

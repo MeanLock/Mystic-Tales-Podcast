@@ -13,6 +13,9 @@ namespace TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction.ListIt
         public AccountSnippetResponseDTO Account { get; set; } = null!;
         public decimal Amount { get; set; }
         public string? TransferReceiptImageFileKey { get; set; }
+        public string BankCode { get; set; }
+        public string BankNumber { get; set; }
+        public string BankName { get; set; }
         public string? RejectReason { get; set; }
         public bool? IsRejected { get; set; }
         public DateTime? CompletedAt { get; set; }

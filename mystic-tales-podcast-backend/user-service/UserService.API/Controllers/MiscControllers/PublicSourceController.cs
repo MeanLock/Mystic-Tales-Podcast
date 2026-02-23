@@ -4,10 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using UserService.API.Enums.Api;
 using UserService.API.Filters.ExceptionFilters;
 using UserService.BusinessLogic.DTOs.Cache;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendUserServiceEmail;
 using UserService.BusinessLogic.Enums.App;
 using UserService.BusinessLogic.Helpers.FileHelpers;
 using UserService.BusinessLogic.Models.CrossService;
+using UserService.BusinessLogic.Models.Mail;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using UserService.BusinessLogic.Services.DbServices.MiscServices;
+using UserService.Common.AppConfigurations.BusinessSetting.interfaces;
 using UserService.Common.AppConfigurations.FilePath.interfaces;
 using UserService.DataAccess.Data;
 
@@ -23,12 +27,16 @@ namespace UserService.API.Controllers.MiscControllers
         private readonly FileIOHelper _fileIOHelper;
         private readonly PdfFormFillingHelper _pdfFormFillingHelper;
         private readonly IFilePathConfig _filePathConfig;
-        public PublicSourceController(ILogger<PublicSourceController> logger, FileIOHelper fileIOHelper, PdfFormFillingHelper pdfFormFillingHelper, IFilePathConfig filePathConfig)
+        private readonly IMailPropertiesConfig _mailPropertiesConfig;
+        private readonly MailOperationService _mailOperationService;
+        public PublicSourceController(ILogger<PublicSourceController> logger, FileIOHelper fileIOHelper, PdfFormFillingHelper pdfFormFillingHelper, IFilePathConfig filePathConfig, IMailPropertiesConfig mailPropertiesConfig, MailOperationService mailOperationService)
         {
             _logger = logger;
             _fileIOHelper = fileIOHelper;
             _pdfFormFillingHelper = pdfFormFillingHelper;
             _filePathConfig = filePathConfig;
+            _mailPropertiesConfig = mailPropertiesConfig;
+            _mailOperationService = mailOperationService;
         }
 
 
@@ -166,6 +174,28 @@ namespace UserService.API.Controllers.MiscControllers
             {
                 return StatusCode(500, new { message = ex.Message });
             }
+        }
+
+
+        // /api/user-service/api/misc/public-source/test-email?templateName=YourTemplateName
+        [HttpPost("test-email")]
+        public async Task<IActionResult> TestEmail([FromBody] SendUserServiceEmailMailInfoDTO mailInfo)
+        {
+
+            object mailModel = mailInfo.MailTypeName switch
+            {
+                "CustomerRegistrationVerification" => mailInfo.MailObject.ToObject<CustomerRegistrationVerificationMailViewModel>(),
+                "CustomerPasswordReset" => mailInfo.MailObject.ToObject<CustomerPasswordResetMailViewModel>(),
+                "PodcasterRequestConfirmation" => mailInfo.MailObject.ToObject<PodcasterRequestConfirmationMailViewModel>(),
+                "PodcasterRequestResult" => mailInfo.MailObject.ToObject<PodcasterRequestResultMailViewModel>(),
+                "CustomerGoogleRegistrationNewAccountPassword" => mailInfo.MailObject.ToObject<CustomerGoogleRegistrationNewAccountPasswordMailViewModel>(),
+                _ => mailInfo.MailObject.ToObject<object>()
+            };
+
+            Console.WriteLine("Sending email to: " + mailInfo.MailObject["VerifyCode"]);
+            var mailProperty = _mailPropertiesConfig.GetMailPropertyByTypeName(mailInfo.MailTypeName);
+            await _mailOperationService.SendUserServiceEmail(mailProperty, mailInfo.ToEmail, mailModel);
+            return Ok(new { message = "Test email sent." });
         }
     }
 }

@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 import type { RootState } from '../../../../redux/rootReducer';
 import { clearAuthToken, setAuthToken } from '../../../../redux/auth/authSlice';
-import { setUserContext } from '../../../../redux/navigation/navigationSlice';
+import { setUserContext, clearContext } from '../../../../redux/navigation/navigationSlice';
 import { JwtUtil } from '../../../../core/utils/jwt.util';
 import { DefaultLayoutHeader } from './DefaultLayoutHeader';
 import DefaultLayoutSideBar from './DefaultLayoutSideBar';
@@ -36,6 +36,10 @@ const DefaultLayout = () => {
   useEffect(() => {
     if (!authSlice || !authSlice.token || !JwtUtil.isTokenValid(authSlice.token) || !authSlice.user?.IsPodcaster) {
       dispatch(clearAuthToken());
+      dispatch(clearContext());
+      setMainImageUrl("");
+      setProfile(null);
+      setProfileLoaded(false);
       navigate('/login');
       return;
     }
@@ -45,30 +49,58 @@ const DefaultLayout = () => {
         if (profileRes?.success) {
           const podcaster = profileRes.data?.PodcasterAccount;
           setProfile(podcaster);
-         dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, IsBuddy: podcaster.PodcasterProfile.IsBuddy, ViolationLevel: podcaster.ViolationLevel, PricePerBookingWord: podcaster.PodcasterProfile.PricePerBookingWord } }));
           
+          let imageUrl = "";
           const fileKey = podcaster?.MainImageFileKey;
           if (fileKey) {
             try {
               const avatarRes = await getPublicSource(loginRequiredAxiosInstance, fileKey);
               if (avatarRes?.success && avatarRes.data) {
-                setMainImageUrl(avatarRes.data?.FileUrl || "");
-              } else {
-                setMainImageUrl("");
+                imageUrl = avatarRes.data?.FileUrl || "";
               }
             } catch (e) {
-              setMainImageUrl("");
+              imageUrl = "";
             }
-          } else {
-            setMainImageUrl("");
+          }
+          
+          setMainImageUrl(imageUrl);
+          console.log("Podcaster profile loaded:", podcaster);
+          // Update authSlice with all info including avatar
+          dispatch(setAuthToken({ 
+            ...authSlice, 
+            user: { 
+              ...authSlice.user, 
+              IsBuddy: podcaster.PodcasterProfile.IsBuddy, 
+              ViolationLevel: podcaster.ViolationLevel, 
+              PricePerBookingWord: podcaster.PodcasterProfile.PricePerBookingWord,
+              mainImageUrl: imageUrl
+            } 
+          }));
+          
+          // Only set user context if NOT on channel/show route
+          const currentPath = window.location.pathname;
+          const isChannelRoute = /^\/channel\/[^\/]+/.test(currentPath);
+          const isShowRoute = /^\/show\/[^\/]+/.test(currentPath);
+          
+          if (!isChannelRoute && !isShowRoute) {
+            dispatch(setUserContext({
+              user: {
+                id: 'user',
+                name: podcaster.PodcasterProfile?.Name,
+                email: podcaster.Email,
+                avatar: imageUrl
+              }
+            }));
           }
         } else {
           dispatch(clearAuthToken());
+          dispatch(clearContext());
           navigate('/login');
         }
       } catch (error) {
         console.error('Lỗi khi fetch podcaster profile:', error);
         dispatch(clearAuthToken());
+        dispatch(clearContext());
         navigate('/login');
       } finally {
         setProfileLoaded(true);
@@ -77,45 +109,27 @@ const DefaultLayout = () => {
   }, [authSlice?.token, authSlice?.user?.Id, dispatch, navigate]);
 
   // Write session + listen for cross-tab user changes
- useEffect(() => {
-  if (!(authSlice?.token && authSlice?.user?.Id)) return;
-
-  // Đẩy session của tab hiện tại (tab vừa đăng nhập)
-  writeSession({ userId: authSlice.user.Id, token: authSlice.token, ts: Date.now() });
-
-  // Lắng nghe thay đổi từ tab khác, nếu khác userId -> logout tab này
-  const cleanup = initSessionSync(authSlice.user.Id, (otherUserId) => {
-    if (otherUserId !== authSlice.user.Id) {
-      dispatch(clearAuthToken());
-      navigate('/login');
-      toast.info('Bạn đã bị đăng xuất vì tài khoản khác đăng nhập ở tab khác.');
-    }
-  });
-
-  return cleanup;
-}, [authSlice?.token, authSlice?.user?.Id, dispatch, navigate]);
-
   useEffect(() => {
-    if (!profileLoaded || !profile) return;
-    dispatch(setAuthToken({
-      ...authSlice,
-      user: {
-        ...authSlice.user,
-        mainImageUrl: mainImageUrl
+    if (!(authSlice?.token && authSlice?.user?.Id)) return;
+
+    // Đẩy session của tab hiện tại (tab vừa đăng nhập)
+    writeSession({ userId: authSlice.user.Id, token: authSlice.token, ts: Date.now() });
+
+    // Lắng nghe thay đổi từ tab khác, nếu khác userId -> logout tab này
+    const cleanup = initSessionSync(authSlice.user.Id, (otherUserId) => {
+      if (otherUserId !== authSlice.user.Id) {
+        dispatch(clearAuthToken());
+        dispatch(clearContext());
+        navigate('/login');
+        toast.info('Bạn đã bị đăng xuất vì tài khoản khác đăng nhập ở tab khác.');
       }
-    }));
-    if (!navigation.currentContext) {
-      dispatch(setUserContext({
-        user: {
-          id: 'user',
-          name: profile.PodcasterProfile?.Name,
-          email: profile.Email,
-          avatar: mainImageUrl
-        }
-        // navItems: _podcasterNav
-      }));
-    }
-  }, [profileLoaded, profile, mainImageUrl, navigation.currentContext, dispatch]);
+    });
+
+    return cleanup;
+  }, [authSlice?.token, authSlice?.user?.Id, dispatch, navigate]);
+
+  // Context is now updated immediately in the first useEffect
+  // This useEffect is no longer needed
 
   if (!authSlice.token || !authSlice.user?.IsPodcaster) {
     return null;
@@ -148,11 +162,24 @@ const DefaultLayout = () => {
     };
   };
 
-useEffect(() => {
+  useEffect(() => {
     const pathname = location.pathname;
     const detectedContext = detectContextFromPath(pathname);
 
-    if (detectedContext.type === 'user') return;
+    if (detectedContext.type === 'user') {
+      // Set user context when navigating back to user routes
+      if (profile) {
+        dispatch(setUserContext({
+          user: {
+            id: 'user',
+            name: profile.PodcasterProfile?.Name,
+            email: profile.Email,
+            avatar: mainImageUrl
+          }
+        }));
+      }
+      return;
+    }
 
     const fetchAndSetContext = async () => {
       if (detectedContext.type === 'channel') {
@@ -165,7 +192,7 @@ useEffect(() => {
               name: channel?.Name,
               avatar: channel?.MainImageFileKey
             });
-          }else {
+          } else {
             navigate('/channel');
           }
         } catch (e) {
@@ -181,7 +208,7 @@ useEffect(() => {
               name: show?.Name,
               avatar: show?.MainImageFileKey
             });
-          }else {
+          } else {
             navigate('/show');
           }
         } catch (e) {
@@ -192,8 +219,8 @@ useEffect(() => {
 
     fetchAndSetContext();
 
-  }, [location.pathname]);
-  
+  }, [location.pathname, profile, mainImageUrl, dispatch]);
+
   useEffect(() => {
     if (!(authSlice?.token && authSlice?.user?.Id)) return;
 
@@ -207,7 +234,7 @@ useEffect(() => {
         const res = await getPodcasterProfile(loginRequiredAxiosInstance, authSlice.user.Id);
         if (res?.success) {
           const pod = res.data?.PodcasterAccount;
-          if (pod.DeactivatedAt !== null){
+          if (pod.DeactivatedAt !== null) {
             dispatch(clearAuthToken());
             navigate('/login');
             toast.info('Your account has been deactivated.');
@@ -219,12 +246,19 @@ useEffect(() => {
           const nextViolation =
             pod?.ViolationLevel ??
             authSlice.user.ViolationLevel;
-
+          const nextPricePerBookingWord = 
+            pod?.PodcasterProfile?.PricePerBookingWord ?? 
+            authSlice.user.PricePerBookingWord;
+          const nextIsBuddy = 
+            pod?.PodcasterProfile?.IsBuddy ?? 
+            authSlice.user.IsBuddy;
 
           // Chỉ dispatch khi có thay đổi để tránh re-render không cần thiết
           if (
             nextBalance !== authSlice.user.Balance ||
-            nextViolation !== authSlice.user.ViolationLevel
+            nextViolation !== authSlice.user.ViolationLevel ||
+            nextPricePerBookingWord !== authSlice.user.PricePerBookingWord ||
+            nextIsBuddy !== authSlice.user.IsBuddy
           ) {
             dispatch(
               setAuthToken({
@@ -233,6 +267,8 @@ useEffect(() => {
                   ...authSlice.user,
                   Balance: nextBalance,
                   ViolationLevel: nextViolation,
+                  PricePerBookingWord: nextPricePerBookingWord,
+                  IsBuddy: nextIsBuddy,
                 },
               })
             );
@@ -248,7 +284,7 @@ useEffect(() => {
     // chạy ngay 1 lần khi tab đang visible
     if (!document.hidden) fetchSilently();
 
-    const id = window.setInterval(fetchSilently, 2000 * 60*5);//30 000 thôi
+    const id = window.setInterval(fetchSilently, 2000 * 60 * 5);//30 000 thôi
     const onVis = () => {
       if (!document.hidden) fetchSilently();
     };
@@ -257,7 +293,7 @@ useEffect(() => {
     return () => {
       stopped = true;
       window.clearInterval(id);
-       document.removeEventListener('visibilitychange', onVis);
+      document.removeEventListener('visibilitychange', onVis);
     };
   }, [
     authSlice?.token,

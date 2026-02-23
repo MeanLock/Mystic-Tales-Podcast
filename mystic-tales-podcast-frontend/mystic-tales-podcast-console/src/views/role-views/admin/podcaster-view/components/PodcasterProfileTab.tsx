@@ -30,7 +30,7 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
   const [loading, setLoading] = React.useState(false)
   const [loadingPdf, setLoadingPdf] = React.useState(false)
   const { startPolling } = useSagaPolling({
-    timeoutSeconds: 15,
+    timeoutSeconds: 300,
     intervalSeconds: 0.5,
   })
 
@@ -277,7 +277,7 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
 
       </div>
 
-      {podcasterProfile.IsVerified === null ? (
+      {podcasterProfile.IsVerified === null  ? (
         <div className="mt-6 ">
           <div className="podcaster-profile__verification-actions flex gap-4">
             <button

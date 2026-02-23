@@ -39,6 +39,7 @@ import { confirmAlert } from '@/core/utils/alert.util';
 import Modal_Button from '@/views/components/common/modal/ModalButton';
 import { X } from 'phosphor-react';
 import DeletionOptionModal from './DeletionOptionModal';
+import { MetadataField } from '@/views/components/common/metadata';
 
 
 interface ChannelUpdateInfo {
@@ -80,7 +81,7 @@ const ChannelOverview = () => {
     const [backgroundImageFile, setBackgroundImageFile] = useState<File | null>(null);
     const backgroundFileInputRef = useRef<HTMLInputElement>(null);
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 20,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const [formData, setFormData] = useState<ChannelUpdateInfo>({
@@ -472,7 +473,7 @@ const ChannelOverview = () => {
                 <Typography variant="h4" className="channel-overview-page__title">
                     Channel Details
                 </Typography>
-                <div className="channel-overview-page__actions">
+                <div className="channel-overview-page__actions mb-16">
                     <Modal_Button
                         className="channel-overview-page__action-btn channel-overview-page__action-btn--remove"
                         content="Delete"
@@ -511,10 +512,67 @@ const ChannelOverview = () => {
                     >
                         {isSaving ? 'Saving...' : 'Save'}
                     </Button>
+                    <div className="  flex justify-center items-center h-full">
+                        <div className="flex items-center gap-2 h-full"
+                        >
+                            <Typography sx={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '1.2rem' }}>
+                                |
+                            </Typography>
+                            <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', fontWeight: 600, fontSize: '0.95rem' }}>
+                                Status :
+                            </Typography>
+                            <Typography sx={{
+                                fontWeight: 700,
+                                fontSize: '0.95rem',
+
+                                color: channelDetail.CurrentStatus.Id === 1 ? '#ffb300' : '#aee339',
+
+                            }}>
+                                {channelDetail.CurrentStatus.Name}
+                            </Typography>
+                        </div>
+                        {/* <Chip
+                            
+                            sx={{
+                                // Glassmorphism effect
+                                background: channelDetail.CurrentStatus.Id === 1
+                                    ? 'rgba(255, 193, 7, 0.2)'
+                                    : 'rgba(174, 227, 57, 0.2)',
+                                backdropFilter: 'blur(10px)',
+                                WebkitBackdropFilter: 'blur(10px)', // Safari support
+                                minWidth: 150,
+                                height: 40,
+                                padding: '0 10px',
+                                borderRadius: 50,
+                                fontWeight: 700,
+                                fontSize: '0.95rem',
+                                // Border with gradient
+                                border: channelDetail.CurrentStatus.Id === 1
+                                    ? '1.5px solid #ffb300'
+                                    : '1.5px solid #aee339',
+                                color: channelDetail.CurrentStatus.Id === 1 ? '#ffb300' : '#aee339',
+                                '& .MuiChip-label': {
+                                    padding: '0 14px',
+                                    textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+                                },
+                            }}
+                        /> */}
+                    </div>
                 </div>
+
 
                 <div className="channel-overview-page__content">
                     <div className="channel-overview-page__form">
+                        <div className="channel-overview-page__metadata-section mb-6 rounded-xl">
+                            <div className="flex flex-wrap w-full justify-between  items-center gap-6 md:gap-8">
+                                <MetadataField label="Total Favorites" value={channelDetail.TotalFavorite ? channelDetail.TotalFavorite.toString() : "0"} />
+                                <MetadataField label="Listen Count" value={channelDetail.ListenCount ? channelDetail.ListenCount.toString() : "0"} />
+                                <MetadataField label="Updated At" value={formatDate(channelDetail.UpdatedAt)} />
+                                <MetadataField label="Created At" value={formatDate(channelDetail.CreatedAt)} />
+
+
+                            </div>
+                        </div>
                         <div className="channel-overview-page__row">
                             <TextField
                                 label="Name"
@@ -531,35 +589,7 @@ const ChannelOverview = () => {
                                 }}
                             />
 
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                <Chip
-                                    label={channelDetail.CurrentStatus.Name}
-                                    sx={{
-                                        // Glassmorphism effect
-                                        background: channelDetail.CurrentStatus.Id === 1
-                                            ? 'rgba(255, 193, 7, 0.2)'
-                                            : 'rgba(174, 227, 57, 0.2)',
-                                        backdropFilter: 'blur(10px)',
-                                        WebkitBackdropFilter: 'blur(10px)', // Safari support
-                                        minWidth: 150,
-                                        padding: '0 10px',
-                                        borderRadius: 50,
-                                        fontWeight: 700,
-                                        fontSize: '0.9rem',
-                                        // Border with gradient
-                                        border: channelDetail.CurrentStatus.Id === 1
-                                            ? '1.5px solid #ffb300'
-                                            : '1.5px solid #aee339',
-                                        color: channelDetail.CurrentStatus.Id === 1 ? '#ffb300' : '#aee339',
-                                        height: '44px',
-                                        '& .MuiChip-label': {
-                                            padding: '0 12px',
-                                            textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
 
-                                        },
-                                    }}
-                                />
-                            </Box>
                         </div>
 
                         <div className="channel-overview-page__row">
@@ -570,14 +600,35 @@ const ChannelOverview = () => {
                                 value={formData.PodcastCategoryId}
                                 onChange={(e) => handleCategoryChange(e.target.value as unknown as number)}
                                 className="channel-overview-page__select"
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {categoryList.map((category) => (
                                     <MenuItem
                                         key={category.Id}
                                         value={category.Id}
-                                        sx={{
-                                            '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
-                                        }}
+
                                     >
                                         {category.Name}
                                     </MenuItem>
@@ -590,6 +641,29 @@ const ChannelOverview = () => {
                                 value={formData.PodcastSubCategoryId}
                                 onChange={(e) => handleSubCategoryChange(e.target.value as unknown as number)}
                                 className="channel-overview-page__select"
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {getSubCategoriesForCategory(formData.PodcastCategoryId || channelDetail.PodcastCategory.Id).map(sub => (
                                     <MenuItem key={sub.Id} value={sub.Id}>{sub.Name}</MenuItem>
@@ -597,63 +671,10 @@ const ChannelOverview = () => {
                             </TextField>
                         </div>
 
-                        {/* Dates and Numbers Row */}
-                        <div className="channel-overview-page__row">
-                            <TextField
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Created At"
-                                value={formatDate(channelDetail.CreatedAt)}
-                                className="channel-overview-page__input-small"
 
-                            />
-                            <TextField
-                                id="filled-helperText"
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Updated At"
-                                value={formatDate(channelDetail.UpdatedAt)}
-                                className="channel-overview-page__input-small"
-
-                            />
-                            <TextField
-                                id="filled-helperText"
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Total Favorite"
-                                value={channelDetail.TotalFavorite}
-                                className="channel-overview-page__input-small"
-
-                            />
-                            <TextField
-                                id="filled-helperText"
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Listen Count"
-                                value={channelDetail.ListenCount}
-                                className="channel-overview-page__input-small"
-
-                            />
-                        </div>
 
                         {/* Hashtags */}
-                        <div className="channel-overview-page__hashtags">
+                        <div className="channel-overview-page__hashtags mt-2">
                             <div className="channel-overview-page__hashtag-input">
                                 <TextField
                                     label="Add hashtag"
@@ -719,7 +740,7 @@ const ChannelOverview = () => {
                                     </Box>
                                 )}
                             </div>
-                            <div className="channel-overview-page__hashtag-chips">
+                            <div className="channel-overview-page__hashtag-chips mt-2">
                                 {selectedHashtags.map((tag, index) => (
                                     <Chip
                                         key={index}

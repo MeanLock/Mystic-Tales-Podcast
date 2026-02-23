@@ -50,7 +50,7 @@ const LoginPage: FC<LoginPageProps> = (props) => {
     const [email, setMembername] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 120,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const deviceInfo = getCapacitorDevice();
@@ -218,13 +218,14 @@ const LoginPage: FC<LoginPageProps> = (props) => {
                         }
 
                         dispatch(setAuthToken({ token }));
-                    const tempInstance = axios.create({
-                        ...loginRequiredAxiosInstance.defaults,
-                        headers: {
-                            ...loginRequiredAxiosInstance.defaults.headers,
-                            Authorization: `Bearer ${token}`
-                        }
-                    });
+                        const tempInstance = axios.create({
+                            ...loginRequiredAxiosInstance.defaults,
+                            headers: {
+                                ...loginRequiredAxiosInstance.defaults.headers,
+                                Authorization: `Bearer ${token}`
+                            }
+                        });
+                        
 
                         const res = await getAccountProfile(tempInstance);
 

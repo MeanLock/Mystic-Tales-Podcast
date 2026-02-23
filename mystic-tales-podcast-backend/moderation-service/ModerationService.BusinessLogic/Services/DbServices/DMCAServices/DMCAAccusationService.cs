@@ -207,6 +207,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         : null,
                     CreatedAt = pbrrs.CreatedAt,
                     UpdatedAt = pbrrs.UpdatedAt,
+                    ResolvedAt = pbrrs.ResolvedAt,
                     CurrentStatus = new DMCAAccusationStatusDTO()
                     {
                         Id = pbrrs.DmcaaccusationStatusTrackings
@@ -263,6 +264,17 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
                     var createdDmcaAccusation = await _dmcaAccusationGenericRepository.CreateAsync(newDmcaAccusation);
+
+                    PodcastShowDTO? show = null;
+                    PodcastEpisodeDTO? episode = null;
+                    if (parameter.PodcastShowId != null)
+                    {
+                        show = await GetPodcastShow(parameter.PodcastShowId.Value);                    
+                    }
+                    if (parameter.PodcastEpisodeId != null)
+                    {
+                        episode = await GetPodcastEpisode(parameter.PodcastEpisodeId.Value);
+                    }
 
                     var newDmcaNotice = new Dmcanotice
                     {
@@ -335,6 +347,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 AccuserEmail = createdDmcaAccusation.AccuserEmail,
                                 AccuserFullName = createdDmcaAccusation.AccuserFullName,
                                 CreatedDate = _dateHelper.GetNowByAppTimeZone(),
+                                PodcastShowName = show != null ? show.Name : null,
+                                PodcastEpisodeName = episode != null ? episode.Name : null,
                             }
                         }
                     });
@@ -580,6 +594,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     : null,
                 CreatedAt = da.CreatedAt,
                 UpdatedAt = da.UpdatedAt,
+                ResolvedAt = da.ResolvedAt,
                 CurrentStatus = new DMCAAccusationStatusDTO()
                 {
                     Id = da.DmcaaccusationStatusTrackings
@@ -746,8 +761,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             {
                                 { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
                                 { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
-                                { "TakenDownReason", Enum.GetName((DMCATakeDownReasonEnum)parameter.DMCAAccusationTakenDownReasonEnum) }
+                                { "TakenDownReason", ((DMCATakeDownReasonEnum)parameter.DMCAAccusationTakenDownReasonEnum).GetDescription() }
                             };
+                            
                             var takeDownMessageName = "content-dmca-takedown-flow";
                             var sagaTakeDownStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.ContentManagementDomain,
@@ -787,6 +803,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         AccuserEmail = dmcaAccusation.AccuserEmail,
                                         AccuserFullName = dmcaAccusation.AccuserFullName,
                                         ValidatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                        PodcastShowName = show != null ? show.Name : null,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null,
                                     }
                                 }
                             });
@@ -810,7 +828,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         PodcasterFullName = podcaster.FullName,
                                         TimeToResponse = 14,
                                         ValidatedAt = _dateHelper.GetNowByAppTimeZone(),
-                                        AttachmentFileUrls = attachmentFileUrls
+                                        AttachmentFileUrls = attachmentFileUrls,
+                                        PodcastShowName = show != null ? show.Name : null,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null,
                                     }
                                 }
                             });
@@ -909,7 +929,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         AccuserFullName = dmcaAccusation.AccuserFullName,
                                         ValidatedAt = _dateHelper.GetNowByAppTimeZone(),
                                         TimeToResponse = 14,
-                                        AttachmentFileUrls = attachmentFileUrls2
+                                        AttachmentFileUrls = attachmentFileUrls2,
+                                        PodcastShowName = show != null ? show.Name : null,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null
                                     }
                                 }
                             });
@@ -931,7 +953,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     {
                                         PodcasterEmail = podcaster.Email,
                                         PodcasterFullName = podcaster.FullName,
-                                        ValidatedAt = _dateHelper.GetNowByAppTimeZone()
+                                        ValidatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                        PodcastShowName = show != null ? show.Name : null,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null
                                     }
                                 }
                             });
@@ -1028,7 +1052,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     {
                                         AccuserEmail = dmcaAccusation.AccuserEmail,
                                         AccuserFullName = dmcaAccusation.AccuserFullName,
-                                        ValidatedAt = _dateHelper.GetNowByAppTimeZone()
+                                        ValidatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                        PodcastShowName = show != null ? show.Name : null,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null
                                     }
                                 }
                             });
@@ -1050,7 +1076,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     {
                                         PodcasterEmail = podcaster.Email,
                                         PodcasterFullName = podcaster.FullName,
-                                        AttachmentFileUrls = attachmentFileUrls3
+                                        AttachmentFileUrls = attachmentFileUrls3,
+                                        PodcastShowName = show != null ? show.Name : null,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null
                                     }
                                 }
                             });
@@ -1233,7 +1261,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                             AccuserEmail = dmcaAccusation.AccuserEmail,
                                             AccuserFullName = dmcaAccusation.AccuserFullName,
                                             InvalidReason = dmcaAccusationReport.InvalidReason,
-                                            CompletedAt = dmcaAccusationReport.CompletedAt.Value
+                                            CompletedAt = dmcaAccusationReport.CompletedAt.Value,
+                                            PodcastShowName = show != null ? show.Name : null,
+                                            PodcastEpisodeName = episode != null ? episode.Name : null,
                                         }
                                     }
                                 });
@@ -1316,7 +1346,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 var accountPunishRequestData1 = new JObject
                                 {
                                     { "AccountId", podcaster.Id },
-                                    { "ViolationPoint", 10 }
+                                    { "ViolationPoint", _dmcaAccusationConfig.InvalidDMCACounterNoticePenaltyPoint }
                                 };
                                 var accountPunishMessageName1 = "user-violation-punishment-flow";
                                 var sagaAccountPunishStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -1363,7 +1393,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 var accountPunishRequestData2 = new JObject
                                 {
                                     { "AccountId", podcaster.Id },
-                                    { "ViolationPoint", 200 }
+                                    { "ViolationPoint", _dmcaAccusationConfig.TakenDownPenaltyPoint }
                                 };
                                 var accountPunishMessageName2 = "user-violation-punishment-flow";
                                 var sagaAccountPunishStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -1558,7 +1588,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 var accountPunishRequestData3 = new JObject
                                 {
                                     { "AccountId", podcaster.Id },
-                                    { "ViolationPoint", 500 }
+                                    { "ViolationPoint", _dmcaAccusationConfig.LawsuitLosePenaltyPoint }
                                 };
                                 var accountPunishMessageName3 = "user-violation-punishment-flow";
                                 var sagaAccountPunishStartSagaTriggerMessage3 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -2177,6 +2207,21 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     messageName: "moderation-service-mail-sending-flow");
                                 await _messagingService.SendSagaMessageAsync(accuserMailSendingFlow1);
 
+                                //Punish account
+                                var accountPunishRequestData2 = new JObject
+                                {
+                                    { "AccountId", podcaster.Id },
+                                    { "ViolationPoint", _dmcaAccusationConfig.TakenDownPenaltyPoint }
+                                };
+                                var accountPunishMessageName2 = "user-violation-punishment-flow";
+                                var sagaAccountPunishStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.UserManagementDomain,
+                                    requestData: accountPunishRequestData2,
+                                    sagaInstanceId: null,
+                                    messageName: accountPunishMessageName2);
+                                await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage2);
+                                _logger.LogInformation("Started user violation punishment flow for Account Id: {AccountId}", podcaster.Id);
+
                                 //Remove Content
                                 if (show != null)
                                 {
@@ -2319,7 +2364,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         MailObject = new DMCACounterNoticeValidNotResponseInTimeToAccusedMailViewModel
                                         {
                                             PodcasterEmail = podcaster.Email,
-                                            PodcasterFullName = podcaster.FullName
+                                            PodcasterFullName = podcaster.FullName,
+                                            PodcastShowName = show != null ? show.Name : null,
+                                            PodcastEpisodeName = episode != null ? episode.Name : null
                                         }
                                     }
                                 });
@@ -2340,7 +2387,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         MailObject = new DMCACounterNoticeValidNotResponseInTimeToAccuserMailViewModel
                                         {
                                             AccuserEmail = dmcaAccusation.AccuserEmail,
-                                            AccuserFullName = dmcaAccusation.AccuserFullName
+                                            AccuserFullName = dmcaAccusation.AccuserFullName,
+                                            PodcastShowName = show != null ? show.Name : null,
+                                            PodcastEpisodeName = episode != null ? episode.Name : null
                                         }
                                     }
                                 });
@@ -4413,10 +4462,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             {
                 return (false, $"Podcast episode with Id: {podcastEpisodeId} is pending edit required");
             }
-            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown)
-            {
-                return (false, $"Podcast episode with Id: {podcastEpisodeId} has been taken down");
-            }
+            // if (episodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown)
+            // {
+            //     return (false, $"Podcast episode with Id: {podcastEpisodeId} has been taken down");
+            // }
             if (episodeStatusId == (int)PodcastEpisodeStatusEnum.Removed)
             {
                 return (false, $"Podcast episode with Id: {podcastEpisodeId} has been removed");
@@ -4448,10 +4497,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             {
                 return (false, $"Podcast show with Id: {podcastShowId} is in Draft status {insideMessage}");
             }
-            if (showStatusId == (int)PodcastShowStatusEnum.TakenDown)
-            {
-                return (false, $"Podcast show with Id: {podcastShowId} has been taken down {insideMessage}");
-            }
+            // if (showStatusId == (int)PodcastShowStatusEnum.TakenDown)
+            // {
+            //     return (false, $"Podcast show with Id: {podcastShowId} has been taken down {insideMessage}");
+            // }
             if (showStatusId == (int)PodcastShowStatusEnum.Removed)
             {
                 return (false, $"Podcast show with Id: {podcastShowId} has been removed {insideMessage}");

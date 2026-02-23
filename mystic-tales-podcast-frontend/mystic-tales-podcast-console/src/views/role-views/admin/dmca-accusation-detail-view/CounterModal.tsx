@@ -19,7 +19,7 @@ const CounterModal: FC<CounterModalProps> = ({ onClose }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [attachFiles, setAttachFiles] = useState<File[]>([])
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
 
@@ -72,9 +72,9 @@ const CounterModal: FC<CounterModalProps> = ({ onClose }) => {
                 return
             }
             await startPolling(sagaId, adminAxiosInstance, {
-                onSuccess: () => {
+                onSuccess:  async () => {
                     toast.success('Counter Notice added successfully')
-                    context?.handleDataChange()
+                    await context?.handleDataChange()
                     onClose()
                 },
                 onFailure: (err: any) => toast.error(err || "Saga failed!"),

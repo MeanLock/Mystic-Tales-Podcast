@@ -11,5 +11,8 @@ namespace ModerationService.Common.AppConfigurations.BusinessSetting.interfaces
         int DMCANoticeResponseTime { get; set; }
         int DMCACounterNoticeResponseTime { get; set; }
         decimal DismissStaticViolationPoint { get; set; }
+        decimal InvalidDMCACounterNoticePenaltyPoint { get; set; }
+        decimal TakenDownPenaltyPoint { get; set; }
+        decimal LawsuitLosePenaltyPoint { get; set; }
     }
 }

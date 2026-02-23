@@ -80,7 +80,7 @@ const EpisodeCreate = ({ onClose }: { onClose?: () => void }) => {
     });
 
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 60,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
 
@@ -169,10 +169,10 @@ const EpisodeCreate = ({ onClose }: { onClose?: () => void }) => {
                     return
                 }
                 await startPolling(sagaId, loginRequiredAxiosInstance, {
-                    onSuccess: (data) => {
+                    onSuccess: async (data) => {
                         onClose();
                         if (hasShowContext) {
-                            context?.handleDataChange();
+                            await context?.handleDataChange();
                         } else {
                             navigate(`/show/${data.PodcastShowId}/episode/${data.PodcastEpisodeId}`);
                         }
@@ -342,12 +342,30 @@ const EpisodeCreate = ({ onClose }: { onClose?: () => void }) => {
                                 InputProps={{
                                     readOnly: true,
                                 }}
-                                sx={{
-                                    '& .MuiInputBase-input': {
-                                        color: 'rgba(255, 255, 255, 0.7)',
-                                        cursor: 'not-allowed',
-                                    }
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
                                 }}
+                             
                             />
                         ) : (
                             <TextField
@@ -359,14 +377,35 @@ const EpisodeCreate = ({ onClose }: { onClose?: () => void }) => {
                                 className="show-episode-modal__select"
                                 required
                                 error={!formData.PodcastShowId}
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {showList.map((show) => (
                                     <MenuItem
                                         key={show.Id}
                                         value={show.Id}
-                                        sx={{
-                                            '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
-                                        }}
+                                      
                                     >
                                         {show.Name}
                                     </MenuItem>
@@ -380,14 +419,35 @@ const EpisodeCreate = ({ onClose }: { onClose?: () => void }) => {
                             value={formData.PodcastEpisodeSubscriptionTypeId}
                             onChange={(e) => setFormData({ ...formData, PodcastEpisodeSubscriptionTypeId: e.target.value as unknown as number })}
                             className="show-episode-modal__select"
+                            SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                         >
                             {mockSubscriptionTypes.map((type) => (
                                 <MenuItem
                                     key={type.Id}
                                     value={type.Id}
-                                    sx={{
-                                        '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
-                                    }}
+                                
                                 >
                                     {type.Name}
                                 </MenuItem>
@@ -400,6 +460,29 @@ const EpisodeCreate = ({ onClose }: { onClose?: () => void }) => {
                             value={formData.ExplicitContent}
                             onChange={(e) => setFormData({ ...formData, ExplicitContent: e.target.value === 'true' })}
                             className="show-episode-modal__select"
+                            SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                         >
                             <MenuItem value="false">No</MenuItem>
                             <MenuItem value="true">Yes</MenuItem>

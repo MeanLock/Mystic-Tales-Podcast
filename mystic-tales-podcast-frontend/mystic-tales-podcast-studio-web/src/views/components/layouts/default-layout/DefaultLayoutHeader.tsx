@@ -20,8 +20,9 @@ export const DefaultLayoutHeader: FC = () => {
 
   const handleLogout = () => {
     setAnchorEl(null);
-    dispatch(clearAuthToken())
-    navigate("/login")
+    dispatch(clearAuthToken());
+    dispatch({ type: 'navigation/clearContext' });
+    navigate("/login");
   }
   const handleOpenProfileMenu = (e: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(e.currentTarget);
@@ -84,7 +85,7 @@ export const DefaultLayoutHeader: FC = () => {
         </Box>
 
         {/* Search */}
-        <Box className="default-layout__header-search">
+        {/* <Box className="default-layout__header-search">
           <Box className="default-layout__header-search-container">
             <Box className="default-layout__header-search-icon">
               <SearchIcon />
@@ -94,11 +95,11 @@ export const DefaultLayoutHeader: FC = () => {
               className="default-layout__header-search-input"
             />
           </Box>
-        </Box>
+        </Box> */}
 
         {/* Actions */}
         <Box className="default-layout__header-actions">
-          <IconButton
+          {/* <IconButton
             className="default-layout__header-actions-notification"
             onClick={handleOpenNotificationMenu}
             aria-controls={notificationAnchorEl ? "notification-menu" : undefined}
@@ -120,7 +121,7 @@ export const DefaultLayoutHeader: FC = () => {
                 }}
               />
             )}
-          </IconButton>
+          </IconButton> */}
 
           <MuiMenu
             id="notification-menu"

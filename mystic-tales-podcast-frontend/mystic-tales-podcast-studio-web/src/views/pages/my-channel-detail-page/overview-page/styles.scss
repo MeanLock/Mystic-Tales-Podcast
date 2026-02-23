@@ -531,6 +531,28 @@
 }
 
 .channel-overview-page {
+     &__metadata-section {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        padding: 18px 30px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.05));
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+    }
+    &__metadata {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        padding: 18px 30px;
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        border: 2.5px dashed rgba(155, 200, 101, 0.477);
+        box-shadow: 0 1px 24px rgba(253, 219, 1, 0.276);
+    }
     .MuiPaper-root {
         background-color: #2a2a2a;
         color: white;
@@ -571,29 +593,29 @@
     }
 }
 
-.css-1tktgsa-MuiPaper-root-MuiPopover-paper-MuiMenu-paper {
-    background-color: #2a2a2a;
-    color: white;
-    padding: 0px !important;
-    font-size: small;
+// .css-1tktgsa-MuiPaper-root-MuiPopover-paper-MuiMenu-paper {
+//     background-color: #2a2a2a;
+//     color: white;
+//     padding: 0px !important;
+//     font-size: small;
 
-    ul {
-        padding: 0 !important;
-    }
+//     ul {
+//         padding: 0 !important;
+//     }
 
-    li {
-        padding: 8px 16px !important;
-        font-size: 0.9rem;
+//     li {
+//         padding: 8px 16px !important;
+//         font-size: 0.9rem;
 
-        &:hover,
-        &:focus,
-        .Mui-selected {
-            background-color: rgba(255, 255, 255, 0.05) !important;
-            color: var(--primary-green);
-        }
-    }
+//         &:hover,
+//         &:focus,
+//         .Mui-selected {
+//             background-color: rgba(255, 255, 255, 0.05) !important;
+//             color: var(--primary-green);
+//         }
+//     }
 
-}
+// }
 
 .deletion-option-modal {
     &__content {
@@ -803,7 +825,6 @@
     &__actions {
         padding: 20px 0 0 0;
         display: flex;
-        justify-content: center;
         gap: 12px;
     }
 

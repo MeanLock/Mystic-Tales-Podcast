@@ -34,7 +34,7 @@ const CustomForm: React.FC<CustomerUpdateProps> = ({ account, onClose }) => {
   const [mainImageFile, setMainImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { startPolling } = useSagaPolling({
-    timeoutSeconds: 5,
+    timeoutSeconds: 300,
     intervalSeconds: 0.5,
   })
 
@@ -241,7 +241,7 @@ const CustomForm: React.FC<CustomerUpdateProps> = ({ account, onClose }) => {
                 <CFormInput
                   type="text"
                   id="balance"
-                  defaultValue={`${account.Balance || 0} Point`}
+                  defaultValue={`${account.Balance || 0} coins`}
                   disabled
                   className="account-info__input account-info__input--disabled"
                 />

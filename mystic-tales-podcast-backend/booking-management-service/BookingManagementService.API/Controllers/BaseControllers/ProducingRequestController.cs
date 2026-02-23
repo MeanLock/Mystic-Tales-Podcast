@@ -104,6 +104,39 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
             return Ok(new { FileUrl = url });
         }
+        [HttpGet("download-completed-track/get-file-url/{**FileKey}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetAudioFileUrl(string FileKey)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.BookingTrackAudio)
+            {
+                return StatusCode(403, new
+                {
+                    error = "Invalid file key: Must be a Booking Track Audio file",
+                    actualCategory = category.ToString()
+                });
+            }
+
+            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
+
+            if (account.RoleId == (int)RoleEnum.Customer)
+            {
+                var isCompleted = await _bookingProducingRequestService.IsAudioFileCompletedAsync(FileKey, account);
+                if (!isCompleted)
+                {
+                    return StatusCode(403, new
+                    {
+                        error = "Access denied: You do not have permission to access this audio file"
+                    });
+                }
+            }
+
+            return Ok(new { FileUrl = url });
+        }
 
         [HttpGet("{BookingProducingRequestId}")]
         [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]

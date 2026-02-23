@@ -18,3 +18,7 @@
 !**/appsettings.Development.example.json
 !**/appsettings.Production.example.json
 
+docker-compose.dev.yml
+docker-compose.prod.yml
+
+

@@ -76,7 +76,7 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
     const [fetchingRegistrations, setFetchingRegistrations] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 10,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const [originalCycleTypeIds, setOriginalCycleTypeIds] = useState<number[]>([]);
@@ -562,7 +562,7 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
                                     size="small"
                                     fullWidth
                                     InputProps={{
-                                        endAdornment: <InputAdornment position="end">VND</InputAdornment>,
+                                        endAdornment: <InputAdornment position="end">Coins</InputAdornment>,
                                     }}
                                     sx={{
                                         '& .MuiOutlinedInput-root': {

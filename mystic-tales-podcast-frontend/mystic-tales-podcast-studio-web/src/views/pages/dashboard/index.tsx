@@ -1,11 +1,11 @@
 
 import { createContext, FC, useState } from "react"
 import { Tabs, Tab, Container, Card, CardHeader, CardContent, Typography } from "@mui/material"
-import "./styles.scss"
 import { SubscriptionRevenueChart } from "./components/SubscriptionRevenueChart"
 import { BookingRevenueChart } from "./components/BookingRevenueChart"
 import { CashFlowChart } from "./components/CashFlowChart"
 import MetricsCards from "./components/MetricsCards"
+import "./styles.scss"
 
 interface DashboardViewProps { }
 interface DashboardContextProps {
@@ -27,6 +27,13 @@ const DashboardView: FC<DashboardViewProps> = () => {
           className="flex-grow-1"
           TabIndicatorProps={{ style: { display: "none" } }}
           aria-label="dashboard period tabs"
+          sx={{
+            '& .MuiTabs-flexContainer': {
+                  display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '16px',
+            }
+          }}
         >
           <Tab className="dashboard-tabs__tab" label="Daily" value="Daily" />
           <Tab className="dashboard-tabs__tab" label="Monthly" value="Monthly" />

@@ -90,6 +90,8 @@ using UserService.BusinessLogic.Services.DbServices.CachingServices;
 using UserService.BusinessLogic.DTOs.SystemConfiguration;
 using UserService.BusinessLogic.DTOs.Account.Details;
 using UserService.BusinessLogic.DTOs.Cache.ListesnSessionProcedure;
+using BookingManagementService.DataAccess.Entities.SqlServer;
+using UserService.BusinessLogic.Enums.Booking;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -1437,10 +1439,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
                 try
                 {
-                    if (updatePodcasterProfileParameterDTO.IsBuddy == true && (updatePodcasterProfileParameterDTO.PricePerBookingWord == null || updatePodcasterProfileParameterDTO.PricePerBookingWord < 0))
+                    if (updatePodcasterProfileParameterDTO.IsBuddy == true && (updatePodcasterProfileParameterDTO.PricePerBookingWord == null || updatePodcasterProfileParameterDTO.PricePerBookingWord <= 0))
                     {
                         // throw new Exception("Price per booking word cannot be negative");
-                        throw new Exception("Price per booking word must be provided and cannot be negative when setting IsBuddy to true");
+                        throw new Exception("Price per booking word must be provided and greater than 0 when setting IsBuddy to true");
                     }
 
                     var podcasterProfile = (await _podcasterProfileGenericRepository.FindAll(
@@ -1981,6 +1983,55 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     if (existingReview != null)
                     {
                         throw new Exception("Account with id " + createPodcastBuddyReviewParameterDTO.AccountId + " has already reviewed podcast buddy with id " + createPodcastBuddyReviewParameterDTO.PodcastBuddyId);
+                    }
+
+                    // check đã có booking nào với podcast buddy này và đã
+                    var batchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "booking",
+                            QueryType = "findall",
+                            EntityType = "Booking",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        AccountId = createPodcastBuddyReviewParameterDTO.AccountId,
+                                        PodcastBuddyId = createPodcastBuddyReviewParameterDTO.PodcastBuddyId
+                                    },
+                                    include = "BookingStatusTrackings",
+
+                                }),
+                            Fields = new[] { "Id", "AccountId", "PodcastBuddyId","BookingStatusTrackings" }
+                        }
+                    }
+                    };
+                    var result = await _httpServiceQueryClient.ExecuteBatchAsync("BookingManagementService", batchRequest);
+                    var bookings = result.Results["booking"].ToObject<List<BookingDTO>>();
+
+                    var hasCompletedBooking = bookings.Any(b =>
+                    {
+                        BookingStatusTrackingDTO latestTracking = b.BookingStatusTrackings
+                            .OrderByDescending(t => t.CreatedAt)
+                            .FirstOrDefault();
+                        
+                        List<int> validStatusIds = new List<int>
+                        {
+                            (int)BookingStatusEnum.Completed,
+                            (int)BookingStatusEnum.CancelledAutomatically,
+                            (int)BookingStatusEnum.CancelledManually
+                        };
+
+                        return latestTracking != null &&
+                               validStatusIds.Contains(latestTracking.BookingStatusId);
+                    });
+
+                    if (!hasCompletedBooking)
+                    {
+                        throw new Exception("Review can only be created by accounts that have completed a booking with the podcast buddy.");
                     }
 
                     var podcastBuddyReview = new PodcastBuddyReview
@@ -5329,6 +5380,29 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         {
             try
             {
+                var accountFromDb = await _accountGenericRepository.FindByIdAsync(account.Id,
+                    includeFunc: a => a.Include(ac => ac.Role)
+                    .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
+                );
+
+                if (accountFromDb == null)
+                {
+                    throw new Exception("Account with id " + accountFromDb.Id + " does not exist");
+                }
+                else if (accountFromDb.PodcasterProfile != null)
+                {
+                    if (accountFromDb.PodcasterProfile.IsVerified == null)
+                    {
+                        throw new Exception("Your podcaster application is in process");
+                    }
+                    else if (accountFromDb.PodcasterProfile.IsVerified == true)
+                    {
+                        throw new Exception("Your podcaster application is already verified");
+                    }
+                }
+
+
+
                 // 1. Get template PDF from S3
                 string templatePath = $"{_filePathConfig.SYSTEM_PODCASTER_DOCUMENTS_FILE_PATH}/main_buddy_commitment_document_template.pdf";
 

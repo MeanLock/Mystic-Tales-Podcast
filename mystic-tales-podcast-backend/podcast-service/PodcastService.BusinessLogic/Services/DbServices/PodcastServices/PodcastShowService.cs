@@ -284,7 +284,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             try
             {
                 var showsQuery = _podcastShowGenericRepository.FindAll(
-                    predicate: ps => ps.DeletedAt == null && (podcasterId == null || ps.PodcasterId == podcasterId),
+                    predicate: ps => ps.DeletedAt == null && (podcasterId == null || ps.PodcasterId == podcasterId) && (ps.PodcastChannelId == null || ps.PodcastChannel.DeletedAt == null),
                     includeFunc: q => q
                         .Include(ps => ps.PodcastShowStatusTrackings)
                         .ThenInclude(pst => pst.PodcastShowStatus)
@@ -294,13 +294,15 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .ThenInclude(psh => psh.Hashtag)
                         .Include(ps => ps.PodcastShowSubscriptionType)
                         .Include(ps => ps.PodcastChannel)
+                        .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
                         .Include(ps => ps.PodcastEpisodes)
                         .ThenInclude(pe => pe.PodcastEpisodeStatusTrackings)
                 );
 
                 if (roleId == null || roleId == 1)
                 {
-                    showsQuery = showsQuery.Where(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Published && ps.IsReleased != null);
+                    showsQuery = showsQuery.Where(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Published && ps.IsReleased != null
+                    && (ps.PodcastChannelId == null || ps.PodcastChannel.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published)); ;
                 }
                 var showList = await showsQuery.ToListAsync();
 

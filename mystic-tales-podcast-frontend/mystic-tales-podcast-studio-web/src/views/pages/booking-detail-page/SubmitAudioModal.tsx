@@ -55,7 +55,7 @@ const SubmitAudioModal: FC<SubmitAudioModalProps> = ({ booking, onClose }) => {
   );
 
   const { startPolling } = useSagaPolling({
-    timeoutSeconds: 60,
+    timeoutSeconds: 300,
     intervalSeconds: 2,
   })
 
@@ -204,9 +204,9 @@ const SubmitAudioModal: FC<SubmitAudioModalProps> = ({ booking, onClose }) => {
         return
       }
       await startPolling(sagaId, loginRequiredAxiosInstance, {
-        onSuccess: () => {
+        onSuccess: async () => {
           onClose();
-          context?.handleDataChange();
+          await context?.handleDataChange();
           toast.success(`Submit successfully!`);
         },
         onFailure: (err) => toast.error(err || "Saga failed!"),
@@ -239,9 +239,9 @@ const SubmitAudioModal: FC<SubmitAudioModalProps> = ({ booking, onClose }) => {
         return
       }
       await startPolling(sagaId, loginRequiredAxiosInstance, {
-        onSuccess: () => {
+        onSuccess: async () => {
           onClose();
-          context?.handleDataChange();
+          await context?.handleDataChange();
           toast.success(`Submit successfully!`);
         },
         onFailure: (err) => toast.error(err || "Saga failed!"),
@@ -265,9 +265,9 @@ const SubmitAudioModal: FC<SubmitAudioModalProps> = ({ booking, onClose }) => {
   return (
     <div >
       {Booking.CurrentStatus.Name === "Producing" && data != null && data.EditRequirementList.length > 0 ? (
-        <>
+        <div className="p-6 space-y-6">
           <Box sx={{
-            p: 2.5,
+            padding: 2.5,
             background: "rgba(255, 30, 0, 0.1)",
             borderRadius: "12px",
             border: "1.5px solid rgba(255, 0, 0, 0.3)",
@@ -275,7 +275,7 @@ const SubmitAudioModal: FC<SubmitAudioModalProps> = ({ booking, onClose }) => {
             flexDirection: "column",
             gap: 1.5
           }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 ,p:2 }}>
               <Edit sx={{ color: "#ff0000ff", fontSize: "1.3rem" }} />
               <Typography sx={{ color: "white", fontWeight: 700, fontSize: "0.95rem" }}>
                 Edit Requirements Requested
@@ -288,9 +288,11 @@ const SubmitAudioModal: FC<SubmitAudioModalProps> = ({ booking, onClose }) => {
                 </Typography>
               ))}
             </Box>
+            {data.FinishedAt === null && (
             <Typography sx={{ color: "rgba(255,255,255,0.7)", fontSize: "0.8rem", fontStyle: "italic", pl: 4 }}>
               Please re-upload the corresponding audio files after making the required edits.
             </Typography>
+            )}
           </Box>
           <Box>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -392,11 +394,11 @@ const SubmitAudioModal: FC<SubmitAudioModalProps> = ({ booking, onClose }) => {
 
             )}
           </Box>
-        </>
+        </div>
       ) : (
-        <>
+        <>  
           <div className="booking-detail__modal-content">
-            {Booking.BookingRequirementFileList.map((req, index) => {
+            {[...Booking.BookingRequirementFileList].sort((a, b) => a.Order - b.Order).map((req, index) => {
               const audioItem = audioFiles.find(item => item.requirementId === req.Id);
               return (
                 <div key={req.Id} className="booking-detail__upload-card">

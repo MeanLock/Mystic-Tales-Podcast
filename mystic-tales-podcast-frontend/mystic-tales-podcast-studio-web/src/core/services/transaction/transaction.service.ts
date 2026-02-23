@@ -19,6 +19,16 @@ export const withdrawalSubscription = async (instance: AxiosInstance, amount: Nu
 
     return response;
 }
+export const getTransferBill = async (instance: AxiosInstance , FileKey: string) => {
+
+    const response = await callAxiosRestApi({
+        instance: instance,
+        method: "get",
+        url: `${BASE_URL}/transfer-receipt-image/get-file-url/${FileKey}`,
+    }, "");
+
+    return response;
+}
 export const getHistoryWithdrawal = async (instance: AxiosInstance ) => {
 
     const response = await callAxiosRestApi({

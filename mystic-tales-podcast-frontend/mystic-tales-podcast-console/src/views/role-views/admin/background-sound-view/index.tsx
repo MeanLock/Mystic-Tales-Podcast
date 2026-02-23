@@ -31,7 +31,7 @@ const BackgroundSoundView: FC<BackgroundSoundViewProps> = () => {
     const [audioUrl, setAudioUrl] = useState<string | null>(null)
     const [isFetchingAudioId, setIsFetchingAudioId] = useState<string | null>(null)
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const handleDataChange = async () => {

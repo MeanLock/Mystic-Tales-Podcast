@@ -33,7 +33,7 @@ const DmcaModal: FC<DmcaModalProps> = ({ type, onClose }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
 

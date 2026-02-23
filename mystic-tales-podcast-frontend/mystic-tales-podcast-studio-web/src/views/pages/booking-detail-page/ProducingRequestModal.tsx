@@ -33,7 +33,7 @@ const ProducingRequestModal: React.FC<ProducingRequestModalProps> = ({ bookingPr
 
     // Removed manual lifetime constants; SmartAudio handles expiry refresh (default 5s)
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 60,
+        timeoutSeconds: 300,
         intervalSeconds: 2,
     })
 
@@ -100,16 +100,16 @@ const ProducingRequestModal: React.FC<ProducingRequestModalProps> = ({ bookingPr
     };
     const handleFileChange = (requirementId: string, file: File | null) => {
         if (file) {
-               const allowedExtensions = ['wav', 'flac', 'mp3', 'm4a', 'aac'];
-        const ext = file.name.split('.').pop()?.toLowerCase();
-        if (!ext || !allowedExtensions.includes(ext)) {
-            toast.error('Allowed audio types: wav, flac, mp3, m4a, aac');
-            return;
-        }
-        if (file.size > 150 * 1024 * 1024) {
-            toast.error('Audio file size must be less than 150MB');
-            return;
-        }
+            const allowedExtensions = ['wav', 'flac', 'mp3', 'm4a', 'aac'];
+            const ext = file.name.split('.').pop()?.toLowerCase();
+            if (!ext || !allowedExtensions.includes(ext)) {
+                toast.error('Allowed audio types: wav, flac, mp3, m4a, aac');
+                return;
+            }
+            if (file.size > 150 * 1024 * 1024) {
+                toast.error('Audio file size must be less than 150MB');
+                return;
+            }
         }
         setReuploadFiles(prev => ({ ...prev, [requirementId]: file }));
     };
@@ -169,9 +169,9 @@ const ProducingRequestModal: React.FC<ProducingRequestModalProps> = ({ bookingPr
                 return
             }
             await startPolling(sagaId, loginRequiredAxiosInstance, {
-                onSuccess: () => {
+                onSuccess: async () => {
                     onClose();
-                    context?.handleDataChange();
+                    await context?.handleDataChange();
                     toast.success(`Submit successfully!`);
                 },
                 onFailure: (err) => toast.error(err || "Saga failed!"),
@@ -315,9 +315,12 @@ const ProducingRequestModal: React.FC<ProducingRequestModalProps> = ({ bookingPr
                             </Typography>
                         ))}
                     </Box>
-                    <Typography sx={{ color: "rgba(255,255,255,0.7)", fontSize: "0.8rem", fontStyle: "italic", pl: 4 }}>
-                        Please re-upload the corresponding audio files after making the required edits.
-                    </Typography>
+                    {data.FinishedAt === null && data.IsAccepted === true && (
+                        <Typography sx={{ color: "rgba(255,255,255,0.7)", fontSize: "0.8rem", fontStyle: "italic", pl: 4 }}>
+                            Please re-upload the corresponding audio files after making the required edits.
+                        </Typography>
+                    )}
+
                 </Box>
             )}
 
@@ -326,7 +329,7 @@ const ProducingRequestModal: React.FC<ProducingRequestModalProps> = ({ bookingPr
                     <Typography sx={{ ...labelSx, fontSize: "0.85rem", mb: 2 }}>Podcast Tracks ({uploadedTracks.length})</Typography>
 
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        {uploadedTracks.map((track: any, index: number) => {
+                        {[...uploadedTracks].sort((a, b) => a.Order - b.Order).map((track: any, index: number) => {
                             const reuploadFile = reuploadFiles[track.BookingRequirementId];
                             return (
                                 <Box
@@ -355,11 +358,11 @@ const ProducingRequestModal: React.FC<ProducingRequestModalProps> = ({ bookingPr
                                                 flexShrink: 0,
                                             }}
                                         >
-                                            {index + 1}
+                                            {track.BookingRequirement.Order}
                                         </Box>
                                         <Box sx={{ flex: 1 }}>
                                             <Typography sx={{ color: "#fff", fontWeight: 600, fontSize: "0.95rem", mb: 0.5 }}>
-                                                Audio Requirment  {index + 1}
+                                                {track.BookingRequirement.Name || "Untitled Track"}
                                             </Typography>
                                             <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
                                                 <Typography sx={{ color: "rgba(255,255,255,0.7)", fontSize: "0.8rem" }}>

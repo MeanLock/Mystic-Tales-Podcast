@@ -122,9 +122,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
 
                 // Fix: Use ToListAsync first, then fetch requirement names in a separate async loop
-                var editRequirements = await _bookingProducingRequestPodcastTrackToEditGenericRepository.FindAll()
-                    .Where(bp => bp.BookingProducingRequestId.Equals(bookingProducingRequest.Id))
+                var editRequirements = await _bookingProducingRequestPodcastTrackToEditGenericRepository.FindAll(
+                    includeFunc: include => include
                     .Include(bp => bp.BookingPodcastTrack)
+                    .ThenInclude(b => b.BookingRequirement))
+                    .Where(bp => bp.BookingProducingRequestId.Equals(bookingProducingRequest.Id))
+                    .OrderBy(bp => bp.BookingPodcastTrack.BookingRequirement.Order)
                     .ToListAsync();
 
                 var editRequirementList = new List<BookingEditRequirementListItemResponseDTO>();
@@ -1163,6 +1166,26 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             }
             var booking = bookingPodcastTrack.BookingProducingRequest.Booking;
             return booking.PodcastBuddyId == account.Id || booking.AssignedStaffId == account.Id;
+        }
+        public async Task<bool> IsAudioFileCompletedAsync(string audioFileKey, AccountStatusCache account)
+        {
+            var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindAll(
+                includeFunc: include => include
+                .Include(bpt => bpt.BookingProducingRequest)
+                .ThenInclude(bpr => bpr.Booking)
+                .ThenInclude(b => b.BookingStatusTrackings)
+            )
+                .Where(bpt => bpt.AudioFileKey == audioFileKey && bpt.Booking.BookingStatusTrackings
+                    .OrderByDescending(bst => bst.CreatedAt)
+                    .FirstOrDefault()
+                    .BookingStatusId == (int)BookingStatusEnum.Completed)
+                .FirstOrDefaultAsync();
+            if (bookingPodcastTrack == null)
+            {
+                return false;
+            }
+            var booking = bookingPodcastTrack.BookingProducingRequest.Booking;
+            return booking.AccountId == account.Id;
         }
         public async Task<bool> ValidateBookingAccountOrPodcasterAsync(int bookingId, int accountId)
         {

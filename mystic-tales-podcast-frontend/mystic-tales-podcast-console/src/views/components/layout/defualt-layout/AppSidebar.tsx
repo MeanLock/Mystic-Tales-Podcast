@@ -20,7 +20,7 @@ import { setUi, UiState } from '../../../../redux/ui/ui.slice'
 import { cilMenu } from '@coreui/icons'
 import logo from '../../../../assets/brand/logoMTP2.png'
 import { loginRequiredAxiosInstance } from '@/core/api/rest-api/config/instances/v2'
-import { setAuthToken } from '@/redux/auth/auth.slice'
+import { clearAuthToken, setAuthToken } from '@/redux/auth/auth.slice'
 import { getProfile } from '@/core/services/account/account.service'
 const AppSidebar = () => {
 
@@ -29,7 +29,7 @@ const AppSidebar = () => {
 
   // STATES
   const [navigation, setNavigation] = useState<any[]>([]);
-
+const [isProfileLoaded, setIsProfileLoaded] = useState<boolean>(false);
   // HOOKS
   const navigate = useNavigate();
 
@@ -44,31 +44,42 @@ const AppSidebar = () => {
 
 
   useEffect(() => {
-    if (authSlice && authSlice.token) {
+    if (authSlice?.token) {
       const user = JwtUtil.decodeToken(authSlice.token);
       console.log("Sidebar user:", user);
-      //*[NOTE] Sau có thay đổi role thì gọi lại hàm này
       setNavigation(get_roleNav(user.role_id, user.id));
-
-      // if( !authSlice.user.MainImageFileKey || !authSlice.user.FullName ){
-      //    (async () => {
-      //   try {
-      //     const res = await getProfile(loginRequiredAxiosInstance);
-      //     if (res?.success && res?.data?.Account) {
-      //       const { MainImageFileKey, FullName } = res.data.Account;
-      //     dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, MainImageFileKey, FullName } }));
-      //     }
-      //   } catch (e) {
-      //     console.warn('Failed to fetch profile for sidebar:', e);
-      //   }
-      // })();
-      // }
-     
-
     } else {
+      dispatch(clearAuthToken())
       navigate("/login")
     }
-  }, [authSlice])
+  }, [authSlice?.token, navigate])
+
+  // Separate effect for profile loading - only run once
+  useEffect(() => {
+    const shouldFetchProfile = authSlice?.token && 
+      (!authSlice.user?.MainImageFileKey || !authSlice.user?.FullName) &&
+      !isProfileLoaded;
+
+    if (shouldFetchProfile) {
+      setIsProfileLoaded(true); // Prevent multiple calls
+      
+      (async () => {
+        try {
+          const res = await getProfile(loginRequiredAxiosInstance);
+          if (res?.success && res?.data?.Account) {
+            const { MainImageFileKey, FullName } = res.data.Account;
+            dispatch(setAuthToken({ 
+              ...authSlice, 
+              user: { ...authSlice.user, MainImageFileKey, FullName } 
+            }));
+          }
+        } catch (e) {
+          console.warn('Failed to fetch profile for sidebar:', e);
+          setIsProfileLoaded(false); // Allow retry on error
+        }
+      })();
+    }
+  }, [authSlice?.token, authSlice.user?.MainImageFileKey, authSlice.user?.FullName, isProfileLoaded, dispatch])
 
   return (
     <CSidebar

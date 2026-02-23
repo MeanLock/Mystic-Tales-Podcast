@@ -1,7 +1,8 @@
-import React, { FC, useEffect } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import {
   CAvatar,
   CBadge,
+  CButtonGroup,
   CDropdown,
   CDropdownDivider,
   CDropdownHeader,
@@ -27,76 +28,42 @@ import AvatarInput from '@/views/components/common/avatar'
 import Image from '@/views/components/common/image'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/redux/root-reducer'
+import StaffUpdate from './StaffUpdate'
+import Modal_Button from '@/views/components/common/modal/ModalButton'
 
 type UserType = AuthState['user']
 
-const AppHeaderDropdown : FC<{ user: AuthState['user'] }> = ({user}) => {
-   
+const AppHeaderDropdown: FC<{ user: AuthState['user'] }> = ({ user }) => {
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
   return (
-    <CDropdown variant="nav-item">
-      <CDropdownToggle className="py-0 pe-0" caret={false}>
-        <Image mainImageFileKey={user.MainImageFileKey} className="rounded-full w-8 h-8" />
-      </CDropdownToggle>
-      <CDropdownMenu className="pt-0">
-        <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Account</CDropdownHeader>
-        <CDropdownItem href="#">
-          <CIcon icon={cilBell} className="me-2" />
-          Updates
-          <CBadge color="info" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilEnvelopeOpen} className="me-2" />
-          Messages
-          <CBadge color="success" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilTask} className="me-2" />
-          Tasks
-          <CBadge color="danger" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilCommentSquare} className="me-2" />
-          Comments
-          <CBadge color="warning" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownHeader className="bg-body-secondary fw-semibold my-2">Settings</CDropdownHeader>
-        <CDropdownItem href="#">
-          <CIcon icon={cilUser} className="me-2" />
-          Profile
-        </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilSettings} className="me-2" />
-          Settings
-        </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilCreditCard} className="me-2" />
-          Payments
-          <CBadge color="secondary" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilFile} className="me-2" />
-          Projects
-          <CBadge color="primary" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownDivider />
-        <CDropdownItem href="#">
-          <CIcon icon={cilLockLocked} className="me-2" />
-          Lock Account
-        </CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
+    <>
+      <CDropdown variant="nav-item">
+        <CDropdownToggle className="py-0 pe-0" caret={false}>
+          <Image mainImageFileKey={user.MainImageFileKey} className="rounded-full w-8 h-8" />
+        </CDropdownToggle>
+        {user.role_id == 2 && (
+          <CDropdownMenu className="pt-0">
+            <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Account</CDropdownHeader>
+            <Modal_Button
+              disabled={false}
+              title="Update Profile"
+              className='w-full'
+              content={
+                <CDropdownItem>
+                  <CIcon icon={cilUser} className="me-2" />
+                  Profile
+                </CDropdownItem>
+              }
+              color="white"
+            >
+              <StaffUpdate onClose={() => { }} />
+            </Modal_Button>
+          </CDropdownMenu>
+        )}
+
+      </CDropdown>
+    </>
   )
 }
 

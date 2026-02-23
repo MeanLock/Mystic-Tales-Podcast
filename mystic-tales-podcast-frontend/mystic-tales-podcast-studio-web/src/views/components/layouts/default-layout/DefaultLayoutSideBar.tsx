@@ -13,7 +13,6 @@ const DefaultLayoutSideBar = () => {
     const dispatch = useDispatch()
     const uiSlice = useSelector((state: RootState) => state.ui)
     const navigation = useSelector((state: RootState) => state.navigation);
-
     useEffect(() => {
         const handleResize = () => {
             const isMobile = window.innerWidth <= 768

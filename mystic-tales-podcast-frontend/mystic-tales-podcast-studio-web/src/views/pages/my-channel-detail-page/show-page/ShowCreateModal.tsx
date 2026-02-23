@@ -82,7 +82,7 @@ const ShowCreate = ({ onClose }: { onClose?: () => void }) => {
 
     });
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 10,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
 
@@ -381,6 +381,29 @@ const ShowCreate = ({ onClose }: { onClose?: () => void }) => {
                             value={formData.PodcastCategoryId}
                             onChange={(e) => handleCategoryChange(e.target.value as unknown as number)}
                             className="show-info-page__select"
+                             SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                         >
                             <MenuItem value={0} disabled>
                                 Select Category
@@ -389,9 +412,7 @@ const ShowCreate = ({ onClose }: { onClose?: () => void }) => {
                                 <MenuItem
                                     key={category.Id}
                                     value={category.Id}
-                                    sx={{
-                                        '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
-                                    }}
+                             
                                 >
                                     {category.Name}
                                 </MenuItem>
@@ -404,6 +425,29 @@ const ShowCreate = ({ onClose }: { onClose?: () => void }) => {
                             value={formData.PodcastSubCategoryId}
                             onChange={(e) => handleSubCategoryChange(e.target.value as unknown as number)}
                             className="show-info-page__select"
+                             SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                         >
                             <MenuItem value={0} disabled>
                                 Select Subcategory
@@ -422,14 +466,35 @@ const ShowCreate = ({ onClose }: { onClose?: () => void }) => {
                             onChange={(e) => setFormData({ ...formData, Language: e.target.value })}
 
                             className="show-info-page__select"
+                             SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                         >
                             {Language.map((l) => (
                                 <MenuItem
                                     key={l.Id}
                                     value={l.Name}
-                                    sx={{
-                                        '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
-                                    }}
+                                  
                                 >
                                     {l.Name}
                                 </MenuItem>
@@ -444,14 +509,35 @@ const ShowCreate = ({ onClose }: { onClose?: () => void }) => {
                                 setFormData({ ...formData, UploadFrequency: e.target.value });
                             }}
                             className="show-info-page__select"
+                             SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                         >
                             {UploadFrequencyList.map((freq) => (
                                 <MenuItem
                                     key={freq.Name}
                                     value={freq.Name}
-                                    sx={{
-                                        '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
-                                    }}
+                                    
                                 >
                                     {freq.Name}
                                 </MenuItem>
@@ -464,15 +550,35 @@ const ShowCreate = ({ onClose }: { onClose?: () => void }) => {
                             value={formData.PodcastShowSubscriptionTypeId}
                             onChange={(e) => setFormData({ ...formData, PodcastShowSubscriptionTypeId: e.target.value as unknown as number })}
                             className="show-info-page__select"
+                             SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                         >
                             {mockSubscriptionTypes.map((type) => (
                                 <MenuItem
                                     key={type.Id}
                                     value={type.Id}
-                                    sx={{
-                                        '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
-
-                                    }}
+                                   
                                 >
                                     {type.Name}
                                 </MenuItem>

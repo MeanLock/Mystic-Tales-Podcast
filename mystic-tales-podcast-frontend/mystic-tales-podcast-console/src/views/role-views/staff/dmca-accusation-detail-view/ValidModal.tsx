@@ -38,7 +38,7 @@ const ValidModal: React.FC<ValidModalProps> = ({ onClose, status }) => {
     ] as const
     const [selectedValidReason, setSelectedValidReason] = useState<string>('DuplicateContent')
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
 

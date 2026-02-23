@@ -57,7 +57,7 @@ const BuddyAudio: React.FC<BuddyAudioProps> = ({
     const [uploading, setUploading] = useState(false);
 
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 200,
+        timeoutSeconds: 300,
         intervalSeconds: 2,
     })
     const fetchBuddyAudio = async () => {

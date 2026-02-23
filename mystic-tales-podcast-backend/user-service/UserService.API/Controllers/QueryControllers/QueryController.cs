@@ -1,3 +1,4 @@
+using BookingManagementService.DataAccess.Entities.SqlServer;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using UserService.API.Filters.ExceptionFilters;
@@ -89,37 +90,38 @@ namespace UserService.API.Controllers.QueryControllers
                     {
                         new BatchQueryItem
                         {
-                            Key = "activeSystemConfigProfile",
+                            Key = "booking",
                             QueryType = "findall",
-                            EntityType = "SystemConfigProfile",
+                            EntityType = "Booking",
                                 Parameters = JObject.FromObject(new
                                 {
                                     where = new
                                     {
-                                        IsActive = true
+                                        AccountId = 1012,
+                                        PodcastBuddyId = 17
                                     },
-                                    include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
+                                    include = "BookingStatusTrackings",
 
                                 }),
-                            Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
+                            Fields = new[] { "Id", "AccountId", "PodcastBuddyId","BookingStatusTrackings" }
                         }
                     }
             };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
-
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("BookingManagementService", batchRequest);
+            var bookings = result.Results["booking"].ToObject<List<BookingDTO>>();
             // kiểm tra null
-            if (result.Results["activeSystemConfigProfile"] == null)
+            if (result.Results["booking"] == null)
             {
-                return NotFound(new { message = "Active SystemConfigProfile not found" });
+                return NotFound(new { message = "Booking not found" });
             }
             else
             {
-                Console.WriteLine(result.Results["activeSystemConfigProfile"].ToString());
+                Console.WriteLine(result.Results["booking"].ToString());
             }
-            var config = (result.Results["activeSystemConfigProfile"].First as JObject).ToObject<SystemConfigProfileDTO>();
+            var config = (result.Results["booking"].First as JObject).ToObject<BookingDTO>();
             return Ok(new
             {
-                result = config
+                result = bookings,
             });
         }
     }

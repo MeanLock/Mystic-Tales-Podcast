@@ -435,82 +435,6 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             }
         }
 
-        /// <summary>
-        /// Extract audio data with platform-aware resampling
-        /// </summary>
-        // private async Task<AcoustIDAudioData?> ExtractAudioDataAsync(Stream audioStream)
-        // {
-        //     WaveStream? reader = null;
-        //     WaveStream? resampler = null;
-
-        //     try
-        //     {
-        //         // Create appropriate reader based on stream content
-        //         reader = CreateWaveReader(audioStream);
-        //         if (reader == null)
-        //         {
-        //             _logger.LogError("Unable to create wave reader for the audio stream");
-        //             return null;
-        //         }
-
-        //         // Convert to standard format for Chromaprint (11025Hz, 16-bit, Mono)
-        //         // AcoustID.NET works best with lower sample rates
-        //         var targetFormat = new WaveFormat(11025, 16, 1);
-
-        //         // ✅ Platform-aware resampling
-        //         if (_isWindows && _isMediaFoundationInitialized)
-        //         {
-        //             // Windows: Use MediaFoundationResampler (best quality)
-        //             try
-        //             {
-        //                 resampler = new MediaFoundationResampler(reader, targetFormat);
-        //                 _logger.LogDebug($"Using MediaFoundationResampler: {reader.WaveFormat.SampleRate}Hz → {targetFormat.SampleRate}Hz");
-        //             }
-        //             catch (Exception ex)
-        //             {
-        //                 _logger.LogWarning(ex, "MediaFoundationResampler failed, using fallback");
-        //                 resampler = TryFallbackResampling(reader, targetFormat);
-        //             }
-        //         }
-        //         else
-        //         {
-        //             // Linux: Use fallback resampling
-        //             resampler = TryFallbackResampling(reader, targetFormat);
-        //         }
-
-        //         // If resampler is null, use original reader
-        //         var sourceStream = resampler ?? reader;
-
-        //         // Read all audio data
-        //         var samples = await ReadAllSamplesAsync(sourceStream);
-
-        //         var audioData = new AcoustIDAudioData
-        //         {
-        //             Samples = samples,
-        //             SampleRate = sourceStream.WaveFormat.SampleRate,
-        //             Channels = sourceStream.WaveFormat.Channels,
-        //             Duration = reader.TotalTime.TotalSeconds
-        //         };
-
-        //         return audioData;
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Error extracting audio data");
-        //         return null;
-        //     }
-        //     finally
-        //     {
-        //         // Dispose resampler if it's different from reader
-        //         if (resampler != null && resampler != reader)
-        //         {
-        //             resampler.Dispose();
-        //         }
-
-        //         // Dispose reader
-        //         reader?.Dispose();
-        //     }
-        // }
 
         private async Task<AcoustIDAudioData?> ExtractAudioDataAsync(Stream audioStream)
         {
@@ -566,6 +490,31 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
         /// <summary>
         /// Try fallback resampling for Linux or when MediaFoundation fails
         /// </summary>
+        // private WaveStream? TryFallbackResampling(WaveStream reader, WaveFormat targetFormat)
+        // {
+        //     // Check if conversion is needed
+        //     if (reader.WaveFormat.SampleRate == targetFormat.SampleRate &&
+        //         reader.WaveFormat.Channels == targetFormat.Channels &&
+        //         reader.WaveFormat.BitsPerSample == targetFormat.BitsPerSample)
+        //     {
+        //         _logger.LogDebug("No resampling needed - format already matches target");
+        //         return reader; // No conversion needed
+        //     }
+
+        //     // Try WaveFormatConversionStream
+        //     try
+        //     {
+        //         var converted = new WaveFormatConversionStream(targetFormat, reader);
+        //         _logger.LogDebug($"Using WaveFormatConversionStream (fallback): {reader.WaveFormat.SampleRate}Hz → {targetFormat.SampleRate}Hz");
+        //         return converted;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogWarning(ex, $"WaveFormatConversionStream not supported. Using original format: {reader.WaveFormat.SampleRate}Hz, {reader.WaveFormat.Channels}ch, {reader.WaveFormat.BitsPerSample}bit");
+        //         return reader; // Use original format
+        //     }
+        // }
+
         private WaveStream? TryFallbackResampling(WaveStream reader, WaveFormat targetFormat)
         {
             // Check if conversion is needed
@@ -577,24 +526,75 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                 return reader; // No conversion needed
             }
 
-            // Try WaveFormatConversionStream
+            // ✅ FIX: Don't try WaveFormatConversionStream on Linux (requires Msacm32.dll)
+            if (!_isWindows)
+            {
+                _logger.LogWarning($"Resampling not available on Linux. Using original format: {reader.WaveFormat.SampleRate}Hz, {reader.WaveFormat.Channels}ch");
+                return reader; // Use original format on Linux
+            }
+
+            // ✅ Windows only: Try WaveFormatConversionStream
             try
             {
                 var converted = new WaveFormatConversionStream(targetFormat, reader);
-                _logger.LogDebug($"Using WaveFormatConversionStream (fallback): {reader.WaveFormat.SampleRate}Hz → {targetFormat.SampleRate}Hz");
+                _logger.LogDebug($"Using WaveFormatConversionStream (Windows): {reader.WaveFormat.SampleRate}Hz → {targetFormat.SampleRate}Hz");
                 return converted;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, $"WaveFormatConversionStream not supported. Using original format: {reader.WaveFormat.SampleRate}Hz, {reader.WaveFormat.Channels}ch, {reader.WaveFormat.BitsPerSample}bit");
+                _logger.LogWarning(ex, $"WaveFormatConversionStream failed. Using original format: {reader.WaveFormat.SampleRate}Hz, {reader.WaveFormat.Channels}ch");
                 return reader; // Use original format
             }
         }
 
+        // private async Task<short[]> ReadAllSamplesAsync(IWaveProvider waveProvider)
+        // {
+        //     var samples = new List<short>();
+        //     var buffer = new byte[4096];
+        //     int bytesRead;
+
+        //     await Task.Run(() =>
+        //     {
+        //         while ((bytesRead = waveProvider.Read(buffer, 0, buffer.Length)) > 0)
+        //         {
+        //             // Convert bytes to 16-bit samples
+        //             for (int i = 0; i < bytesRead; i += 2)
+        //             {
+        //                 if (i + 1 < bytesRead)
+        //                 {
+        //                     short sample = (short)(buffer[i] | (buffer[i + 1] << 8));
+        //                     samples.Add(sample);
+        //                 }
+        //             }
+        //         }
+        //     });
+
+        //     return samples.ToArray();
+        // }
+
         private async Task<short[]> ReadAllSamplesAsync(IWaveProvider waveProvider)
         {
             var samples = new List<short>();
-            var buffer = new byte[4096];
+
+            // ✅ FIX: Calculate buffer size based on block alignment
+            int blockAlign = waveProvider.WaveFormat.BlockAlign;
+            int bufferSize = 4096;
+
+            // Ensure buffer size is a multiple of block align
+            if (blockAlign > 0)
+            {
+                bufferSize = (bufferSize / blockAlign) * blockAlign;
+
+                // If buffer becomes 0, use at least one block
+                if (bufferSize == 0)
+                {
+                    bufferSize = blockAlign;
+                }
+            }
+
+            _logger.LogDebug($"Reading with buffer: {bufferSize} bytes, block align: {blockAlign}");
+
+            var buffer = new byte[bufferSize];
             int bytesRead;
 
             await Task.Run(() =>

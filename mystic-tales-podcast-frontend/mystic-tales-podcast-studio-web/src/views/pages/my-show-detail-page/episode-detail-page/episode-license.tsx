@@ -46,7 +46,7 @@ const EpisodeLicense = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const [uploading, setUploading] = useState<boolean>(false);
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
 
@@ -174,18 +174,18 @@ const EpisodeLicense = () => {
     };
 
     const handleUploadLicenses = async () => {
-               if (authSlice.user?.ViolationLevel > 0) {
-                    toast.error('Your account is currently under violation !!');
-                    return;
-                }
-                if(episodeDetail.CurrentStatus.Id === 7){
-                    toast.error("This episode is removed. You can't upload license.");
-                    return;
-                }
-              if(episodeDetail.CurrentStatus.Id === 6){
-                    toast.error("This episode is taken down. You can't upload license.");
-                    return;
-                }
+        if (authSlice.user?.ViolationLevel > 0) {
+            toast.error('Your account is currently under violation !!');
+            return;
+        }
+        if (episodeDetail.CurrentStatus.Id === 7) {
+            toast.error("This episode is removed. You can't upload license.");
+            return;
+        }
+        if (episodeDetail.CurrentStatus.Id === 6) {
+            toast.error("This episode is taken down. You can't upload license.");
+            return;
+        }
         try {
             setUploading(true);
             const filesToUpload = prepareLicenseFilesForUpload();
@@ -225,14 +225,14 @@ const EpisodeLicense = () => {
         }
     };
     const handleRemoveLicense = async (licenseId: string) => {
-         if(episodeDetail.CurrentStatus.Id === 7){
-                    toast.error("This episode is removed. You can't upload license.");
-                    return;
-                }
-              if(episodeDetail.CurrentStatus.Id === 6){
-                    toast.error("This episode is taken down. You can't upload license.");
-                    return;
-                }
+        if (episodeDetail.CurrentStatus.Id === 7) {
+            toast.error("This episode is removed. You can't upload license.");
+            return;
+        }
+        if (episodeDetail.CurrentStatus.Id === 6) {
+            toast.error("This episode is taken down. You can't upload license.");
+            return;
+        }
         const alert = await confirmAlert("Are you sure to DELETE this license?");
         if (!alert.isConfirmed) return;
         setLoading(true);
@@ -262,49 +262,7 @@ const EpisodeLicense = () => {
             setLoading(false);
         }
     };
-    const connectionRef = useRef<signalR.HubConnection | null>(null);
-        const authSlice2 = useSelector((state: RootState) => state.auth);
-    
-        const token = authSlice2.token || "";
-        const REST_API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
-    
-        useEffect(() => {
-            // Build connection
-            console.log("Setting up SignalR connection...", token);
-            const connection = new signalR.HubConnectionBuilder()
-                .withUrl(`${REST_API_BASE_URL}/api/podcast-service/hubs/podcast-content-notification`, {
-                    accessTokenFactory: () => {
-                        return token;
-                    }
-                })
-                .withAutomaticReconnect()
-                .build();
-    
-            connectionRef.current = connection;
-    
-            // Register events
-            connection.on("PodcastEpisodeAudioProcessingCompletedNotification", async (data) => {
-                console.log("Audio processing :", data);
-    
-                if (!data.IsSuccess) {
-                    console.error("Audio processing failed:", data.ErrorMessage);
-                    return;
-                }
-    
-                //alert(`Audio processing completed for Podcast ID: ${data}`);
-                await refreshEpisode?.();
-            });
-    
-            // Start connection
-            connection.start()
-                .then(() => console.log("SignalR connected"))
-                .catch(err => console.error("SignalR connection error:", err));
-    
-            // Cleanup
-            return () => {
-                connection.stop();
-            };
-        }, []);
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-100">
@@ -356,6 +314,30 @@ const EpisodeLicense = () => {
                                                     '& .MuiInputLabel-root': { color: 'var(--primary-green)' },
                                                     '& .MuiSelect-icon': { color: 'rgba(255, 255, 255, 0.5)' }
                                                 }}
+                                                SelectProps={{
+                                                    MenuProps: {
+                                                        sx: {
+                                                            '& .MuiPaper-root': {
+                                                                backgroundColor: '#2a2a2a',
+                                                                color: 'white',
+                                                            },
+                                                            '& .MuiMenuItem-root': {
+                                                                color: 'white',
+                                                                fontSize: '0.9rem',
+                                                                padding: '8px 16px',
+                                                                '&:hover': {
+                                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                                    color: 'var(--primary-green)',
+                                                                },
+                                                                '&.Mui-selected': {
+                                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                                    color: 'var(--primary-green)',
+                                                                },
+                                                            },
+                                                        },
+                                                    },
+                                                }}
+
                                             >
                                                 {licenseTypes.map((type) => (
                                                     <MenuItem key={type.Id} value={type.Id}>
@@ -486,8 +468,9 @@ const EpisodeLicense = () => {
                                                 size="small"
                                                 fullWidth
                                                 variant="standard"
-                                                sx={{
+                                                  sx={{
                                                     '& .MuiInputBase-root': {
+                                                        marginTop: '1.475rem',
                                                         color: 'white',
                                                         '&:before': { borderColor: 'rgba(255, 255, 255, 0.1)' },
                                                         '&:hover:not(.Mui-disabled):before': { borderColor: 'rgba(255, 255, 255, 0.2)' },
@@ -495,6 +478,29 @@ const EpisodeLicense = () => {
                                                     },
                                                     '& .MuiInputLabel-root': { color: 'var(--primary-green)' },
                                                     '& .MuiSelect-icon': { color: 'rgba(255, 255, 255, 0.5)' }
+                                                }}
+                                                SelectProps={{
+                                                    MenuProps: {
+                                                        sx: {
+                                                            '& .MuiPaper-root': {
+                                                                backgroundColor: '#2a2a2a',
+                                                                color: 'white',
+                                                            },
+                                                            '& .MuiMenuItem-root': {
+                                                                color: 'white',
+                                                                fontSize: '0.9rem',
+                                                                padding: '8px 16px',
+                                                                '&:hover': {
+                                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                                    color: 'var(--primary-green)',
+                                                                },
+                                                                '&.Mui-selected': {
+                                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                                    color: 'var(--primary-green)',
+                                                                },
+                                                            },
+                                                        },
+                                                    },
                                                 }}
                                             >
                                                 {licenseTypes.map((type) => (

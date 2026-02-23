@@ -617,10 +617,12 @@
 
     &--submit {
       background-color: var(--primary-green);
-      color: white;
+      color: #282828;
 
       &:hover:not(:disabled) {
-        background-color: #0056b3;
+      background-color: var(--primary-green);
+            color: #282828;
+
         transform: translateY(-1px);
       }
 

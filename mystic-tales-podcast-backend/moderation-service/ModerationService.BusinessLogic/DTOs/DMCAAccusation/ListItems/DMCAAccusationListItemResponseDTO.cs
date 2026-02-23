@@ -20,6 +20,7 @@ namespace ModerationService.BusinessLogic.DTOs.DMCAAccusation.ListItems
         public AssignedStaffSnippetResponseDTO? AssignedStaff { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public DateTime? ResolvedAt { get; set; }
         public DMCAAccusationStatusDTO CurrentStatus { get; set; }
     }
 }

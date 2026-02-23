@@ -69,6 +69,7 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
     const [uploadImage, setUploadImage] = useState<string | null>(null);
     const [mainImageFile, setMainImageFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const signalRConnection = ctx?.signalRConnection;
     // const [loading, setLoading] = useState<boolean>(false);
     const [isSaving, setIsSaving] = useState<boolean>(false);
 
@@ -76,7 +77,7 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
     const [reviewSessionLoading, setReviewSessionLoading] = useState<boolean>(false);
 
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
 
@@ -103,14 +104,6 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
         },
         placeholder: 'Add description...'
     });
-
-    const connectionRef = useRef<signalR.HubConnection | null>(null);
-    const authSlice2 = useSelector((state: RootState) => state.auth);
-
-    const token = authSlice2.token || "";
-    const REST_API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
-
-  
 
     const fetchReviewSession = async () => {
         setReviewSessionLoading(true);
@@ -543,6 +536,13 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                     >
                         {isSaving ? 'Saving...' : 'Save'}
                     </Button>
+                    <div className="  flex justify-center items-center h-full">
+                        <StatusChip
+                            statusId={episodeDetail.CurrentStatus.Id}
+                            statusName={episodeDetail.CurrentStatus.Name}
+                            type="episode"
+                        />
+                    </div>
                 </div>
             )}
 
@@ -556,8 +556,6 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                             <MetadataField label="Release Date" value={formatDate(episodeDetail.ReleaseDate)} />
                             <MetadataField label="Created At" value={formatDate(episodeDetail.CreatedAt)} />
                             <MetadataField label="Updated At" value={formatDate(episodeDetail.UpdatedAt)} />
-
-
                         </div>
                     </div>
                     <div className="episode-info-page__row">
@@ -575,12 +573,6 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                                 },
                             }}
                         />
-
-                        <StatusChip
-                            statusId={episodeDetail.CurrentStatus.Id}
-                            statusName={episodeDetail.CurrentStatus.Name}
-                            type="episode"
-                        />
                     </div>
                     <div className="episode-info-page__row">
                         <TextField
@@ -590,15 +582,35 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                             value={episodeDetail.PodcastEpisodeSubscriptionType.Id ?? 1}
                             onChange={(e) => setEpisodeDetail({ ...episodeDetail, PodcastEpisodeSubscriptionType: { ...episodeDetail.PodcastEpisodeSubscriptionType, Id: e.target.value as unknown as number } })}
                             className="episode-info-page__select"
+                            SelectProps={{
+                                MenuProps: {
+                                    sx: {
+                                        '& .MuiPaper-root': {
+                                            backgroundColor: '#2a2a2a',
+                                            color: 'white',
+                                        },
+                                        '& .MuiMenuItem-root': {
+                                            color: 'white',
+                                            fontSize: '0.9rem',
+                                            padding: '8px 16px',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                color: 'var(--primary-green)',
+                                            },
+                                            '&.Mui-selected': {
+                                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                color: 'var(--primary-green)',
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
                         >
                             {mockSubscriptionTypes.map((type) => (
                                 <MenuItem
                                     key={type.Id}
                                     value={type.Id}
-                                    sx={{
-                                        '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
 
-                                    }}
                                 >
                                     {type.Name}
                                 </MenuItem>
@@ -611,6 +623,29 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                             value={episodeDetail.ExplicitContent ?? ''}
                             onChange={(e) => setEpisodeDetail({ ...episodeDetail, ExplicitContent: e.target.value === 'true' })}
                             className="episode-info-page__select"
+                            SelectProps={{
+                                MenuProps: {
+                                    sx: {
+                                        '& .MuiPaper-root': {
+                                            backgroundColor: '#2a2a2a',
+                                            color: 'white',
+                                        },
+                                        '& .MuiMenuItem-root': {
+                                            color: 'white',
+                                            fontSize: '0.9rem',
+                                            padding: '8px 16px',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                color: 'var(--primary-green)',
+                                            },
+                                            '&.Mui-selected': {
+                                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                color: 'var(--primary-green)',
+                                            },
+                                        },
+                                    },
+                                },
+                            }}
                         >
                             <MenuItem value="true">True</MenuItem>
                             <MenuItem value="false">False</MenuItem>

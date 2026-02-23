@@ -913,7 +913,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         if (!registration.IsIncomeTaken)
                         {
                             var amount = existPodcastSubscription.PodcastSubscriptionCycleTypePrices
-                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == existPodcastSubscription.CurrentVersion)
                                 .Select(ptcp => ptcp.Price)
                                 .FirstOrDefault();
                             refundAmount = amount;
@@ -1010,6 +1010,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         includeFunc: function => function
                         .Include(ps => ps.PodcastSubscriptionCycleTypePrices))
                         .FirstOrDefaultAsync(ps => ps.Id == parameter.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive);
+                    Console.WriteLine("Podcast Subscription Retrieved: " + podcastSubscription.CurrentVersion);
                     if (podcastSubscription == null)
                     {
                         throw new Exception($"No Active Podcast Subscription exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId}");
@@ -1168,7 +1169,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
 
                     var cycleTypePrice = await _podcastSubscriptionCycleTypePriceGenericRepository.FindAll()
                         .FirstOrDefaultAsync(ptcp => ptcp.PodcastSubscriptionId == parameter.PodcastSubscriptionId
-                            && ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId);
+                            && ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId
+                            && ptcp.Version == podcastSubscription.CurrentVersion);
                     if(cycleTypePrice == null)
                     {
                         throw new Exception($"No Podcast Subscription Cycle Type Price exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId} and SubscriptionCycleType Id: {parameter.SubscriptionCycleTypeId}");
@@ -1180,7 +1182,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     }
 
                     var originalPrice2 = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId)
+                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId && ptcp.Version == podcastSubscription.CurrentVersion)
                         .Select(ptcp => ptcp.Price)
                         .FirstOrDefault();
 
@@ -1508,7 +1510,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 if (!registration.IsIncomeTaken)
                                 {
                                     var amount = existingSubscription.PodcastSubscriptionCycleTypePrices
-                                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                         .Select(ptcp => ptcp.Price)
                                         .FirstOrDefault();
                                     refundAmount = amount;
@@ -1655,7 +1657,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         if (!registration.IsIncomeTaken)
                         {
                             var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                 .Select(ptcp => ptcp.Price)
                                 .FirstOrDefault();
                             refundAmount = amount;
@@ -1787,8 +1789,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         .FirstOrDefault();
 
                     decimal refundAmount = 0;
-                    if (podcastSubscriptionRegistration.LastPaidAt.AddDays((double)incomeTakenDelayDays) < _dateHelper.GetNowByAppTimeZone())
-                    {
+                    // if (podcastSubscriptionRegistration.LastPaidAt.AddDays((double)incomeTakenDelayDays) < _dateHelper.GetNowByAppTimeZone())
+                    // {
                         podcastSubscriptionRegistration.IsIncomeTaken = true;
                         await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(podcastSubscriptionRegistration.Id, podcastSubscriptionRegistration);
 
@@ -1814,29 +1816,29 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             sagaInstanceId: null,
                             messageName: "podcaster-subscription-income-release-flow");
                         await _messagingService.SendSagaMessageAsync(transactionMessage, null);
-                    }
-                    else
-                    {
-                        var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
-                            .Select(ptcp => ptcp.Price)
-                            .FirstOrDefault();
-                        refundAmount = originalPrice;
-                        var transactionRequestData = new JObject
-                        {
-                            { "PodcastSubscriptionRegistrationId", podcastSubscriptionRegistration.Id },
-                            { "Profit", null },
-                            { "AccountId", podcastSubscriptionRegistration.AccountId },
-                            { "Amount", originalPrice },
-                            { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
-                        };
-                        var transactionMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            topic: KafkaTopicEnum.PaymentProcessingDomain,
-                            requestData: transactionRequestData,
-                            sagaInstanceId: null,
-                            messageName: "podcast-subscription-refund-flow");
-                        await _messagingService.SendSagaMessageAsync(transactionMessage, null);
-                    }
+                    // }
+                    // else
+                    // {
+                    //     var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                    //         .Where(ptcp => ptcp.SubscriptionCycleTypeId == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
+                    //         .Select(ptcp => ptcp.Price)
+                    //         .FirstOrDefault();
+                    //     refundAmount = originalPrice;
+                    //     var transactionRequestData = new JObject
+                    //     {
+                    //         { "PodcastSubscriptionRegistrationId", podcastSubscriptionRegistration.Id },
+                    //         { "Profit", null },
+                    //         { "AccountId", podcastSubscriptionRegistration.AccountId },
+                    //         { "Amount", originalPrice },
+                    //         { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
+                    //     };
+                    //     var transactionMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                    //         topic: KafkaTopicEnum.PaymentProcessingDomain,
+                    //         requestData: transactionRequestData,
+                    //         sagaInstanceId: null,
+                    //         messageName: "podcast-subscription-refund-flow");
+                    //     await _messagingService.SendSagaMessageAsync(transactionMessage, null);
+                    // }
 
                     podcastSubscriptionRegistration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
                     var registrationResult = await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(podcastSubscriptionRegistration.Id, podcastSubscriptionRegistration);
@@ -1947,7 +1949,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         if (!registration.IsIncomeTaken)
                         {
                             var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                 .Select(ptcp => ptcp.Price)
                                 .FirstOrDefault();
                             refundAmount = amount;
@@ -2229,7 +2231,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
                                 refundAmount = amount;
@@ -2345,7 +2347,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
                                 refundAmount = amount;
@@ -2437,19 +2439,35 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
-                    var podcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll(
+                    var shows = await GetPodcastShowByPodcastChannelId(parameter.PodcastChannelId);
+                    var showIds = shows?.Select(s => s.Id).ToList();
+                    var query =  _podcastSubscriptionGenericRepository.FindAll(
                         includeFunc: function => function
                         .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                        .Include(ps => ps.PodcastSubscriptionRegistrations))
-                        .Where(ps => ps.PodcastChannelId == parameter.PodcastChannelId
-                        && ps.IsActive)
-                        .ToListAsync();
+                        .Include(ps => ps.PodcastSubscriptionRegistrations));
+
+                    if (showIds != null && showIds.Any())
+                    {
+                        query = query.Where(ps =>
+                            ps.IsActive &&
+                            (
+                                (ps.PodcastShowId.HasValue && showIds.Contains(ps.PodcastShowId.Value))
+                                || ps.PodcastChannelId.HasValue && ps.PodcastChannelId == parameter.PodcastChannelId
+                            ));
+                    }
+                    else
+                    {
+                        query = query.Where(ps =>
+                            ps.PodcastChannelId.HasValue && ps.PodcastChannelId == parameter.PodcastChannelId &&
+                            ps.IsActive);
+                    }
+                    var podcastSubscriptions = await query.ToListAsync();
 
                     foreach (var podcastSubscription in podcastSubscriptions)
                     {
                         var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
-                                .Where(sr => sr.PodcastSubscriptionId == podcastSubscription.Id && sr.CancelledAt == null)
-                                .ToListAsync();
+                            .Where(sr => sr.PodcastSubscriptionId == podcastSubscription.Id && sr.CancelledAt == null)
+                            .ToListAsync();
                         foreach (var registration in subscriptionRegistrations)
                         {
                             decimal refundAmount = 0;
@@ -2462,7 +2480,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
                                 refundAmount = amount;
@@ -2578,7 +2596,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
                                 refundAmount = amount;
@@ -2669,14 +2687,29 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
-                    var podcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll(
+                    var shows = await GetPodcastShowByPodcastChannelId(parameter.PodcastChannelId);
+                    var showIds = shows?.Select(s => s.Id).ToList();
+                    var query =  _podcastSubscriptionGenericRepository.FindAll(
                         includeFunc: function => function
                         .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                        .Include(ps => ps.PodcastSubscriptionRegistrations))
-                        .Where(ps => ps.PodcastChannelId == parameter.PodcastChannelId
-                        && ps.IsActive)
-                        .ToListAsync();
+                        .Include(ps => ps.PodcastSubscriptionRegistrations));
 
+                    if (showIds != null && showIds.Any())
+                    {
+                        query = query.Where(ps =>
+                            ps.IsActive &&
+                            (
+                                (ps.PodcastShowId.HasValue && showIds.Contains(ps.PodcastShowId.Value))
+                                || ps.PodcastChannelId.HasValue && ps.PodcastChannelId == parameter.PodcastChannelId
+                            ));
+                    }
+                    else
+                    {
+                        query = query.Where(ps =>
+                            ps.PodcastChannelId.HasValue && ps.PodcastChannelId == parameter.PodcastChannelId &&
+                            ps.IsActive);
+                    }
+                    var podcastSubscriptions = await query.ToListAsync();
                     foreach (var podcastSubscription in podcastSubscriptions)
                     {
                         var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
@@ -2694,7 +2727,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
                                 refundAmount = amount;
@@ -2790,14 +2823,29 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     {
                         foreach (var channel in channelList)
                         {
-                            var podcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll(
-                            includeFunc: function => function
-                            .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                            .Include(ps => ps.PodcastSubscriptionRegistrations))
-                            .Where(ps => ps.PodcastChannelId == channel.Id
-                            && ps.IsActive)
-                            .ToListAsync();
+                            var shows = await GetPodcastShowByPodcastChannelId(channel.Id);
+                            var showIds = shows?.Select(s => s.Id).ToList();
+                            var query =  _podcastSubscriptionGenericRepository.FindAll(
+                                includeFunc: function => function
+                                .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                                .Include(ps => ps.PodcastSubscriptionRegistrations));
 
+                            if (showIds != null && showIds.Any())
+                            {
+                                query = query.Where(ps =>
+                                    ps.IsActive &&
+                                    (
+                                        (ps.PodcastShowId.HasValue && showIds.Contains(ps.PodcastShowId.Value))
+                                        || (ps.PodcastChannelId.HasValue && ps.PodcastChannelId == channel.Id)
+                                    ));
+                            }
+                            else
+                            {
+                                query = query.Where(ps =>
+                                    ps.PodcastChannelId.HasValue && ps.PodcastChannelId == channel.Id &&
+                                    ps.IsActive);
+                            }
+                            var podcastSubscriptions = await query.ToListAsync();
                             foreach (var podcastSubscription in podcastSubscriptions)
                             {
                                 var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
@@ -2815,7 +2863,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     if (!registration.IsIncomeTaken)
                                     {
                                         var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                             .Select(ptcp => ptcp.Price)
                                             .FirstOrDefault();
                                         refundAmount = amount;
@@ -2957,8 +3005,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 }
                                 podcasterId = temp.PodcasterId;
                             }
-                            //int incomeTakenDelayDays = config.IncomeTakenDelayDays;
-                            int incomeTakenDelayDays = 0;
+                            int incomeTakenDelayDays = config.IncomeTakenDelayDays;
+                            // int incomeTakenDelayDays = 0;
                             decimal profitRate = (decimal)config.ProfitRate;
                             var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                         .Where(psct => psct.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
@@ -3278,7 +3326,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     if (!registration.IsIncomeTaken)
                                     {
                                         var amount = showPodcastSubscription.PodcastSubscriptionCycleTypePrices
-                                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId && ptcp.Version == registration.CurrentVersion)
                                             .Select(ptcp => ptcp.Price)
                                             .FirstOrDefault();
                                         refundAmount = amount;
@@ -4807,23 +4855,32 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             }
             return totalIncome;
         }
-        public async Task<List<PodcastSubscriptionHoldingListItemResponseDTO>> GetHoldingPodcastSubscriptionListAsync()
+        public async Task<List<PodcastSubscriptionMoneyFlowListItemResponseDTO>> GetMoneyFlowPodcastSubscriptionListAsync()
         {
             try
             {
-                var registrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll(
+                // var registrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll(
+                //     includeFunc: function => function
+                //     .Include(psr => psr.PodcastSubscription)
+                //     .Include(psr => psr.SubscriptionCycleType))
+                //     .Where(psr => psr.CancelledAt == null && !psr.IsIncomeTaken)
+                //     .ToListAsync();
+                var holdingList = new List<PodcastSubscriptionMoneyFlowListItemResponseDTO>();
+                // var subscriptionIds = registrations.Select(r => r.PodcastSubscriptionId).Distinct().ToList();
+                var subscriptions = await _podcastSubscriptionGenericRepository.FindAll(
                     includeFunc: function => function
-                    .Include(psr => psr.PodcastSubscription)
-                    .Include(psr => psr.SubscriptionCycleType))
-                    .Where(psr => psr.CancelledAt == null && !psr.IsIncomeTaken)
+                    .Include(ps => ps.PodcastSubscriptionRegistrations)
+                    .ThenInclude(psr => psr.SubscriptionCycleType)
+                )
                     .ToListAsync();
-                var holdingList = new List<PodcastSubscriptionHoldingListItemResponseDTO>();
-                var subscriptionIds = registrations.Select(r => r.PodcastSubscriptionId).Distinct().ToList();
-                foreach (var subscriptionId in subscriptionIds)
+                foreach (var subscription in subscriptions)
                 {
-                    var subscription = await _podcastSubscriptionGenericRepository.FindByIdAsync(subscriptionId);
-                    if(subscription == null || !subscription.IsActive || subscription.DeletedAt != null)
+                    if(subscription.PodcastSubscriptionRegistrations == null || subscription.PodcastSubscriptionRegistrations.Count() == 0)
+                    {
                         continue;
+                    }
+                    var registrations = subscription.PodcastSubscriptionRegistrations
+                        .ToList();
                     string? podcastChannelName = null;
                     string? podcastShowName = null;
                     if (subscription.PodcastShowId != null)
@@ -4836,7 +4893,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         var channel = await GetPodcastChannel(subscription.PodcastChannelId.Value);
                         podcastChannelName = channel?.Name;
                     }
-                    var holdingListItem = new PodcastSubscriptionHoldingListItemResponseDTO
+                    var holdingListItem = new PodcastSubscriptionMoneyFlowListItemResponseDTO
                     {
                         Id = subscription.Id,
                         Name = subscription.Name,
@@ -4848,18 +4905,37 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         DeletedAt = subscription.DeletedAt,
                         CreatedAt = subscription.CreatedAt,
                         UpdatedAt = subscription.UpdatedAt,
-                        PodcastSubscriptionRegistrationList = new List<PodcastSubscriptionRegistrationHoldingListItemResponseDTO>()
+                        PodcastSubscriptionRegistrationList = new List<PodcastSubscriptionRegistrationMoneyFlowListItemResponseDTO>()
                     };
 
-                    foreach (var registration in registrations.Where(r => r.PodcastSubscriptionId == subscriptionId))
+                    var isShown = false;
+                    foreach (var registration in registrations.Where(r => r.PodcastSubscriptionId == subscription.Id))
                     {
-                        var transaction = await GetHoldingPodcastSubscriptionTransactionByRegistrationId(registration.Id);
-                        if (transaction == null)
+                        var transactions = await GetMoneyFlowPodcastSubscriptionTransactionByRegistrationId(registration.Id);
+                        if (transactions == null || transactions.Count() == 0)
                             continue;
-                        var holdingAmount = transaction.OrderByDescending(transaction => transaction.CreatedAt).First().Amount;
+                        else 
+                            isShown = true;
+                        decimal holdingAmount = 0;
+                        decimal profitAmount = 0;
+                        var current = transactions.OrderByDescending(transaction => transaction.CreatedAt).First();
+                        if(!registration.IsIncomeTaken && registration.CancelledAt == null)
+                        {
+                            holdingAmount = current.Amount;
+                        }
+                        Console.WriteLine(transactions.Count + " transactions found for registration ID: " + registration.Id);
+                        profitAmount = transactions.Where(t => new[]
+                        {
+                            (int)TransactionTypeEnum.SystemSubscriptionIncome
+                        }.Contains(t.TransactionType.Id)).Sum(t => t.Amount);
                         var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
 
-                        var registrationHoldingItem = new PodcastSubscriptionRegistrationHoldingListItemResponseDTO
+                        if(holdingAmount == 0 && profitAmount == 0)
+                        {
+                            continue;
+                        }
+                        
+                        var registrationHoldingItem = new PodcastSubscriptionRegistrationMoneyFlowListItemResponseDTO
                         {
                             Id = registration.Id,
                             Account = new AccountSnippetResponseDTO
@@ -4882,21 +4958,23 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             CancelledAt = registration.CancelledAt,
                             CreatedAt = registration.CreatedAt,
                             UpdatedAt = registration.UpdatedAt,
-                            HoldingAmount = holdingAmount
+                            HoldingAmount = holdingAmount,
+                            ProfitAmount = profitAmount,
+                            PodcastSubscriptionTransactionList = transactions
                         };
 
                         holdingListItem.PodcastSubscriptionRegistrationList.Add(registrationHoldingItem);
                     }
-
-                    holdingList.Add(holdingListItem);
+                    if (isShown)
+                        holdingList.Add(holdingListItem);
                 }
 
                 return holdingList;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while GetHoldingPodcastSubscriptionListAsync");
-                throw new HttpRequestException($"Error while retrieving Holding Podcast Subscription List. Error: {ex.Message}");
+                _logger.LogError(ex, "Error occurred while GetMoneyFlowPodcastSubscriptionListAsync");
+                throw new HttpRequestException($"Error while retrieving Money Flow Podcast Subscription List. Error: {ex.Message}");
             }
         }
         public async Task<PodcastChannelDTO?> GetPodcastChannelWithAccountId(int accountId, Guid podcastChannelId)
@@ -5432,7 +5510,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 throw new HttpRequestException($"Error while querying Podcast Subscription Transactions for RegistrationId: {registrationId}. Error: {ex.Message}");
             }
         }
-        public async Task<List<PodcastSubscriptionTransactionDTO>?> GetHoldingPodcastSubscriptionTransactionByRegistrationId(Guid registrationId)
+        public async Task<List<PodcastSubscriptionTransactionListItemDTO>?> GetMoneyFlowPodcastSubscriptionTransactionByRegistrationId(Guid registrationId)
         {
             try
             {
@@ -5450,9 +5528,9 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 where = new
                                 {
                                     PodcastSubscriptionRegistrationId = registrationId,
-                                    TransactionTypeId =(int)TransactionTypeEnum.CustomerSubscriptionCyclePayment,
                                     TransactionStatusId = (int)TransactionStatusEnum.Success
-                                }
+                                },
+                                include = "TransactionType, TransactionStatus"
                             })
                         }
                     }
@@ -5460,7 +5538,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
 
                 return result.Results?["podcastSubscriptionTransaction"] is JArray podcastSubscriptionTransactionArray && podcastSubscriptionTransactionArray.Count >= 0
-                    ? podcastSubscriptionTransactionArray.ToObject<List<PodcastSubscriptionTransactionDTO>>()
+                    ? podcastSubscriptionTransactionArray.ToObject<List<PodcastSubscriptionTransactionListItemDTO>>()
                     : null;
             }
             catch (Exception ex)

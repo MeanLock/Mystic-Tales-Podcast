@@ -14,11 +14,11 @@ export const getBookingList = async (instance: AxiosInstance ) => {
 
     return response;
 }
-export const getBookingHoldingList = async (instance: AxiosInstance ) => {
+export const getBookingTransactionList = async (instance: AxiosInstance ) => {
     const response = await callAxiosRestApi({
         instance: instance,
         method: "get",
-        url: `${BASE_URL}/holding`,
+        url: `${BASE_URL}/money-flow`,
     }, "");
 
     return response;

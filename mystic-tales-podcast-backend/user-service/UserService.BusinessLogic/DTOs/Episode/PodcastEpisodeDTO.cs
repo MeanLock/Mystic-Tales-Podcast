@@ -20,11 +20,11 @@ namespace UserService.BusinessLogic.DTOs.Episode
 
         public string? MainImageFileKey { get; set; }
 
-        public string AudioFileKey { get; set; } = null!;
+        public string? AudioFileKey { get; set; } = null!;
 
-        public double AudioFileSize { get; set; }
+        public double? AudioFileSize { get; set; }
 
-        public int AudioLength { get; set; }
+        public int? AudioLength { get; set; }
 
         public byte[]? AudioFingerPrint { get; set; }
 

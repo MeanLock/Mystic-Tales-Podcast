@@ -176,7 +176,7 @@ const BookingDetailView: FC<BookingDetailViewProps> = () => {
     const [depositRefundRate, setDepositRefundRate] = useState<number>(0);
     const navigate = useNavigate();
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 60,
+        timeoutSeconds: 300,
         intervalSeconds: 2,
     })
     const fetchBookingDetail = async () => {
@@ -236,11 +236,11 @@ const BookingDetailView: FC<BookingDetailViewProps> = () => {
             case 'Quotation Request':
             case 'Quotation Dealing':
                 return { color: '#ffb300', bg: 'rgba(255, 179, 0, 0.15)' };
+            case 'Quotation Cancelled':
+            case 'Cancelled Manually':
+            case 'Cancelled Automatically':
             case 'Customer Cancel Request':
             case 'Podcast Buddy Cancel Request':
-            case 'Quotation Rejected':
-            case 'Cancelled Automatically':
-            case 'Cancelled Manually':
             case 'Quotation Rejected':
                 return { color: '#f2545b', bg: 'rgba(242, 84, 91, 0.15)' };
             default:
@@ -276,7 +276,7 @@ const BookingDetailView: FC<BookingDetailViewProps> = () => {
                             <div className="booking-detail__plain-grid">
                                 <div className="booking-detail__plain-item">
                                     <span className="booking-detail__plain-label">Price</span>
-                                    <span className="booking-detail__plain-value booking-detail__plain-value--price">{Booking.Price ? `${Booking.Price} Coins` : '---'} </span>
+                                    <span className="booking-detail__plain-value booking-detail__plain-value--price">{Booking.Price ? `${Booking.Price.toLocaleString()} Coins` : '---'} </span>
                                 </div>
                                 <div className="booking-detail__plain-item">
                                     <span className="booking-detail__plain-label">Deadline</span>

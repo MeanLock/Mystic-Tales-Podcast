@@ -175,7 +175,7 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
     const [Booking, setBooking] = useState<any | null>(null);
     const navigate = useNavigate();
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 60,
+        timeoutSeconds: 300,
         intervalSeconds: 2,
     })
     const fetchBookingDetail = async () => {
@@ -257,8 +257,7 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
             const response = await cancelQuotation(loginRequiredAxiosInstance, id);
             if (response && response.success) {
                 toast.success(`Canceled booking successfully`);
-                await new Promise((r) => setTimeout(r, 100));
-                navigate(0);
+                await fetchBookingDetail();
             }
         } catch {
             toast.error('Error canceling booking')
@@ -279,9 +278,9 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
                 return
             }
             await startPolling(sagaId, loginRequiredAxiosInstance, {
-                onSuccess: () => {
+                onSuccess: async () => {
                     toast.success(`Cancel Successfully, please wait Staff to review`);
-                    //navigate(0);
+                    await fetchBookingDetail();
                 },
                 onFailure: (err) => toast.error(err || "Saga failed!"),
                 onTimeout: () => toast.error("System not responding, please try again."),
@@ -326,7 +325,7 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
                         </div>
                     )}
 
-                    {isProducing && (
+                    {isProducing || Booking.CurrentStatus?.Name === "Track Previewing" && (
                         <div className="flex gap-6">
                             <Modal_Button
                                 className="booking-detail__reject-btn warning-button"
@@ -471,7 +470,7 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
                             Requirements
                         </Typography>
                         <div className="booking-detail__requirements-grid">
-                            {Booking.BookingRequirementFileList.map((req, index) => (
+                            {[...Booking.BookingRequirementFileList].sort((a, b) => a.Order - b.Order).map((req, index) => (
                                 <Card key={req.Id} className="booking-detail__requirement-card">
                                     <CardContent className="booking-detail__card-content">
                                         <div className="booking-detail__requirement-header">

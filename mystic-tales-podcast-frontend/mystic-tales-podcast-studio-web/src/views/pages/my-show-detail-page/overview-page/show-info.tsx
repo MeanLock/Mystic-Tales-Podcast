@@ -106,7 +106,7 @@ const ShowInfo = () => {
         return today.toISOString().split('T')[0];
     });
     const { startPolling } = useSagaPolling({
-        timeoutSeconds: 5,
+        timeoutSeconds: 300,
         intervalSeconds: 0.5,
     })
     const [formData, setFormData] = useState({
@@ -386,10 +386,10 @@ const ShowInfo = () => {
             return;
         }
         console.log(releaseDate)
-        if (showDetail.CurrentStatus.Id === 1) {
-            toast.warning("At least one Episode must be published before publishing the Show.");
-            return
-        }
+        // if (showDetail.CurrentStatus.Id === 1) {
+        //     toast.warning("At least one Episode must be published before publishing the Show.");
+        //     return
+        // }
         const alert = await confirmAlert("Are you sure to " + (isPublish ? "publish" : "unpublish") + " this show?");
         if (!alert.isConfirmed) return;
         try {
@@ -411,7 +411,14 @@ const ShowInfo = () => {
                     toast.success(`Show ${isPublish ? 'published' : 'unpublished'} successfully.`)
                     await fetchShowDetail();
                 },
-                onFailure: (err) => toast.error(err || "Saga failed!"),
+                onFailure: (err) => {
+                    if (err.includes("current status is not 'Ready to Release'")) {
+                        toast.warning("At least one Episode must be published before publishing the Show.");
+                    }
+                    else {
+                        toast.error("Show assignment failed, please try again.");
+                    }
+                },
                 onTimeout: () => toast.error("System not responding, please try again."),
             })
         } catch (error) {
@@ -608,11 +615,23 @@ const ShowInfo = () => {
                                                 min: new Date().toISOString().split('T')[0]
                                             }}
                                             sx={{
-                                                '& .MuiOutlinedInput-root': {
-                                                    '& fieldset': { borderColor: '#999999 !important' },
-                                                    '&:hover fieldset': { borderColor: '#999999 !important' },
-                                                    '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
+                                                  '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
                                                 },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
                                             }}
                                         />
                                         <Button
@@ -669,6 +688,13 @@ const ShowInfo = () => {
                             </Button>
                         </>
                     )}
+                    <div className="  flex justify-center items-center h-full">
+                        <StatusChip
+                            statusId={showDetail.CurrentStatus.Id}
+                            statusName={showDetail.CurrentStatus.Name}
+                            type="show"
+                        />
+                    </div>
                 </div>
 
 
@@ -679,13 +705,11 @@ const ShowInfo = () => {
                             <div className="flex flex-wrap w-full justify-between  items-center gap-6 md:gap-8">
                                 <MetadataField label="Total Followers" value={showDetail.TotalFollow.toString()} />
                                 <MetadataField label="Listen Count" value={showDetail.ListenCount.toString()} />
-                                <MetadataField label="Rating Average" value={showDetail.AverageRating.toFixed(2) } />
+                                <MetadataField label="Rating Average" value={showDetail.AverageRating.toFixed(2)} />
 
                                 <MetadataField label="Is Released" value={showDetail.IsReleased ? "Yes" : "No"} />
                                 <MetadataField label="Release Date" value={formatDate(showDetail.ReleaseDate)} />
                                 <MetadataField label="Created At" value={formatDate(showDetail.CreatedAt)} />
-
-
                             </div>
                         </div>
 
@@ -726,11 +750,6 @@ const ShowInfo = () => {
                                 }}
                             />
 
-                            <StatusChip
-                                statusId={showDetail.CurrentStatus.Id}
-                                statusName={showDetail.CurrentStatus.Name}
-                                type="show"
-                            />
                         </div>
                         <div className="show-info-page__row">
                             <TextField
@@ -740,6 +759,29 @@ const ShowInfo = () => {
                                 value={showDetail.PodcastShowSubscriptionType?.Id || 1}
                                 onChange={(e) => setShowDetail({ ...showDetail, PodcastShowSubscriptionType: { ...showDetail.PodcastShowSubscriptionType, Id: e.target.value as unknown as number } })}
                                 className="show-info-page__select"
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {mockSubscriptionTypes.map((type) => (
                                     <MenuItem
@@ -762,6 +804,29 @@ const ShowInfo = () => {
                                 onChange={(e) => setShowDetail({ ...showDetail, Language: e.target.value })}
 
                                 className="show-info-page__select"
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {Language.map((l) => (
                                     <MenuItem
@@ -782,6 +847,29 @@ const ShowInfo = () => {
                                 value={showDetail.UploadFrequency}
                                 onChange={(e) => setShowDetail({ ...showDetail, UploadFrequency: e.target.value })}
                                 className="show-info-page__select"
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {UploadFrequencyList.map((freq) => (
                                     <MenuItem
@@ -807,6 +895,29 @@ const ShowInfo = () => {
                                 value={formData.PodcastCategoryId}
                                 onChange={(e) => handleCategoryChange(e.target.value as unknown as number)}
                                 className="show-info-page__select"
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {categoryList.map((category) => (
                                     <MenuItem
@@ -827,6 +938,29 @@ const ShowInfo = () => {
                                 value={formData.PodcastSubCategoryId}
                                 onChange={(e) => handleSubCategoryChange(e.target.value as unknown as number)}
                                 className="show-info-page__select"
+                                SelectProps={{
+                                    MenuProps: {
+                                        sx: {
+                                            '& .MuiPaper-root': {
+                                                backgroundColor: '#2a2a2a',
+                                                color: 'white',
+                                            },
+                                            '& .MuiMenuItem-root': {
+                                                color: 'white',
+                                                fontSize: '0.9rem',
+                                                padding: '8px 16px',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'var(--primary-green)',
+                                                },
+                                            },
+                                        },
+                                    },
+                                }}
                             >
                                 {getSubCategoriesForCategory(formData.PodcastCategoryId || showDetail.PodcastCategory.Id).map(sub => (
                                     <MenuItem key={sub.Id} value={sub.Id}>{sub.Name}</MenuItem>

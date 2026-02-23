@@ -10,5 +10,8 @@ namespace TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDo
     {
         public int AccountId { get; set; }
         public decimal Amount { get; set; }
+        public string BankCode { get; set; }
+        public string BankNumber { get; set; }
+        public string BankName { get; set; }
     }
 }

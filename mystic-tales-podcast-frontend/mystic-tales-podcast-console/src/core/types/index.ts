@@ -80,11 +80,13 @@ export type PodcastEpisode = {
   Id: string;
   Name: string;
   MainImageFileKey: string;
+  PodcasterName: string;
 };
 export type PodcastShow = {
   Id: string;
   Name: string;
   MainImageFileKey: string;
+  PodcasterName: string;
 };
 export type DMCAAccusation = {
   Id: number;
@@ -114,6 +116,7 @@ export type DMCAAccusationDetail = {
   CurrentStatus: CurrentStatus;
   CreatedAt: string;
   UpdatedAt: string;
+  ResolvedAt?: string | null;
   DMCANotice?: DMCANotice;
   CounterNotice?: CounterNotice;
   LawsuitProof?: LawsuitProof;

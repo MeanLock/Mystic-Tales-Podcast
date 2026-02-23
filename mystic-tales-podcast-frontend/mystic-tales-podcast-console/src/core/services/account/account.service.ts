@@ -23,6 +23,16 @@ export const getProfile = async (instance: AxiosInstance) => {
 
     return response;
 }
+export const getAccountDetail = async (instance: AxiosInstance, accountId: number) => {
+
+    const response = await callAxiosRestApi({
+        instance: instance,
+        method: "get",
+        url: `${BASE_URL}/accounts/${accountId}`,
+    });
+
+    return response;
+}
 export const getPodcasterAccounts = async (instance: AxiosInstance) => {
 
     const response = await callAxiosRestApi({
