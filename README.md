@@ -4,7 +4,7 @@ Welcome to the **Mystic Tales Podcast Platform** repository! This project is a c
 
 While there are backend and infrastructure layers to this project, this document focuses primarily on the **Front-End applications** where my efforts were concentrated as a Front-End Developer.
 
-Product Link: https://mystic-tales-podcast.xyz (backend currently shutdown).
+Product Link: https://mystic-tales-podcast.xyz (The backend is currently shut down.).
 
 Team Size: 4 (2 Front-End, 2 Back-End)
 
@@ -25,6 +25,11 @@ In this project, my responsibilities spanned across designing the architecture, 
 - **Content Discovery & Query Systems**: Designed the business-rule layers for varied content queries and multi-faceted discoverability for users (the actual database execution of these queries was handled by the backend, but I designed the query models and integration flows).
 - **Audio Integrity & Copyright Verification**: Implemented complex front-end business logic and flows for validating audio uploads to prevent content duplication and integrated a strict DMCA workflow to protect intellectual property.
 
+---
+## Document
+
+For more about this project, please check the User Manual in this document:
+[Mystic Tales Podcast Document](https://docs.google.com/document/d/13VzIDm5HZIbK4ewQbG2sdWmUuqhIv1Px/edit?usp=sharing&ouid=100826371641594181419&rtpof=true&sd=true)
 ---
 
 ## 📁 Front-End Applications Architecture
