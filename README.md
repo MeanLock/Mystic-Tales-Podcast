@@ -8,6 +8,12 @@ Product Link: https://mystic-tales-podcast.xyz (backend currently shutdown).
 
 Team Size: 4 (2 Front-End, 2 Back-End)
 
+<img width="2852" height="1560" alt="image" src="https://github.com/user-attachments/assets/99292086-41ff-4735-88ba-f62919686a0b" />
+
+
+<img width="2879" height="1564" alt="image" src="https://github.com/user-attachments/assets/dc70b76c-f134-4967-96ca-b227da3a370c" />
+
+
 ---
 
 ## 👨‍💻 My Role as a Front-End Developer
