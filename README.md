@@ -4,8 +4,10 @@ Welcome to the **Mystic Tales Podcast Platform** repository! This project is a c
 
 While there are backend and infrastructure layers to this project, this document focuses primarily on the **Front-End applications** where my efforts were concentrated as a Front-End Developer.
 
-Product Link: https://mystic-tales-podcast.xyz (backend currently shutdown)
+Product Link: https://mystic-tales-podcast.xyz (backend currently shutdown).
+
 Team Size: 4 (2 Front-End, 2 Back-End)
+
 ---
 
 ## 👨‍💻 My Role as a Front-End Developer
