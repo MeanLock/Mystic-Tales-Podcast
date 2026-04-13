@@ -4,6 +4,8 @@ Welcome to the **Mystic Tales Podcast Platform** repository! This project is a c
 
 While there are backend and infrastructure layers to this project, this document focuses primarily on the **Front-End applications** where my efforts were concentrated as a Front-End Developer.
 
+Product Link: https://mystic-tales-podcast.xyz (backend currently shutdown)
+Team Size: 4 (2 Front-End, 2 Back-End)
 ---
 
 ## 👨‍💻 My Role as a Front-End Developer
@@ -82,7 +84,7 @@ To handle complex and long-running backend operations (such as audio processing 
 - **The Takeaway**: This was an elegant and highly effective approach to bypass timeouts and handle asynchronous, long-lasting operations seamlessly on the front end without maintaining a continuous open connection like WebSockets for simple request-response checks.
 
 ### 2. Secure Cloud Media Delivery
-Dealing with media files stored on **Amazon S3** (or similar cloud providers) required a hardened approach compared to serving static, public URLs.
+Dealing with media files stored on **Amazon S3** required a hardened approach compared to serving static, public URLs.
 - Instead of direct public links, the database provided **media keys**.
 - The client application had to explicitly request a signed/accessible URL via a backend intermediary using that key, ensuring that only authenticated users with sufficient permissions could fetch and stream the private media.
 
