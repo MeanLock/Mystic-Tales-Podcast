@@ -1,6 +1,10 @@
 # Mystic Tales Podcast Platform
 
-Welcome to the **Mystic Tales Podcast Platform** repository! This project is a comprehensive podcast streaming and management platform built for both web and mobile. It features a robust subscription mechanism, empowers podcasters to seamlessly upload and edit audio content before publishing, and ensures high-level content security and performance by utilizing `hls.js` to split stream audio into encrypted segments.
+Welcome to the **Mystic Tales Podcast Platform** repository! This project is a comprehensive podcast streaming and management platform built for both web and mobile. It features a robust subscription mechanism, empowers podcasters to seamlessly upload and edit audio content before publishing, and ensures high-level content security and performance by utilizing `hls.js` to split stream audio into encrypted segments. 
+
+In addition to streaming, the platform introduces a **Booking Feature**. This allows users to commission their favorite Podcasters to narrate and produce custom audio based on user-provided materials (supporting various document types like scripts, PDFs, or research papers). To ensure a high-quality experience, the system features:
+- Structured Product Hierarchy: A clear and logical categorization of booking services and pricing tiers.
+- Revision Workflow: A seamless modification flow designed to protect customer interests, allowing for feedback and edits until the final delivery meets expectations.
 
 While there are backend and infrastructure layers to this project, this document focuses primarily on the **Front-End applications** where my efforts were concentrated as a Front-End Developer.
 
