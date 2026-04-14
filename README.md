@@ -41,6 +41,8 @@ The frontend monorepo consists primarily of two core applications:
 ### 1. `mystic-tales-podcast-platform-web`
 This is the web-based entry point to the platform for both podcasters (who need sophisticated dashboards to manage content) and web listeners.
 
+[Demo Website Video](https://drive.google.com/file/d/11_Y283VIkmlbHLOXILcLaV-i_OkFmuu8/view?usp=sharing)
+
 **Tech Stack**:
 - **Framework & Build**: React 19, Vite, TypeScript
 - **Styling**: Tailwind CSS v4, Radix UI (Headless components), Framer Motion (Animations)
@@ -63,6 +65,8 @@ This is the web-based entry point to the platform for both podcasters (who need 
 
 ### 2. `customer-mobile`
 This is the dedicated mobile application targeting listeners, providing them with a smooth, native-like podcast listening experience on iOS and Android.
+
+[Demo App Video](https://drive.google.com/file/d/1qX1yasrtD4jU01XI0EnqKMMAC1owU9tf/view?usp=sharing)
 
 **Tech Stack**:
 - **Framework**: React Native with Expo (~v54.0), TypeScript
