@@ -32,7 +32,7 @@ In this project, my responsibilities spanned across designing the architecture, 
 ---
 ## Document
 
-For more about this project, please check the User Manual in this document:
+For more about this project, please check the **`User Manual`** in this document:
 
 [Mystic Tales Podcast Document](https://docs.google.com/document/d/13VzIDm5HZIbK4ewQbG2sdWmUuqhIv1Px/edit?usp=sharing&ouid=100826371641594181419&rtpof=true&sd=true)
 
